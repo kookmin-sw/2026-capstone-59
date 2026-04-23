@@ -18,3 +18,6 @@ class Stage(Base):
         back_populates="stage"
     )
     steps: Mapped[list["Step"]] = relationship(back_populates="stage")  # noqa: F821
+    required_steps: Mapped[list["RequiredStep"]] = relationship(  # noqa: F821
+        back_populates="stage"
+    )

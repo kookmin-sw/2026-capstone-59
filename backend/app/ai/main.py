@@ -5,7 +5,7 @@ from app.ai.routers import ai
 
 app = FastAPI(title="Poco AI Orchestrator")
 
-app.include_router(ai.router, prefix="/ai", tags=["ai"])
+app.include_router(ai.router, tags=["ai"])
 
 
 @app.get("/health")
