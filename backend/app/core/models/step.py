@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.core.enums import StepStatus
 
 
 class Step(Base):
@@ -25,8 +26,7 @@ class Step(Base):
         UUID(as_uuid=True), ForeignKey("required_step.id"), nullable=True
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
-    # Ready | ACCEPTED | CANCELED
-    status: Mapped[str] = mapped_column(String, nullable=False, default="Ready")
+    status: Mapped[str] = mapped_column(String, nullable=False, default=StepStatus.READY)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
