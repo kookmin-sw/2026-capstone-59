@@ -17,7 +17,7 @@ class Project(Base):
     duration_month: Mapped[int | None] = mapped_column(Integer, nullable=True)
     member_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    constraint: Mapped[str | None] = mapped_column(Text, nullable=True)
+    constraint_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(

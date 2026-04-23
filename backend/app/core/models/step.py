@@ -21,6 +21,9 @@ class Step(Base):
     parent_step_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("step.id"), nullable=True
     )
+    required_step_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("required_step.id"), nullable=True
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     # Ready | ACCEPTED | CANCELED
     status: Mapped[str] = mapped_column(String, nullable=False, default="Ready")
@@ -40,6 +43,7 @@ class Step(Base):
     parent: Mapped["Step | None"] = relationship(
         back_populates="children", foreign_keys="Step.parent_step_id", remote_side="Step.id"
     )
+    required_step: Mapped["RequiredStep | None"] = relationship()  # noqa: F821
 
 
 class StepContent(Base):
