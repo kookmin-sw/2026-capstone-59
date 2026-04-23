@@ -15,5 +15,4 @@ def health() -> dict:
     return {"ok": True, "service": "business"}
 
 
-# Lambda A entrypoint
 handler = Mangum(app)
