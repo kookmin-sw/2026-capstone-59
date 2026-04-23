@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import StepNotFoundError
 from app.core.models.step import Step, StepTree
 
 _EXAMPLE_STEP_NAMES = [
@@ -33,7 +33,7 @@ def _insert_closure_rows(db: Session, step_id: uuid.UUID, parent_step_id: uuid.U
 def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
     parent_step = db.get(Step, parent_step_id)
     if parent_step is None:
-        raise NotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")
+        raise StepNotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")
 
     # TODO(AI): Bedrock Claude + RAG 기반 Step 후보 생성
     # context = {
@@ -47,6 +47,9 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
 
     chosen_names = random.sample(_EXAMPLE_STEP_NAMES, 3)  # 임시
 
+    # 부모가 필수 Step 영역에 속하면 자식도 같은 영역에 속함
+    belonging_rs_id = parent_step.belonging_required_step_id or parent_step.required_step_id
+
     steps: list[Step] = []
     for i, name in enumerate(chosen_names):
         step = Step(
@@ -55,6 +58,7 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
             stage_id=parent_step.stage_id,
             parent_step_id=parent_step_id,
             required_step_id=None,
+            belonging_required_step_id=belonging_rs_id,
             name=name,
             status=StepStatus.READY,
             sort_order=i + 1,
