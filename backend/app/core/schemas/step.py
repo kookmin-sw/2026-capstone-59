@@ -34,3 +34,14 @@ StepTreeNode.model_rebuild()
 class StepTreeResponse(BaseModel):
     current_path: list[UUID]
     steps: list[StepTreeNode]
+
+
+class RequiredStepItem(BaseModel):
+    step_id: UUID
+    name: str
+    stage_id: UUID
+    sequence: int
+
+
+class RequiredStepListResponse(BaseModel):
+    required_step: list[RequiredStepItem]
