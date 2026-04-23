@@ -6,40 +6,13 @@ from fastapi import status as http_status
 
 from app.ai.services import step_service
 from app.core.database import get_db
-from app.core.schemas.step import GeneratedStep, StepGenerateResponse, StepTreeNode, StepTreeResponse
+from app.core.schemas.step import GeneratedStep, StepGenerateResponse
 
 router = APIRouter()
 
 
 def _ok(data):
     return {"status": "success", "data": data}
-
-
-@router.get("/steps/tree")
-def get_step_tree(project_id: UUID, stage_id: UUID, db: Session = Depends(get_db)) -> dict:
-    """project_id + stage_id 기준 Step 트리 + Footprint 경로 반환."""
-    current_path, steps = step_service.get_step_tree(db, project_id, stage_id)
-
-    node_map: dict[UUID, StepTreeNode] = {
-        s.id: StepTreeNode(
-            step_id=s.id,
-            name=s.name,
-            status=s.status,
-            is_required=s.required_step_id is not None,
-            parent_step_id=s.parent_step_id,
-        )
-        for s in steps
-    }
-    roots: list[StepTreeNode] = []
-    for s in steps:
-        node = node_map[s.id]
-        if s.parent_step_id is not None and s.parent_step_id in node_map:
-            node_map[s.parent_step_id].children.append(node)
-        else:
-            roots.append(node)
-
-    response = StepTreeResponse(current_path=current_path, steps=roots)
-    return _ok(response.model_dump())
 
 
 @router.post("/steps/{step_id}/generate", status_code=http_status.HTTP_201_CREATED)
@@ -61,13 +34,20 @@ def generate_steps(step_id: UUID, db: Session = Depends(get_db)) -> dict:
     return _ok(response.model_dump())
 
 
-@router.post("/steps/{step_id}/details")
-def step_details(step_id: UUID) -> dict:
-    """Step 상세 정보: To-Do, 용어, 추천 행위, Reference 생성."""
+@router.post("/steps/{step_id}/accept")
+def accept_step(step_id: UUID) -> dict:
+    """Step Accept (상태 판정) — TODO: AI 충족 판단 구현."""
     return _ok({
         "step_id": str(step_id),
-        "todo": ["아이디어 10개 이상 작성", "핵심 3개 선정"],
-        "dictionary": [{"term": "MVP", "desc": "Minimum Viable Product"}],
-        "recommendations": ["유사 서비스 3개 조사해보기"],
-        "references": [{"title": "IDEO 브레인스토밍 가이드", "url": "https://ideo.com"}],
+        "status": "ACCEPTED",
+        "is_current_required_step_completed": False,
+    })
+
+
+@router.post("/steps/{step_id}/notion-template", status_code=http_status.HTTP_201_CREATED)
+def create_notion_template(step_id: UUID) -> dict:
+    """Required Step의 Notion 템플릿 페이지 생성 — TODO: Notion API 연동."""
+    return _ok({
+        "notion_page_id": "placeholder",
+        "notion_page_url": "https://notion.so/placeholder",
     })
