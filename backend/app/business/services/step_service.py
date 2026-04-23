@@ -3,6 +3,9 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
+from app.core.exceptions import StageNotFoundError
+from app.core.models.required_step import RequiredStep
+from app.core.models.stage import Stage
 from app.core.models.step import Step
 
 
@@ -36,3 +39,14 @@ def get_step_tree(
         )
 
     return current_path, steps
+
+
+def get_required_steps(db: Session, stage_id: uuid.UUID) -> list[RequiredStep]:
+    if not db.get(Stage, stage_id):
+        raise StageNotFoundError()
+    return (
+        db.query(RequiredStep)
+        .filter(RequiredStep.stage_id == stage_id)
+        .order_by(RequiredStep.sequence)
+        .all()
+    )
