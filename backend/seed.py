@@ -6,10 +6,12 @@
 import sys
 
 from app.core.database import SessionLocal
+from app.core.seeds import required_step as required_step_seed
 from app.core.seeds import stage as stage_seed
 
 SEEDS = {
     "stage": stage_seed,
+    "required_step": required_step_seed,
 }
 
 
