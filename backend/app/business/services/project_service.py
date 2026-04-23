@@ -3,18 +3,28 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.enums import ProjectStageStatus
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import DuplicateProjectNameError, ProjectNotFoundError
 from app.core.models.project import Project, ProjectStage
+from app.core.models.project_required_step_status import ProjectRequiredStepStatus
+from app.core.models.required_step import RequiredStep
 from app.core.models.stage import Stage
 from app.core.schemas.project import (
     ProjectCreateRequest,
-    ProjectUpdateRequest,
-    ProjectResponse,
     ProjectListItemResponse,
+    ProjectResponse,
+    ProjectUpdateRequest,
 )
 
 
 def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
+    if payload.name:
+        existing = db.query(Project).filter(
+            Project.name == payload.name,
+            Project.is_deleted == False,
+        ).first()
+        if existing:
+            raise DuplicateProjectNameError()
+
     project = Project(
         name=payload.name if payload.name is not None else "새 프로젝트",
         duration_month=payload.duration_months,
@@ -87,14 +97,17 @@ def list_projects(
 
 
 def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest) -> dict:
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.is_deleted == False,  # noqa: E712
-    ).first()
-    if not project:
-        raise NotFoundError("프로젝트를 찾을 수 없습니다.")
+    project = _get_project_or_raise(db, project_id)
 
     if payload.name is not None:
+        # 이름 중복 체크
+        existing = db.query(Project).filter(
+            Project.name == payload.name,
+            Project.id != project_id,
+            Project.is_deleted == False,  # noqa: E712
+        ).first()
+        if existing:
+            raise DuplicateProjectNameError()
         project.name = payload.name
     if payload.description is not None:
         project.description = payload.description
@@ -105,15 +118,19 @@ def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest)
 
 
 def delete_project(db: Session, project_id: UUID) -> None:
+    project = _get_project_or_raise(db, project_id)
+    project.is_deleted = True
+    db.commit()
+
+
+def _get_project_or_raise(db: Session, project_id: UUID) -> Project:
     project = db.query(Project).filter(
         Project.id == project_id,
         Project.is_deleted == False,  # noqa: E712
     ).first()
     if not project:
-        raise NotFoundError("프로젝트를 찾을 수 없습니다.")
-
-    project.is_deleted = True
-    db.commit()
+        raise ProjectNotFoundError()
+    return project
 
 
 def _to_project_response(project: Project) -> dict:
