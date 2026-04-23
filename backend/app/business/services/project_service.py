@@ -44,6 +44,14 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
             status=ProjectStageStatus.ACTIVE if i == 0 else ProjectStageStatus.LOCKED,
         ))
 
+    required_steps = db.query(RequiredStep).all()
+    for rs in required_steps:
+        db.add(ProjectRequiredStepStatus(
+            project_id=project.id,
+            required_step_id=rs.id,
+            is_fulfilled=False,
+        ))
+
     db.commit()
     db.refresh(project)
     return _to_project_response(project)
@@ -77,7 +85,7 @@ def list_projects(
             ProjectListItemResponse(
                 project_id=p.id,
                 name=p.name,
-                current_stage_number=1,
+                current_stage_number=_get_current_stage_number(db, p.id),
                 is_completed=p.is_completed,
                 is_deleted=p.is_deleted,
                 member_count=p.member_count,
@@ -131,6 +139,22 @@ def _get_project_or_raise(db: Session, project_id: UUID) -> Project:
     if not project:
         raise ProjectNotFoundError()
     return project
+
+    
+def _get_current_stage_number(db: Session, project_id: UUID) -> int:
+    active_ps = (
+        db.query(ProjectStage)
+        .join(Stage, Stage.id == ProjectStage.stage_id)
+        .filter(
+            ProjectStage.project_id == project_id,
+            ProjectStage.status == ProjectStageStatus.ACTIVE,
+        )
+        .first()
+    )
+    if active_ps:
+        stage = db.get(Stage, active_ps.stage_id)
+        return stage.sequence if stage else 1
+    return 1
 
 
 def _to_project_response(project: Project) -> dict:
