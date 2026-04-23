@@ -1,7 +1,13 @@
+import { useNavigate } from 'react-router-dom'
+
 export default function LandingPage() {
+  const navigate = useNavigate()
+
   return (
     <div>
-      <h1>Landing Page</h1>
+      <p>Your AI Development Partner</p>
+      <h1>poco</h1>
+      <button onClick={() => navigate('/projects')}>Get started!</button>
     </div>
   )
 }
