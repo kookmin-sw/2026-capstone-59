@@ -5,8 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
 from app.core.exceptions import NotFoundError
-from app.core.models.step import Step as StepModel
-from app.core.models.step_tree import StepTree as StepTreeModel
+from app.core.models.step import Step, StepTree
 
 _EXAMPLE_STEP_NAMES = [
     "사용자 인터뷰 진행",
@@ -23,18 +22,10 @@ _EXAMPLE_STEP_NAMES = [
 
 
 def _insert_closure_rows(db: Session, step_id: uuid.UUID, parent_step_id: uuid.UUID | None) -> None:
-    # self-reference row (depth=0)
     db.add(StepTree(ancestor=step_id, descendant=step_id, depth=0))
-
     if parent_step_id is None:
         return
-
-    # inherit all ancestor rows of parent, shifting depth by 1
-    parent_ancestors = (
-        db.query(StepTree)
-        .filter(StepTree.descendant == parent_step_id)
-        .all()
-    )
+    parent_ancestors = db.query(StepTree).filter(StepTree.descendant == parent_step_id).all()
     for row in parent_ancestors:
         db.add(StepTree(ancestor=row.ancestor, descendant=step_id, depth=row.depth + 1))
 
@@ -54,7 +45,7 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
     # candidates = bedrock_client.invoke(model_id=settings.BEDROCK_MODEL_ID, context=context)
     # → Claude가 3개의 regular step + optional 1 required step 후보를 JSON으로 반환
 
-    chosen_names = random.sample(_EXAMPLE_STEP_NAMES, 3) # 임시
+    chosen_names = random.sample(_EXAMPLE_STEP_NAMES, 3)  # 임시
 
     steps: list[Step] = []
     for i, name in enumerate(chosen_names):
@@ -69,7 +60,7 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
             sort_order=i + 1,
         )
         db.add(step)
-        db.flush()  # get step.id before closure insert
+        db.flush()
         _insert_closure_rows(db, step.id, parent_step_id)
         steps.append(step)
 
@@ -77,3 +68,36 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
     for step in steps:
         db.refresh(step)
     return steps
+
+
+def get_step_tree(
+    db: Session,
+    project_id: uuid.UUID,
+    stage_id: uuid.UUID,
+) -> tuple[list[uuid.UUID], list[Step]]:
+    """(current_path, all_steps) 반환. current_path는 ACCEPTED 경로의 step_id 순서 (루트→말단)."""
+    steps = (
+        db.query(Step)
+        .filter(Step.project_id == project_id, Step.stage_id == stage_id)
+        .order_by(Step.sort_order)
+        .all()
+    )
+
+    accepted_ids = {s.id for s in steps if s.status == StepStatus.ACCEPTED}
+
+    current_path: list[uuid.UUID] = []
+    # ACCEPTED 경로의 루트: parent가 없거나 parent가 ACCEPTED가 아닌 노드
+    current = next(
+        (s for s in steps
+         if s.id in accepted_ids
+         and (s.parent_step_id is None or s.parent_step_id not in accepted_ids)),
+        None,
+    )
+    while current is not None:
+        current_path.append(current.id)
+        current = next(
+            (s for s in steps if s.parent_step_id == current.id and s.id in accepted_ids),
+            None,
+        )
+
+    return current_path, steps
