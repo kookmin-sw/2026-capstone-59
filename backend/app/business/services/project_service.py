@@ -2,7 +2,10 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.models.project import Project
+from app.core.enums import ProjectStageStatus
+from app.core.exceptions import NotFoundError
+from app.core.models.project import Project, ProjectStage
+from app.core.models.stage import Stage
 from app.core.schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,
@@ -11,7 +14,6 @@ from app.core.schemas.project import (
 )
 
 
-# Project 생성
 def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
     project = Project(
         name=payload.name if payload.name is not None else "새 프로젝트",
@@ -34,19 +36,17 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
 
     db.commit()
     db.refresh(project)
-    return ProjectResponse(
-        project_id=project.id,
-        name=project.name,
-        current_stage_number=1,
-        is_completed=project.is_completed,
-        is_deleted=project.is_deleted,
-        created_at=project.created_at,
-        updated_at=project.updated_at,
-    ).model_dump()
+    return _to_project_response(project)
 
 
-# Project 목록 조회
-def list_projects(db: Session, page: int, size: int, sort_by: str, sort_order: str, keyword: str | None = None) -> dict:
+def list_projects(
+    db: Session,
+    page: int,
+    size: int,
+    sort_by: str,
+    sort_order: str,
+    keyword: str | None = None,
+) -> dict:
     ALLOWED_SORT = {"created_at", "updated_at", "name"}
     if sort_by not in ALLOWED_SORT:
         sort_by = "created_at"
@@ -86,20 +86,37 @@ def list_projects(db: Session, page: int, size: int, sort_by: str, sort_order: s
     }
 
 
-# Project 수정
-def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest) -> dict | None:
+def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest) -> dict:
     project = db.query(Project).filter(
         Project.id == project_id,
         Project.is_deleted == False,  # noqa: E712
     ).first()
     if not project:
-        return None
+        raise NotFoundError("프로젝트를 찾을 수 없습니다.")
 
-    project.name = payload.name if payload.name is not None else project.name
-    project.description = payload.description if payload.description is not None else project.description
+    if payload.name is not None:
+        project.name = payload.name
+    if payload.description is not None:
+        project.description = payload.description
 
     db.commit()
     db.refresh(project)
+    return _to_project_response(project)
+
+
+def delete_project(db: Session, project_id: UUID) -> None:
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        Project.is_deleted == False,  # noqa: E712
+    ).first()
+    if not project:
+        raise NotFoundError("프로젝트를 찾을 수 없습니다.")
+
+    project.is_deleted = True
+    db.commit()
+
+
+def _to_project_response(project: Project) -> dict:
     return ProjectResponse(
         project_id=project.id,
         name=project.name,
@@ -109,16 +126,3 @@ def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest)
         created_at=project.created_at,
         updated_at=project.updated_at,
     ).model_dump()
-
-# Project 삭제
-def delete_project(db: Session, project_id: UUID) -> bool:
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.is_deleted == False,  # noqa: E712
-    ).first()
-    if not project:
-        return None
-
-    project.is_deleted = True
-    db.commit()
-    return True
