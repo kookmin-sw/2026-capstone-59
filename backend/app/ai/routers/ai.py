@@ -6,13 +6,40 @@ from fastapi import status as http_status
 
 from app.ai.services import step_service
 from app.core.database import get_db
-from app.core.schemas.step import GeneratedStep, StepGenerateResponse
+from app.core.schemas.step import GeneratedStep, StepGenerateResponse, StepTreeNode, StepTreeResponse
 
 router = APIRouter()
 
 
 def _ok(data):
     return {"status": "success", "data": data}
+
+
+@router.get("/steps/tree")
+def get_step_tree(project_id: UUID, stage_id: UUID, db: Session = Depends(get_db)) -> dict:
+    """project_id + stage_id 기준 Step 트리 + Footprint 경로 반환."""
+    current_path, steps = step_service.get_step_tree(db, project_id, stage_id)
+
+    node_map: dict[UUID, StepTreeNode] = {
+        s.id: StepTreeNode(
+            step_id=s.id,
+            name=s.name,
+            status=s.status,
+            is_required=s.required_step_id is not None,
+            parent_step_id=s.parent_step_id,
+        )
+        for s in steps
+    }
+    roots: list[StepTreeNode] = []
+    for s in steps:
+        node = node_map[s.id]
+        if s.parent_step_id is not None and s.parent_step_id in node_map:
+            node_map[s.parent_step_id].children.append(node)
+        else:
+            roots.append(node)
+
+    response = StepTreeResponse(current_path=current_path, steps=roots)
+    return _ok(response.model_dump())
 
 
 @router.post("/steps/{step_id}/generate", status_code=http_status.HTTP_201_CREATED)
