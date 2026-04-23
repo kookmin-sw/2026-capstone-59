@@ -22,6 +22,16 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
         prompt=payload.prompt,
     )
     db.add(project)
+    db.flush()
+
+    stages = db.query(Stage).order_by(Stage.sequence).all()
+    for i, stage in enumerate(stages):
+        db.add(ProjectStage(
+            project_id=project.id,
+            stage_id=stage.id,
+            status=ProjectStageStatus.ACTIVE if i == 0 else ProjectStageStatus.LOCKED,
+        ))
+
     db.commit()
     db.refresh(project)
     return ProjectResponse(
