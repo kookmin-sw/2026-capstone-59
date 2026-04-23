@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.enums import ProjectStageStatus
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import ProjectNotFoundError
 from app.core.models.project import Project, ProjectStage
 from app.core.models.stage import Stage
 from app.core.schemas.stage import StageListItem, StageListResponse
@@ -15,7 +15,7 @@ def list_stages(db: Session, project_id: UUID) -> dict:
         Project.is_deleted == False,  # noqa: E712
     ).first()
     if not project:
-        raise NotFoundError("프로젝트를 찾을 수 없습니다.")
+        raise ProjectNotFoundError()
 
     rows = (
         db.query(ProjectStage, Stage)

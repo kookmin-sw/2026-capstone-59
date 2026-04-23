@@ -1,47 +1,63 @@
 class PocoError(Exception):
     """Poco 도메인 예외 기반 클래스."""
-    def __init__(self, code: str, message: str):
+
+    def __init__(self, code: str, message: str, status_code: int = 500):
         self.code = code
         self.message = message
+        self.status_code = status_code
         super().__init__(message)
 
 
-class BadRequestError(PocoError):
-    def __init__(self, message: str = "잘못된 요청 파라미터입니다."):
-        super().__init__(code="BAD_REQUEST", message=message)
+class InvalidInputError(PocoError):
+    def __init__(self, message: str = "요청 파라미터 형식이 올바르지 않습니다."):
+        super().__init__(code="INVALID_INPUT", message=message, status_code=400)
 
 
-class NotFoundError(PocoError):
-    def __init__(self, message: str = "리소스를 찾을 수 없습니다."):
-        super().__init__(code="NOT_FOUND", message=message)
+class DuplicateProjectNameError(PocoError):
+    def __init__(self, message: str = "이미 존재하는 프로젝트 이름입니다."):
+        super().__init__(code="DUPLICATE_PROJECT_NAME", message=message, status_code=409)
 
 
-class InvalidStateError(PocoError):
-    def __init__(self, message: str = "현재 상태에서 허용되지 않는 작업입니다."):
-        super().__init__(code="INVALID_STATE_TRANSITION", message=message)
+class StepAlreadyAcceptedError(PocoError):
+    def __init__(self, message: str = "이미 Accept된 Step입니다."):
+        super().__init__(code="STEP_ALREADY_ACCEPTED", message=message, status_code=409)
 
 
-class StageCompletionBlockedError(PocoError):
-    def __init__(self, message: str = "모든 필수 Step을 완료해야 Stage를 넘어갈 수 있습니다.", details: dict | None = None):
-        super().__init__(code="STAGE_COMPLETION_BLOCKED", message=message)
-        self.details = details or {}
+class InvalidRollbackTargetError(PocoError):
+    def __init__(self, message: str = "롤백할 수 없는 대상입니다."):
+        super().__init__(code="INVALID_ROLLBACK_TARGET", message=message, status_code=400)
 
 
-class ValidationError(PocoError):
-    def __init__(self, message: str = "입력값이 올바르지 않습니다."):
-        super().__init__(code="VALIDATION_ERROR", message=message)
+class ProjectNotFoundError(PocoError):
+    def __init__(self, message: str = "프로젝트를 찾을 수 없습니다."):
+        super().__init__(code="PROJECT_NOT_FOUND", message=message, status_code=404)
 
 
-class InternalError(PocoError):
-    def __init__(self, message: str = "서버 내부 오류가 발생했습니다."):
-        super().__init__(code="INTERNAL_ERROR", message=message)
+class StageNotFoundError(PocoError):
+    def __init__(self, message: str = "Stage를 찾을 수 없습니다."):
+        super().__init__(code="STAGE_NOT_FOUND", message=message, status_code=404)
 
 
-class AIServiceUnavailableError(PocoError):
-    def __init__(self, message: str = "AI 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요."):
-        super().__init__(code="AI_SERVICE_UNAVAILABLE", message=message)
+class StepNotFoundError(PocoError):
+    def __init__(self, message: str = "Step을 찾을 수 없습니다."):
+        super().__init__(code="STEP_NOT_FOUND", message=message, status_code=404)
 
 
-class NotionServiceUnavailableError(PocoError):
-    def __init__(self, message: str = "Notion 템플릿 생성에 실패했습니다. 잠시 후 다시 시도해주세요."):
-        super().__init__(code="NOTION_SERVICE_UNAVAILABLE", message=message)
+class ProjectNotInitializedError(PocoError):
+    def __init__(self, message: str = "초기화되지 않은 프로젝트입니다."):
+        super().__init__(code="PROJECT_NOT_INITIALIZED", message=message, status_code=400)
+
+
+class StepGenerationLimitError(PocoError):
+    def __init__(self, message: str = "Step 추가생성 횟수를 초과했습니다. (최대 6개)"):
+        super().__init__(code="STEP_GENERATION_LIMIT", message=message, status_code=400)
+
+
+class AIGenerationFailedError(PocoError):
+    def __init__(self, message: str = "AI Step 생성에 실패했습니다."):
+        super().__init__(code="AI_GENERATION_FAILED", message=message, status_code=503)
+
+
+class NotionAPIFailedError(PocoError):
+    def __init__(self, message: str = "Notion 템플릿 생성에 실패했습니다."):
+        super().__init__(code="NOTION_API_FAILED", message=message, status_code=503)
