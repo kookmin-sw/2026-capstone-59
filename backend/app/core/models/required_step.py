@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -9,6 +9,7 @@ from app.core.database import Base
 
 class RequiredStep(Base):
     __tablename__ = "required_step"
+    __table_args__ = (UniqueConstraint("stage_id", "sequence", name="uq_required_step_stage_seq"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     stage_id: Mapped[uuid.UUID] = mapped_column(
