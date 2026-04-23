@@ -12,7 +12,7 @@ class Stage(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
 
     project_stages: Mapped[list["ProjectStage"]] = relationship(  # noqa: F821
         back_populates="stage"
