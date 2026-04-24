@@ -274,6 +274,7 @@ export default function CreateProjectPage() {
           </div>
 
           <button type="submit">다음으로 이동 →</button>
+          <button type="button" onClick={() => navigate('/projects')}>← 뒤로</button>
         </form>
       </div>
     )
