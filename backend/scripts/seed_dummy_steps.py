@@ -100,9 +100,7 @@ def run() -> None:
     db = SessionLocal()
     try:
         # 1) 첫 번째 프로젝트 가져오기 (없으면 에러)
-        project = (
-            db.query(Project).filter(Project.is_deleted == False).first()
-        )  # noqa: E712
+        project = db.query(Project).filter(Project.is_deleted == False).first()
         if not project:
             print("❌ 프로젝트가 없습니다. 먼저 프로젝트를 생성하세요.")
             return

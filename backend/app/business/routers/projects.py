@@ -17,7 +17,7 @@ def _ok(data):
 
 @router.post("", status_code=http_status.HTTP_201_CREATED)
 def create_project(payload: ProjectCreateRequest, db: Session = Depends(get_db)):
-    return _ok(project_service.create_project(db, payload))
+    return _ok(project_service.create_project(db, payload).model_dump())
 
 
 @router.get("", status_code=http_status.HTTP_200_OK)
@@ -30,7 +30,9 @@ def list_projects(
     db: Session = Depends(get_db),
 ):
     return _ok(
-        project_service.list_projects(db, page, size, sort_by, sort_order, keyword)
+        project_service.list_projects(
+            db, page, size, sort_by, sort_order, keyword
+        ).model_dump()
     )
 
 
@@ -38,7 +40,7 @@ def list_projects(
 def update_project(
     project_id: UUID, payload: ProjectUpdateRequest, db: Session = Depends(get_db)
 ):
-    return _ok(project_service.update_project(db, project_id, payload))
+    return _ok(project_service.update_project(db, project_id, payload).model_dump())
 
 
 @router.delete("/{project_id}", status_code=http_status.HTTP_200_OK)

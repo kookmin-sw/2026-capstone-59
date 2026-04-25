@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
-from app.core.models.step import Step
+from app.core.models.step import Step as StepModel
 from app.core.schemas.step import StepTreeNode, StepTreeResponse
 
 
@@ -13,8 +13,8 @@ def get_step_tree(
     """Step 트리 + Footprint 경로를 조립하여 반환."""
     steps = (
         db.query(Step)
-        .filter(Step.project_id == project_id, Step.stage_id == stage_id)
-        .order_by(Step.sort_order)
+        .filter(StepModel.project_id == project_id, StepModel.stage_id == stage_id)
+        .order_by(StepModel.sort_order)
         .all()
     )
 
@@ -24,7 +24,7 @@ def get_step_tree(
     return StepTreeResponse(current_path=current_path, steps=roots)
 
 
-def _build_current_path(steps: list[Step]) -> list[uuid.UUID]:
+def _build_current_path(steps: list[StepModel]) -> list[uuid.UUID]:
     """ACCEPTED 경로의 step_id 순서 (루트→말단)."""
     accepted_ids = {s.id for s in steps if s.status == StepStatus.ACCEPTED}
 
@@ -51,7 +51,7 @@ def _build_current_path(steps: list[Step]) -> list[uuid.UUID]:
     return current_path
 
 
-def _build_tree(steps: list[Step]) -> list[StepTreeNode]:
+def _build_tree(steps: list[StepModel]) -> list[StepTreeNode]:
     """flat한 Step 리스트를 재귀 트리 구조로 조립."""
     node_map: dict[uuid.UUID, StepTreeNode] = {
         s.id: StepTreeNode(
@@ -75,7 +75,7 @@ def _build_tree(steps: list[Step]) -> list[StepTreeNode]:
     return roots
 
 
-from app.core.models.required_step import RequiredStep
+from app.core.models.required_step import RequiredStep as RequiredStepModel
 from app.core.schemas.step import RequiredStepItem, RequiredStepListResponse
 
 
@@ -83,8 +83,8 @@ def get_required_steps(db: Session, stage_id: uuid.UUID) -> RequiredStepListResp
     """특정 Stage의 Required Step 목록 조회."""
     required_steps = (
         db.query(RequiredStep)
-        .filter(RequiredStep.stage_id == stage_id)
-        .order_by(RequiredStep.sequence)
+        .filter(RequiredStepModel.stage_id == stage_id)
+        .order_by(RequiredStepModel.sequence)
         .all()
     )
     return RequiredStepListResponse(
