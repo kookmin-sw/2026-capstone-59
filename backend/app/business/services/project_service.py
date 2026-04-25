@@ -96,7 +96,7 @@ def list_projects(
             ProjectListItemResponse(
                 project_id=p.id,
                 name=p.name,
-                current_stage_number=_get_current_stage_number(db, p.id),
+                current_stage_sequence=_get_current_stage_sequence(db, p.id),
                 is_deleted=p.is_deleted,
                 member_count=p.member_count,
                 duration_month=p.duration_month,
@@ -160,7 +160,7 @@ def _get_project_or_raise(db: Session, project_id: UUID) -> ProjectModel:
     return project
 
 
-def _get_current_stage_number(db: Session, project_id: UUID) -> int:
+def _get_current_stage_sequence(db: Session, project_id: UUID) -> int:
     """is_active=True인 Stage의 sequence를 반환."""
     row = (
         db.query(StageModel.sequence)
@@ -179,7 +179,7 @@ def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
     return ProjectResponse(
         project_id=project.id,
         name=project.name,
-        current_stage_number=_get_current_stage_number(db, project.id),
+        current_stage_sequencer=_get_current_stage_sequence(db, project.id),
         is_deleted=project.is_deleted,
         created_at=project.created_at,
         updated_at=project.updated_at,

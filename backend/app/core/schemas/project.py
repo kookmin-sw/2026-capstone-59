@@ -10,7 +10,7 @@ class ProjectCreateRequest(BaseModel):
     member_count: int
     description: Optional[str] = None
     constraint: Optional[str] = None
-    prompt: str
+    prompt: str 
 
 
 class ProjectUpdateRequest(BaseModel):
@@ -21,7 +21,8 @@ class ProjectUpdateRequest(BaseModel):
 class ProjectResponse(BaseModel):
     project_id: UUID
     name: str
-    current_stage_number: int
+    current_stage_sequence: int
+    is_completed: bool
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
@@ -30,19 +31,12 @@ class ProjectResponse(BaseModel):
 class ProjectListItemResponse(BaseModel):
     project_id: UUID
     name: str
-    current_stage_number: int
+    current_stage_sequence: int
     is_deleted: bool
-    member_count: int | None
-    duration_month: int | None
+    member_count: int
+    duration_month: int
     description: str | None
     constraint: str | None
     prompt: str
     created_at: datetime
     updated_at: datetime
-
-
-class ProjectListResponse(BaseModel):
-    projects: list[ProjectListItemResponse]
-    total_count: int
-    page: int
-    size: int
