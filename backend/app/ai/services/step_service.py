@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.enums import StepStatus
 from app.core.exceptions import StepNotFoundError
 from app.core.models.step import Step, StepTree
+from app.core.schemas.step import StepGenerateResponse, GeneratedStep
 
 _EXAMPLE_STEP_NAMES = [
     "사용자 인터뷰 진행",
@@ -34,7 +35,7 @@ def _insert_closure_rows(
         db.add(StepTree(ancestor=row.ancestor, descendant=step_id, depth=row.depth + 1))
 
 
-def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
+def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateResponse:
     parent_step = db.get(Step, parent_step_id)
     if parent_step is None:
         raise StepNotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")

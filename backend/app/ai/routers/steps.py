@@ -6,7 +6,6 @@ from fastapi import status as http_status
 
 from app.ai.services import step_service
 from app.core.database import get_db
-from app.core.schemas.step import GeneratedStep, StepGenerateResponse
 
 router = APIRouter()
 
