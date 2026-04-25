@@ -14,13 +14,19 @@ class ProjectRequiredStepStatus(Base):
     __tablename__ = "project_required_step_status"
 
     project_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("project.id", ondelete="CASCADE"), primary_key=True
+        UUID(as_uuid=True),
+        ForeignKey("project.id", ondelete="CASCADE"),
+        primary_key=True,
     )
     required_step_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("required_step.id", ondelete="CASCADE"), primary_key=True
+        UUID(as_uuid=True),
+        ForeignKey("required_step.id", ondelete="CASCADE"),
+        primary_key=True,
     )
     is_fulfilled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    fulfilled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    fulfilled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     project: Mapped["Project"] = relationship()  # noqa: F821
     required_step: Mapped["RequiredStep"] = relationship()  # noqa: F821

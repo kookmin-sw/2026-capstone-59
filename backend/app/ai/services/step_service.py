@@ -21,11 +21,15 @@ _EXAMPLE_STEP_NAMES = [
 ]
 
 
-def _insert_closure_rows(db: Session, step_id: uuid.UUID, parent_step_id: uuid.UUID | None) -> None:
+def _insert_closure_rows(
+    db: Session, step_id: uuid.UUID, parent_step_id: uuid.UUID | None
+) -> None:
     db.add(StepTree(ancestor=step_id, descendant=step_id, depth=0))
     if parent_step_id is None:
         return
-    parent_ancestors = db.query(StepTree).filter(StepTree.descendant == parent_step_id).all()
+    parent_ancestors = (
+        db.query(StepTree).filter(StepTree.descendant == parent_step_id).all()
+    )
     for row in parent_ancestors:
         db.add(StepTree(ancestor=row.ancestor, descendant=step_id, depth=row.depth + 1))
 
@@ -48,7 +52,9 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
     chosen_names = random.sample(_EXAMPLE_STEP_NAMES, 3)  # 임시
 
     # 부모가 필수 Step 영역에 속하면 자식도 같은 영역에 속함
-    belonging_rs_id = parent_step.belonging_required_step_id or parent_step.required_step_id
+    belonging_rs_id = (
+        parent_step.belonging_required_step_id or parent_step.required_step_id
+    )
 
     steps: list[Step] = []
     for i, name in enumerate(chosen_names):

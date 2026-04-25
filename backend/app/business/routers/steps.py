@@ -14,7 +14,9 @@ def _ok(data):
 
 
 @router.get("/tree")
-def get_step_tree(project_id: UUID, stage_id: UUID, db: Session = Depends(get_db)) -> dict:
+def get_step_tree(
+    project_id: UUID, stage_id: UUID, db: Session = Depends(get_db)
+) -> dict:
     """project_id + stage_id 기준 Step 트리 + Footprint 경로 반환."""
     response = step_service.get_step_tree(db, project_id, stage_id)
     return _ok(response.model_dump())
