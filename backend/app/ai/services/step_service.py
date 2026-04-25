@@ -71,4 +71,16 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> list[Step]:
     db.commit()
     for step in steps:
         db.refresh(step)
-    return steps
+
+    return StepGenerateResponse(
+        generated_steps=[
+            GeneratedStep(
+                step_id=s.id,
+                name=s.name,
+                status=s.status,
+                is_required=s.required_step_id is not None,
+                parent_step_id=s.parent_step_id,
+            )
+            for s in steps
+        ]
+    )

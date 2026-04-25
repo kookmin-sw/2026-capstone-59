@@ -18,19 +18,7 @@ def _ok(data):
 @router.post("/steps/{step_id}/generate", status_code=http_status.HTTP_201_CREATED)
 def generate_steps(step_id: UUID, db: Session = Depends(get_db)) -> dict:
     """현재 Step 기반으로 다음 후보 Step 3개를 AI로 생성."""
-    steps = step_service.generate_steps(db, step_id)
-    response = StepGenerateResponse(
-        generated_steps=[
-            GeneratedStep(
-                step_id=s.id,
-                name=s.name,
-                status=s.status,
-                is_required=s.required_step_id is not None,
-                parent_step_id=s.parent_step_id,
-            )
-            for s in steps
-        ]
-    )
+    response = step_service.generate_steps(db, step_id)
     return _ok(response.model_dump())
 
 
