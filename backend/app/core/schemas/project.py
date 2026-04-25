@@ -16,6 +16,8 @@ class ProjectCreateRequest(BaseModel):
 class ProjectUpdateRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    duration_months: Optional[int] = None
+    member_count: Optional[int] = None
 
 
 class ProjectResponse(BaseModel):
