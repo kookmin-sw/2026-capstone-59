@@ -134,6 +134,10 @@ def update_project(
         project.name = payload.name
     if payload.description is not None:
         project.description = payload.description
+    if payload.duration_months is not None:
+        project.duration_month = payload.duration_months
+    if payload.member_count is not None:
+        project.member_count = payload.member_count
 
     db.commit()
     db.refresh(project)
