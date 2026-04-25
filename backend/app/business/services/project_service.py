@@ -2,17 +2,28 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.models.project import Project
+from app.core.exceptions import DuplicateProjectNameError, ProjectNotFoundError
+from app.core.models.project import Project, ProjectStage
+from app.core.models.project_required_step_status import ProjectRequiredStepStatus
+from app.core.models.required_step import RequiredStep
+from app.core.models.stage import Stage
 from app.core.schemas.project import (
     ProjectCreateRequest,
-    ProjectUpdateRequest,
-    ProjectResponse,
     ProjectListItemResponse,
+    ProjectResponse,
+    ProjectUpdateRequest,
 )
 
 
-# Project 생성
 def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
+    if payload.name:
+        existing = db.query(Project).filter(
+            Project.name == payload.name,
+            Project.is_deleted == False,
+        ).first()
+        if existing:
+            raise DuplicateProjectNameError()
+
     project = Project(
         name=payload.name if payload.name is not None else "새 프로젝트",
         duration_month=payload.duration_months,
@@ -22,21 +33,37 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
         prompt=payload.prompt,
     )
     db.add(project)
+    db.flush()
+
+    stages = db.query(Stage).order_by(Stage.sequence).all()
+    for i, stage in enumerate(stages):
+        db.add(ProjectStage(
+            project_id=project.id,
+            stage_id=stage.id,
+            is_active=(i == 0),
+        ))
+
+    required_steps = db.query(RequiredStep).all()
+    for rs in required_steps:
+        db.add(ProjectRequiredStepStatus(
+            project_id=project.id,
+            required_step_id=rs.id,
+            is_fulfilled=False,
+        ))
+
     db.commit()
     db.refresh(project)
-    return ProjectResponse(
-        project_id=project.id,
-        name=project.name,
-        current_stage_number=1,
-        is_completed=project.is_completed,
-        is_deleted=project.is_deleted,
-        created_at=project.created_at,
-        updated_at=project.updated_at,
-    ).model_dump()
+    return _to_project_response(project)
 
 
-# Project 목록 조회
-def list_projects(db: Session, page: int, size: int, sort_by: str, sort_order: str, keyword: str | None = None) -> dict:
+def list_projects(
+    db: Session,
+    page: int,
+    size: int,
+    sort_by: str,
+    sort_order: str,
+    keyword: str | None = None,
+) -> dict:
     ALLOWED_SORT = {"created_at", "updated_at", "name"}
     if sort_by not in ALLOWED_SORT:
         sort_by = "created_at"
@@ -57,7 +84,7 @@ def list_projects(db: Session, page: int, size: int, sort_by: str, sort_order: s
             ProjectListItemResponse(
                 project_id=p.id,
                 name=p.name,
-                current_stage_number=1,
+                current_stage_number=_get_current_stage_number(db, p.id),
                 is_completed=p.is_completed,
                 is_deleted=p.is_deleted,
                 member_count=p.member_count,
@@ -76,20 +103,59 @@ def list_projects(db: Session, page: int, size: int, sort_by: str, sort_order: s
     }
 
 
-# Project 수정
-def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest) -> dict | None:
+def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest) -> dict:
+    project = _get_project_or_raise(db, project_id)
+
+    if payload.name is not None:
+        # 이름 중복 체크
+        existing = db.query(Project).filter(
+            Project.name == payload.name,
+            Project.id != project_id,
+            Project.is_deleted == False,  # noqa: E712
+        ).first()
+        if existing:
+            raise DuplicateProjectNameError()
+        project.name = payload.name
+    if payload.description is not None:
+        project.description = payload.description
+
+    db.commit()
+    db.refresh(project)
+    return _to_project_response(project)
+
+
+def delete_project(db: Session, project_id: UUID) -> None:
+    project = _get_project_or_raise(db, project_id)
+    project.is_deleted = True
+    db.commit()
+
+
+def _get_project_or_raise(db: Session, project_id: UUID) -> Project:
     project = db.query(Project).filter(
         Project.id == project_id,
         Project.is_deleted == False,  # noqa: E712
     ).first()
     if not project:
-        return None
+        raise ProjectNotFoundError()
+    return project
 
-    project.name = payload.name if payload.name is not None else project.name
-    project.description = payload.description if payload.description is not None else project.description
+    
+def _get_current_stage_number(db: Session, project_id: UUID) -> int:
+    """is_active=True인 Stage의 sequence를 반환."""
+    row = (
+        db.query(Stage.sequence)
+        .join(ProjectStage, ProjectStage.stage_id == Stage.id)
+        .filter(
+            ProjectStage.project_id == project_id,
+            ProjectStage.is_active == True,  # noqa: E712
+        )
+        .order_by(Stage.sequence)
+        .first()
+    )
+    return row[0] if row else 1
 
-    db.commit()
-    db.refresh(project)
+
+def _to_project_response(project: Project) -> dict:
     return ProjectResponse(
         project_id=project.id,
         name=project.name,
@@ -99,16 +165,3 @@ def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest)
         created_at=project.created_at,
         updated_at=project.updated_at,
     ).model_dump()
-
-# Project 삭제
-def delete_project(db: Session, project_id: UUID) -> bool:
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.is_deleted == False,  # noqa: E712
-    ).first()
-    if not project:
-        return None
-
-    project.is_deleted = True
-    db.commit()
-    return True
