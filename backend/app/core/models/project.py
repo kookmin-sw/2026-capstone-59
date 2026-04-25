@@ -20,7 +20,6 @@ class Project(Base):
     member_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     constraint_text: Mapped[str | None] = mapped_column(Text, nullable=True)
-    is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -52,9 +51,6 @@ class ProjectStage(Base):
         UUID(as_uuid=True), ForeignKey("stage.id", ondelete="CASCADE"), primary_key=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
 
     project: Mapped["Project"] = relationship(back_populates="project_stages")
     stage: Mapped["Stage"] = relationship(back_populates="project_stages")  # noqa: F821
