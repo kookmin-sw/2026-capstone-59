@@ -36,7 +36,6 @@ REQUIRED_STEP_DATA: list[dict] = [
         "toast_message": "핵심 개념 정의를 완료했습니다! 💡",
         "template_description": "프로젝트의 핵심 가치 제안과 차별점을 정의하는 문서입니다. 솔루션 개요, 핵심 기능 아이디어, 기대 가치를 포함합니다.",
     },
-
     # ── Stage 2: 프로젝트 계획 (Ch5) ──────────────────────────────────────
     {
         "stage_sequence": 2,
@@ -66,7 +65,6 @@ REQUIRED_STEP_DATA: list[dict] = [
         "toast_message": "리스크 분석을 완료했습니다! ⚠️",
         "template_description": "프로젝트 리스크를 식별하고 대응 계획을 수립하는 문서입니다. 리스크 목록, 발생 가능성·영향도 매트릭스, 완화 전략을 포함합니다.",
     },
-
     # ── Stage 3: 요구사항 정의 (Ch6) ──────────────────────────────────────
     {
         "stage_sequence": 3,
@@ -96,7 +94,6 @@ REQUIRED_STEP_DATA: list[dict] = [
         "toast_message": "요구사항 확정을 완료했습니다! 📌",
         "template_description": "이해관계자 검토 후 요구사항 기준선을 확정하는 문서입니다. 검토 의견 반영 내역, 최종 기능 목록, 승인 내역을 포함합니다.",
     },
-
     # ── Stage 4: 설계 (Ch7) ───────────────────────────────────────────────
     {
         "stage_sequence": 4,
@@ -126,7 +123,6 @@ REQUIRED_STEP_DATA: list[dict] = [
         "toast_message": "UI/UX 설계를 완료했습니다! 🎨",
         "template_description": "화면 설계와 사용자 인터페이스 프로토타입을 작성하는 문서입니다. 화면 흐름도, 와이어프레임, 인터랙션 가이드를 포함합니다.",
     },
-
     # ── Stage 5: 개발 (Ch8) ───────────────────────────────────────────────
     {
         "stage_sequence": 5,
@@ -156,7 +152,6 @@ REQUIRED_STEP_DATA: list[dict] = [
         "toast_message": "코드 리뷰 및 리팩토링을 완료했습니다! ✨",
         "template_description": "코드 품질 검토와 개선 내역을 기록하는 문서입니다. 리뷰 체크리스트, 발견된 이슈 및 개선 사항, 기술 부채 목록을 포함합니다.",
     },
-
     # ── Stage 6: 테스트 및 검증 (Ch9) ────────────────────────────────────
     {
         "stage_sequence": 6,
@@ -191,16 +186,15 @@ REQUIRED_STEP_DATA: list[dict] = [
 
 def run(db: Session) -> None:
     """Required Step 시드 데이터 삽입. stage_sequence로 Stage를 조회한 뒤 upsert한다."""
-    stage_map: dict[int, object] = {
-        s.sequence: s.id
-        for s in db.query(Stage).all()
-    }
+    stage_map: dict[int, object] = {s.sequence: s.id for s in db.query(Stage).all()}
 
     rows = []
     for item in REQUIRED_STEP_DATA:
         seq = item["stage_sequence"]
         if seq not in stage_map:
-            raise ValueError(f"Stage sequence {seq} 를 찾을 수 없습니다. Stage 시드를 먼저 실행하세요.")
+            raise ValueError(
+                f"Stage sequence {seq} 를 찾을 수 없습니다. Stage 시드를 먼저 실행하세요."
+            )
         rows.append(
             {
                 "stage_id": stage_map[seq],
@@ -219,7 +213,9 @@ def run(db: Session) -> None:
             set_={
                 "name": insert(RequiredStep).excluded.name,
                 "toast_message": insert(RequiredStep).excluded.toast_message,
-                "template_description": insert(RequiredStep).excluded.template_description,
+                "template_description": insert(
+                    RequiredStep
+                ).excluded.template_description,
             },
         )
     )

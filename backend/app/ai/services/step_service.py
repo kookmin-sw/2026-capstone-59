@@ -33,7 +33,11 @@ def _insert_closure_rows(
         db.query(StepTreeModel).filter(StepTreeModel.descendant == parent_step_id).all()
     )
     for row in parent_ancestors:
-        db.add(StepTreeModel(ancestor=row.ancestor, descendant=step_id, depth=row.depth + 1))
+        db.add(
+            StepTreeModel(
+                ancestor=row.ancestor, descendant=step_id, depth=row.depth + 1
+            )
+        )
 
 
 def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateResponse:
