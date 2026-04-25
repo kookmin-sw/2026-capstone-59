@@ -2,7 +2,6 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import ProjectStageStatus
 from app.core.exceptions import DuplicateProjectNameError, ProjectNotFoundError
 from app.core.models.project import Project, ProjectStage
 from app.core.models.project_required_step_status import ProjectRequiredStepStatus
@@ -41,7 +40,7 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
         db.add(ProjectStage(
             project_id=project.id,
             stage_id=stage.id,
-            status=ProjectStageStatus.ACTIVE if i == 0 else ProjectStageStatus.LOCKED,
+            is_active=(i == 0),
         ))
 
     required_steps = db.query(RequiredStep).all()
@@ -142,19 +141,18 @@ def _get_project_or_raise(db: Session, project_id: UUID) -> Project:
 
     
 def _get_current_stage_number(db: Session, project_id: UUID) -> int:
-    active_ps = (
-        db.query(ProjectStage)
-        .join(Stage, Stage.id == ProjectStage.stage_id)
+    """is_active=True인 Stage의 sequence를 반환."""
+    row = (
+        db.query(Stage.sequence)
+        .join(ProjectStage, ProjectStage.stage_id == Stage.id)
         .filter(
             ProjectStage.project_id == project_id,
-            ProjectStage.status == ProjectStageStatus.ACTIVE,
+            ProjectStage.is_active == True,  # noqa: E712
         )
+        .order_by(Stage.sequence)
         .first()
     )
-    if active_ps:
-        stage = db.get(Stage, active_ps.stage_id)
-        return stage.sequence if stage else 1
-    return 1
+    return row[0] if row else 1
 
 
 def _to_project_response(project: Project) -> dict:

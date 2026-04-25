@@ -2,7 +2,6 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import ProjectStageStatus
 from app.core.exceptions import ProjectNotFoundError
 from app.core.models.project import Project, ProjectStage
 from app.core.models.stage import Stage
@@ -30,8 +29,7 @@ def list_stages(db: Session, project_id: UUID) -> dict:
             stage_id=stage.id,
             stage_sequence=stage.sequence,
             stage_name=stage.name,
-            status=ProjectStageStatus(ps.status),
-            is_completed=(ps.status == ProjectStageStatus.COMPLETED),
+            is_active=ps.is_active,
         )
         for ps, stage in rows
     ]

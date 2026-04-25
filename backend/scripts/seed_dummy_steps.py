@@ -36,7 +36,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings  # noqa: E402
 from app.core.database import SessionLocal  # noqa: E402
-from app.core.enums import ProjectStageStatus, StepStatus  # noqa: E402
+from app.core.enums import StepStatus  # noqa: E402
 from app.core.models.project import Project, ProjectStage  # noqa: E402
 from app.core.models.required_step import RequiredStep  # noqa: E402
 from app.core.models.stage import Stage  # noqa: E402
