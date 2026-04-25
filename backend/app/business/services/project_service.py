@@ -79,7 +79,9 @@ def list_projects(
     if sort_by not in ALLOWED_SORT:
         sort_by = "created_at"
 
-    query = db.query(ProjectModel).filter(ProjectModel.is_deleted == False)  # noqa: E712
+    query = db.query(ProjectModel).filter(
+        ProjectModel.is_deleted == False
+    )  # noqa: E712
 
     if keyword:
         query = query.filter(ProjectModel.name.ilike(f"%{keyword}%"))

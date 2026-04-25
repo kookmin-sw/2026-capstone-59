@@ -10,7 +10,7 @@ class ProjectCreateRequest(BaseModel):
     member_count: int
     description: Optional[str] = None
     constraint: Optional[str] = None
-    prompt: str 
+    prompt: str
 
 
 class ProjectUpdateRequest(BaseModel):
