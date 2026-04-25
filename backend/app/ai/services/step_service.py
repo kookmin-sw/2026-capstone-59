@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
 from app.core.exceptions import StepNotFoundError
-from app.core.models.step import Step, StepTree
+from app.core.models.step import Step as StepModel
+from app.core.models.step import StepTree as StepTreeModel
 from app.core.schemas.step import StepGenerateResponse, GeneratedStep
 
 _EXAMPLE_STEP_NAMES = [
@@ -25,18 +26,18 @@ _EXAMPLE_STEP_NAMES = [
 def _insert_closure_rows(
     db: Session, step_id: uuid.UUID, parent_step_id: uuid.UUID | None
 ) -> None:
-    db.add(StepTree(ancestor=step_id, descendant=step_id, depth=0))
+    db.add(StepTreeModel(ancestor=step_id, descendant=step_id, depth=0))
     if parent_step_id is None:
         return
     parent_ancestors = (
-        db.query(StepTree).filter(StepTree.descendant == parent_step_id).all()
+        db.query(StepTreeModel).filter(StepTreeModel.descendant == parent_step_id).all()
     )
     for row in parent_ancestors:
-        db.add(StepTree(ancestor=row.ancestor, descendant=step_id, depth=row.depth + 1))
+        db.add(StepTreeModel(ancestor=row.ancestor, descendant=step_id, depth=row.depth + 1))
 
 
 def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateResponse:
-    parent_step = db.get(Step, parent_step_id)
+    parent_step = db.get(StepModel, parent_step_id)
     if parent_step is None:
         raise StepNotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")
 
@@ -57,9 +58,9 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateRespon
         parent_step.belonging_required_step_id or parent_step.required_step_id
     )
 
-    steps: list[Step] = []
+    steps: list[StepModel] = []
     for i, name in enumerate(chosen_names):
-        step = Step(
+        step = StepModel(
             id=uuid.uuid4(),
             project_id=parent_step.project_id,
             stage_id=parent_step.stage_id,
