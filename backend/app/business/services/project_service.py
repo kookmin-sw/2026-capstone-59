@@ -179,7 +179,7 @@ def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
     return ProjectResponse(
         project_id=project.id,
         name=project.name,
-        current_stage_sequencer=_get_current_stage_sequence(db, project.id),
+        current_stage_sequence=_get_current_stage_sequence(db, project.id),
         is_deleted=project.is_deleted,
         created_at=project.created_at,
         updated_at=project.updated_at,
