@@ -9,10 +9,14 @@ from app.core.schemas.stage import StageListItem, StageListResponse
 
 
 def list_stages(db: Session, project_id: UUID) -> dict:
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.is_deleted == False,  # noqa: E712
-    ).first()
+    project = (
+        db.query(Project)
+        .filter(
+            Project.id == project_id,
+            Project.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
     if not project:
         raise ProjectNotFoundError()
 

@@ -7,7 +7,9 @@ from app.core.models.step import Step
 from app.core.schemas.step import StepTreeNode, StepTreeResponse
 
 
-def get_step_tree(db: Session, project_id: uuid.UUID, stage_id: uuid.UUID) -> StepTreeResponse:
+def get_step_tree(
+    db: Session, project_id: uuid.UUID, stage_id: uuid.UUID
+) -> StepTreeResponse:
     """Step 트리 + Footprint 경로를 조립하여 반환."""
     steps = (
         db.query(Step)
@@ -28,15 +30,22 @@ def _build_current_path(steps: list[Step]) -> list[uuid.UUID]:
 
     current_path: list[uuid.UUID] = []
     current = next(
-        (s for s in steps
-         if s.id in accepted_ids
-         and (s.parent_step_id is None or s.parent_step_id not in accepted_ids)),
+        (
+            s
+            for s in steps
+            if s.id in accepted_ids
+            and (s.parent_step_id is None or s.parent_step_id not in accepted_ids)
+        ),
         None,
     )
     while current is not None:
         current_path.append(current.id)
         current = next(
-            (s for s in steps if s.parent_step_id == current.id and s.id in accepted_ids),
+            (
+                s
+                for s in steps
+                if s.parent_step_id == current.id and s.id in accepted_ids
+            ),
             None,
         )
     return current_path
