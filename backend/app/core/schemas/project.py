@@ -22,7 +22,6 @@ class ProjectResponse(BaseModel):
     project_id: UUID
     name: str
     current_stage_sequence: int
-    is_completed: bool
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
