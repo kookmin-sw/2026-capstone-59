@@ -22,7 +22,6 @@ class ProjectResponse(BaseModel):
     project_id: UUID
     name: str
     current_stage_number: int
-    is_completed: bool
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
@@ -32,7 +31,6 @@ class ProjectListItemResponse(BaseModel):
     project_id: UUID
     name: str
     current_stage_number: int
-    is_completed: bool
     is_deleted: bool
     member_count: int | None
     duration_month: int | None
