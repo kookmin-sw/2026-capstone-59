@@ -33,7 +33,7 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectRespons
             raise DuplicateProjectNameError()
 
     project = ProjectModel(
-        name=payload.name if payload.name is not None else "새 프로젝트",
+        name=payload.name if payload.name is not None else _generate_default_name(db),
         duration_month=payload.duration_months,
         member_count=payload.member_count,
         description=payload.description,
@@ -96,7 +96,7 @@ def list_projects(
             ProjectListItemResponse(
                 project_id=p.id,
                 name=p.name,
-                current_stage_number=_get_current_stage_number(db, p.id),
+                current_stage_sequence=_get_current_stage_sequence(db, p.id),
                 is_deleted=p.is_deleted,
                 member_count=p.member_count,
                 duration_month=p.duration_month,
@@ -134,6 +134,10 @@ def update_project(
         project.name = payload.name
     if payload.description is not None:
         project.description = payload.description
+    if payload.duration_months is not None:
+        project.duration_month = payload.duration_months
+    if payload.member_count is not None:
+        project.member_count = payload.member_count
 
     db.commit()
     db.refresh(project)
@@ -160,7 +164,7 @@ def _get_project_or_raise(db: Session, project_id: UUID) -> ProjectModel:
     return project
 
 
-def _get_current_stage_number(db: Session, project_id: UUID) -> int:
+def _get_current_stage_sequence(db: Session, project_id: UUID) -> int:
     """is_active=True인 Stage의 sequence를 반환."""
     row = (
         db.query(StageModel.sequence)
@@ -179,8 +183,28 @@ def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
     return ProjectResponse(
         project_id=project.id,
         name=project.name,
-        current_stage_number=_get_current_stage_number(db, project.id),
+        current_stage_sequence=_get_current_stage_sequence(db, project.id),
         is_deleted=project.is_deleted,
         created_at=project.created_at,
         updated_at=project.updated_at,
     )
+
+def _generate_default_name(db: Session) -> str:
+    base = "새 프로젝트"
+    existing_names = (
+        db.query(ProjectModel.name)
+        .filter(
+            ProjectModel.name.ilike(f"{base}%"),
+            ProjectModel.is_deleted == False,
+        )
+        .all()
+    )
+    existing_names = {row[0] for row in existing_names}
+
+    if base not in existing_names:
+        return base
+
+    count = 2
+    while f"{base} ({count})" in existing_names:
+        count += 1
+    return f"{base} ({count})"
