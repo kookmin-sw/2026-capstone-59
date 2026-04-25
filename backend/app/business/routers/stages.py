@@ -1,6 +1,11 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi import status as http_status
+from sqlalchemy.orm import Session
+
+from app.business.dependency import get_db
+from app.business.services import stage_service
 
 router = APIRouter()
 
@@ -9,25 +14,6 @@ def _ok(data):
     return {"status": "success", "data": data}
 
 
-_DUMMY_STAGES = [
-    {"id": str(uuid4()), "name": "아이디에이션", "sequence": 1},
-    {"id": str(uuid4()), "name": "요구사항 분석", "sequence": 2},
-    {"id": str(uuid4()), "name": "설계", "sequence": 3},
-    {"id": str(uuid4()), "name": "개발", "sequence": 4},
-    {"id": str(uuid4()), "name": "테스트 및 배포", "sequence": 5},
-]
-
-
-@router.get("")
-def list_stages():
-    return _ok(_DUMMY_STAGES)
-
-
-@router.post("/project/{project_id}/complete")
-def complete_stage(project_id: UUID, stage_id: UUID, payload: dict):
-    return _ok({
-        "project_id": str(project_id),
-        "stage_id": str(stage_id),
-        "status": "Completed",
-        "completed_at": "2026-04-09T12:00:00Z",
-    })
+@router.get("", status_code=http_status.HTTP_200_OK)
+def list_stages(project_id: UUID, db: Session = Depends(get_db)):
+    return _ok(stage_service.list_stages(db, project_id))

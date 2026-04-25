@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from mangum import Mangum
 
-from app.ai.routers import ai
+from app.ai.routers import steps
+from app.core import exception_handlers
 
 app = FastAPI(title="Poco AI Orchestrator")
 
-app.include_router(ai.router, tags=["ai"])
+exception_handlers.register(app)
+app.include_router(steps.router, tags=["ai"])
 
 
 @app.get("/health")

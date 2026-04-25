@@ -1,6 +1,10 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.business.dependency import get_db
+from app.business.services import step_service
 
 router = APIRouter()
 
@@ -9,36 +13,15 @@ def _ok(data):
     return {"status": "success", "data": data}
 
 
-_DUMMY_STEP = {
-    "id": str(uuid4()),
-    "project_id": str(uuid4()),
-    "stage_id": str(uuid4()),
-    "name": "브레인스토밍",
-    "status": "Ready",
-    "sort_order": 1,
-    "content": {
-        "dictionary": "브레인스토밍: 자유롭게 아이디어를 쏟아내는 발상 기법",
-        "mentoring": "판단은 나중에, 양을 먼저 확보하세요",
-        "template_url": "https://notion.so/template/brainstorming",
-    },
-}
+@router.get("/tree")
+def get_step_tree(project_id: UUID, stage_id: UUID, db: Session = Depends(get_db)) -> dict:
+    """project_id + stage_id 기준 Step 트리 + Footprint 경로 반환."""
+    response = step_service.get_step_tree(db, project_id, stage_id)
+    return _ok(response.model_dump())
 
 
-@router.get("")
-def list_steps(project_id: UUID | None = None):
-    return _ok([_DUMMY_STEP])
-
-
-@router.get("/{step_id}")
-def get_step(step_id: UUID):
-    return _ok({**_DUMMY_STEP, "id": str(step_id)})
-
-
-@router.patch("/{step_id}/status")
-def update_step_status(step_id: UUID, payload: dict):
-    return _ok({"id": str(step_id), "status": payload.get("status", "Current")})
-
-
-@router.delete("/{step_id}")
-def delete_step(step_id: UUID):
-    return _ok({"deleted_id": str(step_id)})
+@router.get("/{stage_id}/required")
+def get_required_steps(stage_id: UUID, db: Session = Depends(get_db)) -> dict:
+    """특정 Stage의 Required Step 목록 조회."""
+    response = step_service.get_required_steps(db, stage_id)
+    return _ok(response.model_dump())

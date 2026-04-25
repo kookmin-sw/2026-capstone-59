@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.core.enums import StepStatus
 
 
 class Step(Base):
@@ -24,9 +25,11 @@ class Step(Base):
     required_step_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("required_step.id"), nullable=True
     )
+    belonging_required_step_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("required_step.id"), nullable=True
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
-    # Ready | ACCEPTED | CANCELED
-    status: Mapped[str] = mapped_column(String, nullable=False, default="Ready")
+    status: Mapped[str] = mapped_column(String, nullable=False, default=StepStatus.READY)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -43,7 +46,12 @@ class Step(Base):
     parent: Mapped["Step | None"] = relationship(
         back_populates="children", foreign_keys="Step.parent_step_id", remote_side="Step.id"
     )
-    required_step: Mapped["RequiredStep | None"] = relationship()  # noqa: F821
+    required_step: Mapped["RequiredStep | None"] = relationship(  # noqa: F821
+        foreign_keys="Step.required_step_id"
+    )
+    belonging_required_step: Mapped["RequiredStep | None"] = relationship(  # noqa: F821
+        foreign_keys="Step.belonging_required_step_id"
+    )
 
 
 class StepContent(Base):
