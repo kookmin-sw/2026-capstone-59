@@ -52,4 +52,10 @@ def generate_next_steps(payload: dict) -> dict:
 
 def generate_step_details(step_id: UUID, payload: dict) -> dict:
     # TODO: implement guide/dictionary/mentoring/template 생성
-    return {"step_id": str(step_id), "todo": [], "dictionary": [], "recommendations": [], "references": []}
+    return {
+        "step_id": str(step_id),
+        "todo": [],
+        "dictionary": [],
+        "recommendations": [],
+        "references": [],
+    }
