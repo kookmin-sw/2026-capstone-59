@@ -33,7 +33,7 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectRespons
             raise DuplicateProjectNameError()
 
     project = ProjectModel(
-        name=payload.name if payload.name is not None else "새 프로젝트",
+        name=payload.name if payload.name is not None else _generate_default_name(db),
         duration_month=payload.duration_months,
         member_count=payload.member_count,
         description=payload.description,
@@ -184,3 +184,23 @@ def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
         created_at=project.created_at,
         updated_at=project.updated_at,
     )
+
+def _generate_default_name(db: Session) -> str:
+    base = "새 프로젝트"
+    existing_names = (
+        db.query(ProjectModel.name)
+        .filter(
+            ProjectModel.name.ilike(f"{base}%"),
+            ProjectModel.is_deleted == False,
+        )
+        .all()
+    )
+    existing_names = {row[0] for row in existing_names}
+
+    if base not in existing_names:
+        return base
+
+    count = 2
+    while f"{base} ({count})" in existing_names:
+        count += 1
+    return f"{base} ({count})"
