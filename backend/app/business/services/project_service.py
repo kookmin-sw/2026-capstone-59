@@ -13,12 +13,13 @@ from app.core.models.stage import Stage as StageModel
 from app.core.schemas.project import (
     ProjectCreateRequest,
     ProjectListItemResponse,
+    ProjectListResponse,
     ProjectResponse,
     ProjectUpdateRequest,
 )
 
 
-def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
+def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectResponse:
     if payload.name:
         existing = (
             db.query(ProjectModel)
@@ -64,7 +65,7 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
 
     db.commit()
     db.refresh(project)
-    return _to_project_response(project)
+    return _to_project_response(db, project)
 
 
 def list_projects(
@@ -74,26 +75,24 @@ def list_projects(
     sort_by: str,
     sort_order: str,
     keyword: str | None = None,
-) -> dict:
+) -> ProjectListResponse:
     ALLOWED_SORT = {"created_at", "updated_at", "name"}
     if sort_by not in ALLOWED_SORT:
         sort_by = "created_at"
 
-    query = db.query(ProjectModel).filter(
-        ProjectModel.is_deleted == False
-    )  # noqa: E712
+    query = db.query(ProjectModel).filter(ProjectModel.is_deleted == False)
 
     if keyword:
         query = query.filter(ProjectModel.name.ilike(f"%{keyword}%"))
 
-    sort_col = getattr(Project, sort_by)
+    sort_col = getattr(ProjectModel, sort_by)
     query = query.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())
 
     total_count = query.count()
     projects = query.offset((page - 1) * size).limit(size).all()
 
-    return {
-        "projects": [
+    return ProjectListResponse(
+        projects=[
             ProjectListItemResponse(
                 project_id=p.id,
                 name=p.name,
@@ -107,28 +106,27 @@ def list_projects(
                 prompt=p.prompt,
                 created_at=p.created_at,
                 updated_at=p.updated_at,
-            ).model_dump()
+            )
             for p in projects
         ],
-        "total_count": total_count,
-        "page": page,
-        "size": size,
-    }
+        total_count=total_count,
+        page=page,
+        size=size,
+    )
 
 
 def update_project(
     db: Session, project_id: UUID, payload: ProjectUpdateRequest
-) -> dict:
+) -> ProjectResponse:
     project = _get_project_or_raise(db, project_id)
 
     if payload.name is not None:
-        # 이름 중복 체크
         existing = (
             db.query(ProjectModel)
             .filter(
                 ProjectModel.name == payload.name,
                 ProjectModel.id != project_id,
-                ProjectModel.is_deleted == False,  # noqa: E712
+                ProjectModel.is_deleted == False,
             )
             .first()
         )
@@ -140,7 +138,7 @@ def update_project(
 
     db.commit()
     db.refresh(project)
-    return _to_project_response(project)
+    return _to_project_response(db, project)
 
 
 def delete_project(db: Session, project_id: UUID) -> None:
@@ -149,12 +147,12 @@ def delete_project(db: Session, project_id: UUID) -> None:
     db.commit()
 
 
-def _get_project_or_raise(db: Session, project_id: UUID) -> Project:
+def _get_project_or_raise(db: Session, project_id: UUID) -> ProjectModel:
     project = (
         db.query(ProjectModel)
         .filter(
             ProjectModel.id == project_id,
-            ProjectModel.is_deleted == False,  # noqa: E712
+            ProjectModel.is_deleted == False,
         )
         .first()
     )
@@ -167,10 +165,10 @@ def _get_current_stage_number(db: Session, project_id: UUID) -> int:
     """is_active=True인 Stage의 sequence를 반환."""
     row = (
         db.query(StageModel.sequence)
-        .join(ProjectStage, ProjectStageModel.stage_id == Stage.id)
+        .join(ProjectStageModel, ProjectStageModel.stage_id == StageModel.id)
         .filter(
             ProjectStageModel.project_id == project_id,
-            ProjectStageModel.is_active == True,  # noqa: E712
+            ProjectStageModel.is_active == True,
         )
         .order_by(StageModel.sequence)
         .first()
@@ -178,13 +176,13 @@ def _get_current_stage_number(db: Session, project_id: UUID) -> int:
     return row[0] if row else 1
 
 
-def _to_project_response(project: Project) -> dict:
+def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
     return ProjectResponse(
         project_id=project.id,
         name=project.name,
-        current_stage_number=1,
+        current_stage_number=_get_current_stage_number(db, project.id),
         is_completed=project.is_completed,
         is_deleted=project.is_deleted,
         created_at=project.created_at,
         updated_at=project.updated_at,
-    ).model_dump()
+    )

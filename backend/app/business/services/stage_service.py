@@ -14,7 +14,7 @@ def list_stages(db: Session, project_id: UUID) -> dict:
         db.query(ProjectModel)
         .filter(
             ProjectModel.id == project_id,
-            ProjectModel.is_deleted == False,  # noqa: E712
+            ProjectModel.is_deleted == False,
         )
         .first()
     )
