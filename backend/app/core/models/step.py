@@ -12,7 +12,9 @@ from app.core.enums import StepStatus
 class Step(Base):
     __tablename__ = "step"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     project_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("project.id", ondelete="CASCADE"), nullable=False
     )
@@ -29,7 +31,9 @@ class Step(Base):
         UUID(as_uuid=True), ForeignKey("required_step.id"), nullable=True
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
-    status: Mapped[str] = mapped_column(String, nullable=False, default=StepStatus.READY)
+    status: Mapped[str] = mapped_column(
+        String, nullable=False, default=StepStatus.READY
+    )
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -44,7 +48,9 @@ class Step(Base):
         back_populates="parent", foreign_keys="Step.parent_step_id"
     )
     parent: Mapped["Step | None"] = relationship(
-        back_populates="children", foreign_keys="Step.parent_step_id", remote_side="Step.id"
+        back_populates="children",
+        foreign_keys="Step.parent_step_id",
+        remote_side="Step.id",
     )
     required_step: Mapped["RequiredStep | None"] = relationship(  # noqa: F821
         foreign_keys="Step.required_step_id"

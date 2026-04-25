@@ -17,10 +17,14 @@ from app.core.schemas.project import (
 
 def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
     if payload.name:
-        existing = db.query(Project).filter(
-            Project.name == payload.name,
-            Project.is_deleted == False,
-        ).first()
+        existing = (
+            db.query(Project)
+            .filter(
+                Project.name == payload.name,
+                Project.is_deleted == False,
+            )
+            .first()
+        )
         if existing:
             raise DuplicateProjectNameError()
 
@@ -37,19 +41,23 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> dict:
 
     stages = db.query(Stage).order_by(Stage.sequence).all()
     for i, stage in enumerate(stages):
-        db.add(ProjectStage(
-            project_id=project.id,
-            stage_id=stage.id,
-            is_active=(i == 0),
-        ))
+        db.add(
+            ProjectStage(
+                project_id=project.id,
+                stage_id=stage.id,
+                is_active=(i == 0),
+            )
+        )
 
     required_steps = db.query(RequiredStep).all()
     for rs in required_steps:
-        db.add(ProjectRequiredStepStatus(
-            project_id=project.id,
-            required_step_id=rs.id,
-            is_fulfilled=False,
-        ))
+        db.add(
+            ProjectRequiredStepStatus(
+                project_id=project.id,
+                required_step_id=rs.id,
+                is_fulfilled=False,
+            )
+        )
 
     db.commit()
     db.refresh(project)
@@ -103,16 +111,22 @@ def list_projects(
     }
 
 
-def update_project(db: Session, project_id: UUID, payload: ProjectUpdateRequest) -> dict:
+def update_project(
+    db: Session, project_id: UUID, payload: ProjectUpdateRequest
+) -> dict:
     project = _get_project_or_raise(db, project_id)
 
     if payload.name is not None:
         # 이름 중복 체크
-        existing = db.query(Project).filter(
-            Project.name == payload.name,
-            Project.id != project_id,
-            Project.is_deleted == False,  # noqa: E712
-        ).first()
+        existing = (
+            db.query(Project)
+            .filter(
+                Project.name == payload.name,
+                Project.id != project_id,
+                Project.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
         if existing:
             raise DuplicateProjectNameError()
         project.name = payload.name
@@ -131,15 +145,19 @@ def delete_project(db: Session, project_id: UUID) -> None:
 
 
 def _get_project_or_raise(db: Session, project_id: UUID) -> Project:
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.is_deleted == False,  # noqa: E712
-    ).first()
+    project = (
+        db.query(Project)
+        .filter(
+            Project.id == project_id,
+            Project.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
     if not project:
         raise ProjectNotFoundError()
     return project
 
-    
+
 def _get_current_stage_number(db: Session, project_id: UUID) -> int:
     """is_active=True인 Stage의 sequence를 반환."""
     row = (

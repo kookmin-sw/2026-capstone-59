@@ -25,17 +25,23 @@ def generate_steps(step_id: UUID, db: Session = Depends(get_db)) -> dict:
 @router.post("/steps/{step_id}/accept")
 def accept_step(step_id: UUID) -> dict:
     """Step Accept (상태 판정) — TODO: AI 충족 판단 구현."""
-    return _ok({
-        "step_id": str(step_id),
-        "status": "ACCEPTED",
-        "is_current_required_step_completed": False,
-    })
+    return _ok(
+        {
+            "step_id": str(step_id),
+            "status": "ACCEPTED",
+            "is_current_required_step_completed": False,
+        }
+    )
 
 
-@router.post("/steps/{step_id}/notion-template", status_code=http_status.HTTP_201_CREATED)
+@router.post(
+    "/steps/{step_id}/notion-template", status_code=http_status.HTTP_201_CREATED
+)
 def create_notion_template(step_id: UUID) -> dict:
     """Required Step의 Notion 템플릿 페이지 생성 — TODO: Notion API 연동."""
-    return _ok({
-        "notion_page_id": "placeholder",
-        "notion_page_url": "https://notion.so/placeholder",
-    })
+    return _ok(
+        {
+            "notion_page_id": "placeholder",
+            "notion_page_url": "https://notion.so/placeholder",
+        }
+    )

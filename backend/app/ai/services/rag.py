@@ -11,6 +11,8 @@ def retrieve(query: str, top_k: int = 5) -> list[dict]:
     resp = client.retrieve(
         knowledgeBaseId=settings.BEDROCK_KB_ID,
         retrievalQuery={"text": query},
-        retrievalConfiguration={"vectorSearchConfiguration": {"numberOfResults": top_k}},
+        retrievalConfiguration={
+            "vectorSearchConfiguration": {"numberOfResults": top_k}
+        },
     )
     return resp.get("retrievalResults", [])

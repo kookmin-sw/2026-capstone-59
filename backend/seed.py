@@ -3,6 +3,7 @@
 사용법: python seed.py [stage]
 인자 없이 실행하면 모든 시드를 삽입한다.
 """
+
 import sys
 
 from app.core.database import SessionLocal

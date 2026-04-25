@@ -29,11 +29,15 @@ def list_projects(
     keyword: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    return _ok(project_service.list_projects(db, page, size, sort_by, sort_order, keyword))
+    return _ok(
+        project_service.list_projects(db, page, size, sort_by, sort_order, keyword)
+    )
 
 
 @router.patch("/{project_id}", status_code=http_status.HTTP_200_OK)
-def update_project(project_id: UUID, payload: ProjectUpdateRequest, db: Session = Depends(get_db)):
+def update_project(
+    project_id: UUID, payload: ProjectUpdateRequest, db: Session = Depends(get_db)
+):
     return _ok(project_service.update_project(db, project_id, payload))
 
 
