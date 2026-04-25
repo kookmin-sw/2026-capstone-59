@@ -3,17 +3,18 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ProjectNotFoundError
-from app.core.models.project import Project, ProjectStage
-from app.core.models.stage import Stage
+from app.core.models.project import Project as ProjectModel
+from app.core.models.project import ProjectStage as ProjectStageModel
+from app.core.models.stage import Stage as StageModel
 from app.core.schemas.stage import StageListItem, StageListResponse
 
 
 def list_stages(db: Session, project_id: UUID) -> dict:
     project = (
-        db.query(Project)
+        db.query(ProjectModel)
         .filter(
-            Project.id == project_id,
-            Project.is_deleted == False,  # noqa: E712
+            ProjectModel.id == project_id,
+            ProjectModel.is_deleted == False,  # noqa: E712
         )
         .first()
     )
@@ -21,10 +22,10 @@ def list_stages(db: Session, project_id: UUID) -> dict:
         raise ProjectNotFoundError()
 
     rows = (
-        db.query(ProjectStage, Stage)
-        .join(Stage, Stage.id == ProjectStage.stage_id)
-        .filter(ProjectStage.project_id == project_id)
-        .order_by(Stage.sequence)
+        db.query(ProjectStageModel, Stage)
+        .join(Stage, StageModel.id == ProjectStageModel.stage_id)
+        .filter(ProjectStageModel.project_id == project_id)
+        .order_by(StageModel.sequence)
         .all()
     )
 
