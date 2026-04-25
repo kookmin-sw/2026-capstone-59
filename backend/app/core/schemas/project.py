@@ -40,3 +40,9 @@ class ProjectListItemResponse(BaseModel):
     prompt: str
     created_at: datetime
     updated_at: datetime
+
+class ProjectListResponse(BaseModel):
+    projects: list[ProjectListItemResponse]
+    total_count: int
+    page: int
+    size: int
