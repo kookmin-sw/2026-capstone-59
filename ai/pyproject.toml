@@ -1,0 +1,21 @@
+[project]
+name = "poco-ai"
+version = "0.1.0"
+description = "Poco AI Orchestrator — Bedrock Claude 기반 독립 AI 모듈"
+requires-python = ">=3.13"
+dependencies = [
+    "boto3>=1.35.0,<2.0.0",
+    "pydantic>=2.10.0,<3.0.0",
+    "pydantic-settings>=2.5.0,<3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0,<9.0.0",
+    "pytest-asyncio>=0.24.0,<1.0.0",
+    "hypothesis>=6.100.0,<7.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=75.0.0"]
+build-backend = "setuptools.build_meta"
