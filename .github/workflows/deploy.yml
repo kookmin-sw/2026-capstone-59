@@ -1,0 +1,21 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ${{ secrets.PROJECT_PATH }}
+            git pull origin master
+            docker compose up -d --build
+            docker image prune -f
