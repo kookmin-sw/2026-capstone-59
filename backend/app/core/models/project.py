@@ -14,6 +14,9 @@ class Project(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("app_user.id"), nullable=True
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
     duration_month: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -37,6 +40,9 @@ class Project(Base):
     steps: Mapped[list["Step"]] = relationship(  # noqa: F821
         back_populates="project", cascade="all, delete-orphan"
     )
+    user: Mapped["AppUser | None"] = relationship(
+        back_populates="projects"
+    )  # noqa: F821
 
 
 class ProjectStage(Base):
