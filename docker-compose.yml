@@ -45,6 +45,8 @@ services:
       DB_SSL: ${DB_SSL}
     expose:
       - "8000"
+    ports:
+      - "8000:8000"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -63,6 +65,8 @@ services:
       DB_SSL: ${DB_SSL}
     expose:
       - "8001"
+    ports:
+      - "8001:8001"
     depends_on:
       migrate:
         condition: service_completed_successfully
