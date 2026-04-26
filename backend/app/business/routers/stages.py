@@ -16,4 +16,4 @@ def _ok(data):
 
 @router.get("", status_code=http_status.HTTP_200_OK)
 def list_stages(project_id: UUID, db: Session = Depends(get_db)):
-    return _ok(stage_service.list_stages(db, project_id))
+    return _ok(stage_service.list_stages(db, project_id).model_dump())

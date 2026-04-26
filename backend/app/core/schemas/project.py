@@ -10,7 +10,7 @@ class ProjectCreateRequest(BaseModel):
     member_count: int
     description: Optional[str] = None
     constraint: Optional[str] = None
-    prompt: str 
+    prompt: str
 
 
 class ProjectUpdateRequest(BaseModel):
@@ -34,13 +34,14 @@ class ProjectListItemResponse(BaseModel):
     name: str
     current_stage_sequence: int
     is_deleted: bool
-    member_count: int
-    duration_month: int
-    description: str | None
-    constraint: str | None
-    prompt: str
+    member_count: Optional[int] = None
+    duration_month: Optional[int] = None
+    description: Optional[str] = None
+    constraint: Optional[str] = None
+    prompt: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
 
 class ProjectListResponse(BaseModel):
     projects: list[ProjectListItemResponse]
