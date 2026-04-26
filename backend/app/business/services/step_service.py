@@ -3,8 +3,14 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
+from app.core.models.required_step import RequiredStep as RequiredStepModel
 from app.core.models.step import Step as StepModel
-from app.core.schemas.step import StepTreeNode, StepTreeResponse
+from app.core.schemas.step import (
+    RequiredStepItem,
+    RequiredStepListResponse,
+    StepTreeNode,
+    StepTreeResponse,
+)
 
 
 def get_step_tree(
@@ -12,7 +18,7 @@ def get_step_tree(
 ) -> StepTreeResponse:
     """Step 트리 + Footprint 경로를 조립하여 반환."""
     steps = (
-        db.query(Step)
+        db.query(StepModel)
         .filter(StepModel.project_id == project_id, StepModel.stage_id == stage_id)
         .order_by(StepModel.sort_order)
         .all()
@@ -22,6 +28,27 @@ def get_step_tree(
     roots = _build_tree(steps)
 
     return StepTreeResponse(current_path=current_path, steps=roots)
+
+
+def get_required_steps(db: Session, stage_id: uuid.UUID) -> RequiredStepListResponse:
+    """특정 Stage의 Required Step 목록 조회."""
+    required_steps = (
+        db.query(RequiredStepModel)
+        .filter(RequiredStepModel.stage_id == stage_id)
+        .order_by(RequiredStepModel.sequence)
+        .all()
+    )
+    return RequiredStepListResponse(
+        required_step=[
+            RequiredStepItem(
+                step_id=rs.id,
+                name=rs.name,
+                stage_id=rs.stage_id,
+                sequence=rs.sequence,
+            )
+            for rs in required_steps
+        ]
+    )
 
 
 def _build_current_path(steps: list[StepModel]) -> list[uuid.UUID]:
@@ -73,28 +100,3 @@ def _build_tree(steps: list[StepModel]) -> list[StepTreeNode]:
             roots.append(node)
 
     return roots
-
-
-from app.core.models.required_step import RequiredStep as RequiredStepModel
-from app.core.schemas.step import RequiredStepItem, RequiredStepListResponse
-
-
-def get_required_steps(db: Session, stage_id: uuid.UUID) -> RequiredStepListResponse:
-    """특정 Stage의 Required Step 목록 조회."""
-    required_steps = (
-        db.query(RequiredStep)
-        .filter(RequiredStepModel.stage_id == stage_id)
-        .order_by(RequiredStepModel.sequence)
-        .all()
-    )
-    return RequiredStepListResponse(
-        required_step=[
-            RequiredStepItem(
-                step_id=rs.id,
-                name=rs.name,
-                stage_id=rs.stage_id,
-                sequence=rs.sequence,
-            )
-            for rs in required_steps
-        ]
-    )

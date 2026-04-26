@@ -9,7 +9,7 @@ from app.core.models.stage import Stage as StageModel
 from app.core.schemas.stage import StageListItem, StageListResponse
 
 
-def list_stages(db: Session, project_id: UUID) -> dict:
+def list_stages(db: Session, project_id: UUID) -> StageListResponse:
     project = (
         db.query(ProjectModel)
         .filter(
@@ -22,8 +22,8 @@ def list_stages(db: Session, project_id: UUID) -> dict:
         raise ProjectNotFoundError()
 
     rows = (
-        db.query(ProjectStageModel, Stage)
-        .join(Stage, StageModel.id == ProjectStageModel.stage_id)
+        db.query(ProjectStageModel, StageModel)
+        .join(StageModel, StageModel.id == ProjectStageModel.stage_id)
         .filter(ProjectStageModel.project_id == project_id)
         .order_by(StageModel.sequence)
         .all()
@@ -39,4 +39,4 @@ def list_stages(db: Session, project_id: UUID) -> dict:
         for ps, stage in rows
     ]
 
-    return StageListResponse(stages=stages).model_dump()
+    return StageListResponse(stages=stages)
