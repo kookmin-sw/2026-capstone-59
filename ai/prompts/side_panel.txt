@@ -1,0 +1,1 @@
+{# side_panel 프롬프트 템플릿 — Phase 3에서 구현 #}
