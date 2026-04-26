@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poco OAuth 로그인 테스트</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: #f5f5f5; padding: 40px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        h1 { margin-bottom: 24px; color: #333; }
+        .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 14px; color: #888; margin-bottom: 12px; text-transform: uppercase; }
+        .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 8px; text-align: center; text-decoration: none; }
+        .btn-google { background: #4285f4; color: #fff; }
+        .btn-naver { background: #03c75a; color: #fff; }
+        .btn-kakao { background: #fee500; color: #3c1e1e; }
+        .btn-logout { background: #e74c3c; color: #fff; }
+        .btn-refresh { background: #3498db; color: #fff; }
+        .btn:hover { opacity: 0.9; }
+        .hidden { display: none; }
+        .token-box { background: #f8f8f8; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; word-break: break-all; margin-bottom: 8px; max-height: 80px; overflow-y: auto; }
+        .label { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .user-info { margin-bottom: 8px; }
+        .user-info span { font-weight: 600; }
+        .status { padding: 8px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
+        .status-ok { background: #d4edda; color: #155724; }
+        .status-err { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐾 Poco 로그인 테스트</h1>
+
+        <!-- 로그인 전 -->
+        <div id="login-section" class="card">
+            <h2>소셜 로그인</h2>
+            <a class="btn btn-google" href="http://localhost:8000/auth/google/login">Google 로그인</a>
+            <a class="btn btn-naver" href="http://localhost:8000/auth/naver/login">Naver 로그인</a>
+            <a class="btn btn-kakao" href="http://localhost:8000/auth/kakao/login">Kakao 로그인</a>
+        </div>
+
+        <!-- 로그인 후 -->
+        <div id="user-section" class="card hidden">
+            <h2>로그인 사용자</h2>
+            <div id="status"></div>
+            <div class="user-info">이메일: <span id="user-email">-</span></div>
+            <div class="user-info">닉네임: <span id="user-nickname">-</span></div>
+            <div class="user-info">Provider: <span id="user-provider">-</span></div>
+            <div class="user-info">User ID: <span id="user-id">-</span></div>
+        </div>
+
+        <div id="token-section" class="card hidden">
+            <h2>토큰 정보</h2>
+            <div class="label">Access Token</div>
+            <div class="token-box" id="access-token">-</div>
+            <div class="label">Refresh Token</div>
+            <div class="token-box" id="refresh-token">-</div>
+            <button class="btn btn-refresh" onclick="refreshToken()">토큰 갱신</button>
+            <button class="btn btn-logout" onclick="logout()">로그아웃</button>
+        </div>
+    </div>
+
+<script>
+const API = 'http://localhost:8000';
+
+// 페이지 로드 시 URL fragment에서 토큰 추출
+window.addEventListener('load', () => {
+    const hash = window.location.hash.substring(1);
+    if (hash) {
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (accessToken) {
+            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('refresh_token', refreshToken);
+            // URL에서 fragment 제거
+            history.replaceState(null, '', window.location.pathname);
+        }
+    }
+
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        fetchMe(token);
+    }
+});
+
+async function fetchMe(token) {
+    try {
+        const resp = await fetch(`${API}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const body = await resp.json();
+
+        if (body.status === 'success') {
+            showUser(body.data);
+        } else {
+            showError(body.error?.message || '인증 실패');
+        }
+    } catch (e) {
+        showError('서버 연결 실패: ' + e.message);
+    }
+}
+
+function showUser(data) {
+    document.getElementById('login-section').classList.add('hidden');
+    document.getElementById('user-section').classList.remove('hidden');
+    document.getElementById('token-section').classList.remove('hidden');
+
+    document.getElementById('user-email').textContent = data.email;
+    document.getElementById('user-nickname').textContent = data.nickname;
+    document.getElementById('user-provider').textContent = data.provider;
+    document.getElementById('user-id').textContent = data.user_id;
+    document.getElementById('access-token').textContent = localStorage.getItem('access_token');
+    document.getElementById('refresh-token').textContent = localStorage.getItem('refresh_token');
+
+    document.getElementById('status').className = 'status status-ok';
+    document.getElementById('status').textContent = '✅ 로그인 성공';
+}
+
+function showError(msg) {
+    document.getElementById('login-section').classList.remove('hidden');
+    document.getElementById('user-section').classList.remove('hidden');
+    document.getElementById('token-section').classList.add('hidden');
+
+    document.getElementById('status').className = 'status status-err';
+    document.getElementById('status').textContent = '❌ ' + msg;
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+}
+
+async function refreshToken() {
+    const rt = localStorage.getItem('refresh_token');
+    if (!rt) return alert('Refresh Token이 없습니다.');
+
+    try {
+        const resp = await fetch(`${API}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: rt })
+        });
+        const body = await resp.json();
+
+        if (body.status === 'success') {
+            localStorage.setItem('access_token', body.data.access_token);
+            localStorage.setItem('refresh_token', body.data.refresh_token);
+            document.getElementById('access-token').textContent = body.data.access_token;
+            document.getElementById('refresh-token').textContent = body.data.refresh_token;
+            document.getElementById('status').className = 'status status-ok';
+            document.getElementById('status').textContent = '✅ 토큰 갱신 성공';
+        } else {
+            showError(body.error?.message || '토큰 갱신 실패');
+        }
+    } catch (e) {
+        showError('토큰 갱신 실패: ' + e.message);
+    }
+}
+
+function logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    document.getElementById('login-section').classList.remove('hidden');
+    document.getElementById('user-section').classList.add('hidden');
+    document.getElementById('token-section').classList.add('hidden');
+    document.getElementById('status').className = '';
+    document.getElementById('status').textContent = '';
+}
+</script>
+</body>
+</html>
