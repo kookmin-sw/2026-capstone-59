@@ -189,6 +189,7 @@ def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
         updated_at=project.updated_at,
     )
 
+
 def _generate_default_name(db: Session) -> str:
     base = "새 프로젝트"
     existing_names = (
