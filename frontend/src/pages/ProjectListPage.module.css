@@ -274,9 +274,9 @@
 
 /* 하단 */
 .footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   margin-top: 24px;
   padding-bottom: 24px;
 }
@@ -290,6 +290,7 @@
   font-size: 14px;
   font-weight: 600;
   gap: 10px;
+  justify-self: start;
 }
 
 .createBtn:hover {
@@ -300,9 +301,6 @@
 .pagination {
   display: flex;
   gap: 10px;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .pageBtn {
