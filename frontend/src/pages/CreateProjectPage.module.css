@@ -1,0 +1,345 @@
+/* ── 공통 레이아웃 ── */
+.page {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 0%, #ddd8ff 0%, #eae7ff 30%, #f2f0ff 60%, #f7f6ff 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+.nav {
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.btnBack {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  padding: 0;
+}
+
+.btnBack:hover {
+  color: var(--color-text);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 20px 60px;
+}
+
+/* ── 타이틀 ── */
+.title {
+  font-size: 42px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.35;
+  margin-bottom: 40px;
+}
+
+.titleDark {
+  color: #2B2966;
+}
+
+.titleLight {
+  color: #5C45E8;
+}
+
+/* ── Step 1 폼 ── */
+.formWrapper {
+  width: 100%;
+  max-width: 420px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.required {
+  color: var(--color-error);
+}
+
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #CEC9EE;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+}
+
+.input::placeholder {
+  color: #B5B0D8;
+}
+
+.select {
+  width: 100%;
+  padding: 12px 36px 12px 14px;
+  border: 1px solid #CEC9EE;
+  border-radius: 8px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B6D90' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 12px center;
+  appearance: none;
+  color: #B5B0D8;
+  font-family: var(--font-family);
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.select:valid {
+  color: var(--color-text);
+}
+
+.select option {
+  color: var(--color-text);
+}
+
+.select:focus {
+  border-color: var(--color-primary);
+}
+
+/* ── 기간 선택 ── */
+.durationRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selectSmall {
+  padding: 10px 28px 10px 10px;
+  border: 1px solid #CEC9EE;
+  border-radius: 8px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B6D90' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  appearance: none;
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.selectSmall:focus {
+  border-color: var(--color-primary);
+}
+
+.selectSmall:disabled {
+  background-color: #EEEDF8;
+  color: #B5B0D8;
+  cursor: not-allowed;
+}
+
+.selectYear {
+  width: 82px;
+}
+
+.selectMonth {
+  width: 66px;
+}
+
+.separator {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 10px;
+}
+
+.textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #CEC9EE;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+  min-height: 100px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.textarea:focus {
+  border-color: var(--color-primary);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* ── Step 2 ── */
+.subtitleCenter {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-bottom: 28px;
+  text-align: center;
+  margin-top: -20px;
+}
+
+.promptForm {
+  width: 100%;
+  max-width: 660px;
+}
+
+.promptCard {
+  border: 1px solid #CEC9EE;
+  border-radius: 20px;
+  background: #fff;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.promptTextarea {
+  border: none;
+  outline: none;
+  resize: none;
+  min-height: 200px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.7;
+  background: transparent;
+}
+
+.promptTextarea::placeholder {
+  color: #B5B0D8;
+}
+
+.promptActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ── 버튼 ── */
+.btnPrimary {
+  padding: 12px 20px;
+  background: none;
+  color: var(--color-primary);
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+.btnPrimary:hover {
+  text-decoration: underline;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.createBtn {
+  padding: 10px 20px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.createBtn:hover {
+  background: var(--color-primary-hover);
+}
+
+.createBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnBack {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  padding: 10px 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: default;
+}
