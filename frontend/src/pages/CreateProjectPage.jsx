@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { createProject } from '../api/projects'
+import styles from './CreateProjectPage.module.css'
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 5 }, (_, i) => currentYear + i)
@@ -60,88 +61,53 @@ export default function CreateProjectPage() {
   function handleStartYearChange(e) {
     const nextStartYear = Number(e.target.value)
     setStartYear(nextStartYear)
-
-    if (nextStartYear > endYear) {
-      setEndYear(nextStartYear)
-    }
-
-    if (nextStartYear === endYear && startMonth > endMonth) {
-      setEndMonth(startMonth)
-    }
+    if (nextStartYear > endYear) setEndYear(nextStartYear)
+    if (nextStartYear === endYear && startMonth > endMonth) setEndMonth(startMonth)
   }
 
   function handleStartMonthChange(e) {
     const nextStartMonth = Number(e.target.value)
     setStartMonth(nextStartMonth)
-
-    if (startYear === endYear && nextStartMonth > endMonth) {
-      setEndMonth(nextStartMonth)
-    }
+    if (startYear === endYear && nextStartMonth > endMonth) setEndMonth(nextStartMonth)
   }
 
   function handleEndYearChange(e) {
     const nextEndYear = Number(e.target.value)
     setEndYear(nextEndYear)
-
-    if (nextEndYear < startYear) {
-      setStartYear(nextEndYear)
-    }
-
-    if (startYear === nextEndYear && endMonth < startMonth) {
-      setStartMonth(endMonth)
-    }
+    if (nextEndYear < startYear) setStartYear(nextEndYear)
+    if (startYear === nextEndYear && endMonth < startMonth) setStartMonth(endMonth)
   }
 
   function handleEndMonthChange(e) {
     const nextEndMonth = Number(e.target.value)
     setEndMonth(nextEndMonth)
-
-    if (startYear === endYear && nextEndMonth < startMonth) {
-      setStartMonth(nextEndMonth)
-    }
+    if (startYear === endYear && nextEndMonth < startMonth) setStartMonth(nextEndMonth)
   }
 
   function handleNoDurationChange(e) {
-    const checked = e.target.checked
-    setNoDuration(checked)
+    setNoDuration(e.target.checked)
   }
 
   function handleNext(e) {
     e.preventDefault()
-
     if (!memberCount) {
       alert('프로젝트 인원을 선택해주세요.')
       return
     }
-
     if (!noDuration && endValue < startValue) {
       alert('종료 시점은 시작 시점보다 빠를 수 없습니다.')
       return
     }
-
     setStep(2)
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
-
     if (!prompt.trim()) {
       alert('현재 상황을 입력해주세요.')
       return
     }
-
-    if (!memberCount) {
-      alert('프로젝트 인원을 선택해주세요.')
-      return
-    }
-
-    if (!noDuration && endValue < startValue) {
-      alert('종료 시점은 시작 시점보다 빠를 수 없습니다.')
-      return
-    }
-
     setLoading(true)
-
     try {
       await createProject({
         name: name.trim() || null,
@@ -151,7 +117,6 @@ export default function CreateProjectPage() {
         constraint: constraint.trim() || null,
         prompt: prompt.trim(),
       })
-
       navigate('/projects')
     } catch (err) {
       alert('생성 실패: ' + (err.message ?? '알 수 없는 오류'))
@@ -160,148 +125,198 @@ export default function CreateProjectPage() {
     }
   }
 
+  const Logo = (
+    <Link to="/projects">
+      <div className={styles.logo}>
+        <span>poco</span>
+      </div>
+    </Link>
+  )
+
   if (step === 1) {
     return (
-      <div>
-        <h1>어떤 걸 만들고 싶으신가요? 🤔</h1>
-        <p>프로젝트 정보(이름, 인원, 기간 등)를 적어주세요.</p>
+      <div className={styles.page}>
+        <nav className={styles.nav}>
+          {Logo}
+        </nav>
 
-        <form onSubmit={handleNext}>
-          <div>
-            <label>프로젝트 이름</label>
-            <input
-              type="text"
-              maxLength={20}
-              placeholder="1 ~ 20자"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+        <div className={styles.content}>
+          <h1 className={styles.title}>
+            <span className={styles.titleDark}>어떤 걸 </span>
+            <span className={styles.titleLight}>만들고</span>
+            <br />
+            <span className={styles.titleDark}>싶으신가요? 🤔</span>
+          </h1>
+
+          <div className={styles.formWrapper}>
+            <p className={styles.subtitle}>프로젝트 정보(이름, 인원, 기간 등)를 적어주세요.</p>
+
+            <form className={styles.form} onSubmit={handleNext}>
+              <div className={styles.field}>
+                <label className={styles.label}>프로젝트 이름</label>
+                <input
+                  className={styles.input}
+                  type="text"
+                  maxLength={20}
+                  placeholder="1 ~ 20자"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  프로젝트 인원 <span className={styles.required}>*</span>
+                </label>
+                <select
+                  className={styles.select}
+                  required
+                  value={memberCount}
+                  onChange={(e) => setMemberCount(e.target.value)}
+                >
+                  <option value="">1 ~ 20명</option>
+                  {members.map((m) => (
+                    <option key={m} value={m}>{m}명</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  프로젝트 기간 <span className={styles.required}>*</span>
+                </label>
+                <div className={styles.durationRow}>
+                  <select
+                    className={`${styles.selectSmall} ${styles.selectYear}`}
+                    disabled={noDuration}
+                    value={startYear}
+                    onChange={handleStartYearChange}
+                  >
+                    {availableStartYears.map((y) => (
+                      <option key={y} value={y}>{y}년</option>
+                    ))}
+                  </select>
+                  <select
+                    className={`${styles.selectSmall} ${styles.selectMonth}`}
+                    disabled={noDuration}
+                    value={startMonth}
+                    onChange={handleStartMonthChange}
+                  >
+                    {availableStartMonths.map((m) => (
+                      <option key={m} value={m}>{m}월</option>
+                    ))}
+                  </select>
+
+                  <span className={styles.separator}>~</span>
+
+                  <select
+                    className={`${styles.selectSmall} ${styles.selectYear}`}
+                    disabled={noDuration}
+                    value={endYear}
+                    onChange={handleEndYearChange}
+                  >
+                    {availableEndYears.map((y) => (
+                      <option key={y} value={y}>{y}년</option>
+                    ))}
+                  </select>
+                  <select
+                    className={`${styles.selectSmall} ${styles.selectMonth}`}
+                    disabled={noDuration}
+                    value={endMonth}
+                    onChange={handleEndMonthChange}
+                  >
+                    {availableEndMonths.map((m) => (
+                      <option key={m} value={m}>{m}월</option>
+                    ))}
+                  </select>
+
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={noDuration}
+                      onChange={handleNoDurationChange}
+                    />
+                    기간 없음
+                  </label>
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>프로젝트 설명</label>
+                <textarea
+                  className={styles.textarea}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>프로젝트 제약 사항</label>
+                <textarea
+                  className={styles.textarea}
+                  value={constraint}
+                  onChange={(e) => setConstraint(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.actions}>
+                <button type="submit" className={styles.btnPrimary}>
+                  다음으로 이동 →
+                </button>
+              </div>
+            </form>
           </div>
-
-          <div>
-            <label>프로젝트 인원 *</label>
-            <select
-              required
-              value={memberCount}
-              onChange={(e) => setMemberCount(e.target.value)}
-            >
-              <option value="">1 ~ 20명</option>
-              {members.map((m) => (
-                <option key={m} value={m}>
-                  {m}명
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label>프로젝트 기간 *</label>
-
-            <select
-              disabled={noDuration}
-              value={startYear}
-              onChange={handleStartYearChange}
-            >
-              {availableStartYears.map((y) => (
-                <option key={y} value={y}>
-                  {y}년
-                </option>
-              ))}
-            </select>
-
-            <select
-              disabled={noDuration}
-              value={startMonth}
-              onChange={handleStartMonthChange}
-            >
-              {availableStartMonths.map((m) => (
-                <option key={m} value={m}>
-                  {m}월
-                </option>
-              ))}
-            </select>
-
-            {' ~ '}
-
-            <select
-              disabled={noDuration}
-              value={endYear}
-              onChange={handleEndYearChange}
-            >
-              {availableEndYears.map((y) => (
-                <option key={y} value={y}>
-                  {y}년
-                </option>
-              ))}
-            </select>
-
-            <select
-              disabled={noDuration}
-              value={endMonth}
-              onChange={handleEndMonthChange}
-            >
-              {availableEndMonths.map((m) => (
-                <option key={m} value={m}>
-                  {m}월
-                </option>
-              ))}
-            </select>
-
-            <label>
-              <input
-                type="checkbox"
-                checked={noDuration}
-                onChange={handleNoDurationChange}
-              />
-              기간 없음
-            </label>
-          </div>
-
-          <div>
-            <label>프로젝트 설명</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label>프로젝트 제약 사항</label>
-            <textarea
-              value={constraint}
-              onChange={(e) => setConstraint(e.target.value)}
-            />
-          </div>
-
-          <button type="submit">다음으로 이동 →</button>
-          <button type="button" onClick={() => navigate('/projects')}>← 뒤로</button>
-        </form>
+        </div>
       </div>
     )
   }
 
   return (
-    <div>
-      <h1>현재 상황을 자유롭게 적어주세요!</h1>
-      <p>상황에 맞춰 poco가 단계별 프로젝트를 설계해드릴게요.</p>
-
-      <form onSubmit={handleSubmit}>
-        <textarea
-          required
-          placeholder="예) 현재 팀원 3명이서 2개월 동안 캡스톤 프로젝트를 진행해야해. 주제는 아직 정하지 않았지만 대학생과 관련한 걸로 하고 싶어."
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          rows={8}
-        />
-
-        <button type="button" onClick={() => setStep(1)}>
-          이전으로
+    <div className={styles.page}>
+      <nav className={styles.nav}>
+        {Logo}
+        <button
+          type="button"
+          className={styles.btnBack}
+          onClick={() => setStep(1)}
+        >
+          ← 이전으로
         </button>
+      </nav>
 
-        <button type="submit" disabled={loading}>
-          {loading ? '생성 중...' : '프로젝트 생성 →'}
-        </button>
-      </form>
+      <div className={styles.content}>
+        <h1 className={styles.title}>
+          <span className={styles.titleDark}>현재 상황을 </span>
+          <span className={styles.titleLight}>자유롭게</span>
+          <br />
+          <span className={styles.titleDark}>적어주세요!</span>
+        </h1>
+
+        <p className={styles.subtitleCenter}>
+          상황에 맞춰 poco가 단계별 프로젝트를 설계해드릴게요.
+        </p>
+
+        <form className={styles.promptForm} onSubmit={handleSubmit}>
+          <div className={styles.promptCard}>
+            <textarea
+              className={styles.promptTextarea}
+              required
+              placeholder="예) 현재 팀원 3명이서 2개월 동안 캡스톤 프로젝트를 진행해야해. 주제는 아직 정하지 않았지만 대학생과 관련한 걸로 하고 싶어."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+            />
+            <div className={styles.promptActions}>
+              <button
+                type="submit"
+                className={styles.createBtn}
+                disabled={loading}
+              >
+                {loading ? '생성 중...' : '프로젝트 생성 →'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
