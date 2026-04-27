@@ -7,7 +7,7 @@ export default function LandingPage() {
     <div>
       <p>Your AI Development Partner</p>
       <h1>poco</h1>
-      <button onClick={() => navigate('/projects')}>Get started!</button>
+      <button onClick={() => navigate('/login')}>Get started!</button>
     </div>
   )
 }
