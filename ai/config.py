@@ -17,7 +17,7 @@ class AISettings(BaseSettings):
 
     AWS_REGION: str = "us-east-1"
     MODEL_ID: str = "us.anthropic.claude-sonnet-4-20250514-v1:0"
-    KB_ID: str = "ZAEWSDQVP1"
+    KB_ID: str = ""
     MAX_TOKENS: int = 4096
     TEMPERATURE: float = 0.7
 
