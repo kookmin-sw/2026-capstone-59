@@ -15,10 +15,9 @@ class AISettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    AWS_REGION: str = "ap-northeast-2"
-    MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
-    KB_A_ID: str = ""
-    KB_B_ID: str = ""
+    AWS_REGION: str = "us-east-1"
+    MODEL_ID: str = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    KB_ID: str = "ZAEWSDQVP1"
     MAX_TOKENS: int = 4096
     TEMPERATURE: float = 0.7
 
