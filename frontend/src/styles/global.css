@@ -1,0 +1,76 @@
+/* =============================================
+   Poco — Global CSS
+   ============================================= */
+
+/* 1. 폰트 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+/* 2. CSS 변수 (디자인 토큰) */
+:root {
+  /* Primary */
+  --color-primary-darkest: #291C80;
+  --color-primary-dark:    #3928AA;
+  --color-primary:         #5C45E8;
+  --color-primary-hover:   #4A35D0;
+  --color-primary-light:   #7A67F2;
+  --color-primary-lighter: #A195F7;
+  --color-primary-pale:    #C5BDFB;
+  --color-primary-bg:      #F0EFFE;
+
+  /* Neutral */
+  --color-white:           #FFFFFF;
+  --color-bg:              #FBFAFF;
+  --color-bg-gray:         #F9F9F9;
+  --color-border:          #E8E8E8;
+  --color-border-dark:     #D4D2E3;
+  --color-text-disabled:   #9795B5;
+  --color-text-secondary:  #6B6D90;
+  --color-text:            #404040;
+  --color-text-strong:     #191919;
+
+  /* Semantic */
+  --color-error:   #F32B2B;
+  --color-success: #00BF18;
+
+  /* Typography */
+  --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* 3. 리셋 */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: var(--font-family);
+}
+
+input, textarea, select {
+  font-family: var(--font-family);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
