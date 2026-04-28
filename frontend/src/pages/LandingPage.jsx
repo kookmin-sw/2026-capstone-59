@@ -13,7 +13,7 @@ export default function LandingPage() {
           <span>poco</span>
         </div>
         <button className={styles.loginBtn} onClick={() => navigate('/login')}>
-          Login
+          로그인
         </button>
       </nav>
 

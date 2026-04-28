@@ -280,7 +280,8 @@ export default function CreateProjectPage() {
           className={styles.btnBack}
           onClick={() => setStep(1)}
         >
-          ← 이전으로
+          
+          <span> {'<'} </span> 이전으로
         </button>
       </nav>
 

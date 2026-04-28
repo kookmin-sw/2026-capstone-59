@@ -26,16 +26,16 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 15px 20px;
-  border-radius: 30px;
-  background-color: var(--color-primary);
+  padding: 10px 20px;
+  border-radius: 10px;
+  background-color: var(--color-primary-light);
   color: var(--color-white);
   font-weight: 500;
   font-size: 14px;
 }
 
 .loginBtn:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-primary);
 }
 
 /* 메인 영역 */
@@ -60,12 +60,11 @@
 }
 
 .startBtn {
-  width: 200px;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 15px 20px;
-  border-radius: 30px;
+  padding: 15px 30px;
+  border-radius: 25px;
   background-color: var(--color-primary);
   color: var(--color-white);
   font-weight: 600;
