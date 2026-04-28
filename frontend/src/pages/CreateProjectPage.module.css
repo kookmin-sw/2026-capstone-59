@@ -1,43 +1,17 @@
 /* ── 공통 레이아웃 ── */
 .page {
   min-height: 100vh;
-  background: radial-gradient(ellipse at 50% 0%, #ddd8ff 0%, #eae7ff 30%, #f2f0ff 60%, #f7f6ff 100%);
+  background: radial-gradient(ellipse at 50% 0%, #f7f6ff 0%, #eae7ff 30%, #f2f0ff 60%, #f7f6ff 100%);
   display: flex;
   flex-direction: column;
 }
 
 .nav {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 32px;
-  display: flex;
   flex-direction: column;
   align-items: flex-start;
+  padding: 16px 32px;
   gap: 8px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-primary);
-}
-
-.btnBack {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  font-family: var(--font-family);
-  cursor: pointer;
-  padding: 0;
-}
-
-.btnBack:hover {
-  color: var(--color-text);
 }
 
 .content {
@@ -284,6 +258,25 @@
 }
 
 /* ── 버튼 ── */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.btnBack {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  padding: 0;
+}
+
 .btnPrimary {
   padding: 8px 16px;
   background: none;
