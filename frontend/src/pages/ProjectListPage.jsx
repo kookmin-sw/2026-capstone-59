@@ -100,7 +100,7 @@ export default function ProjectListPage() {
                   <div className={styles.cardInfo}>
                     <div>
                       <p className={styles.cardName}>{p.name ?? '(이름 없음)'}</p>
-                      <p className={styles.cardMeta}>{timeAgo(p.updated_at)} 전 편집됨</p>
+                      <p className={styles.cardMeta}>{timeAgo(p.updated_at)} 편집됨</p>
                     </div>
                     <button className={styles.moreBtn} onClick={(e) => e.stopPropagation()}>
                       <BsThreeDotsVertical size={16} />
