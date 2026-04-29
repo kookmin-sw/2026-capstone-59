@@ -16,7 +16,7 @@ export default function SidePanel({ step, isOpen, onClose, onAccept }) {
   const [lastStep, setLastStep] = useState(step)
 
   useEffect(() => {
-    if (step) setLastStep(step)
+    if (step) setTimeout(() => setLastStep(step), 0)
   }, [step])
 
   const current = step ?? lastStep

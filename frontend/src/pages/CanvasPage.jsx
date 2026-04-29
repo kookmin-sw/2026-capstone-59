@@ -1,12 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
-  ReactFlow,
-  Background,
-  Controls,
-  useNodesState,
-  useEdgesState,
-  addEdge,
+  ReactFlow, Background, Controls,
+  useNodesState, useEdgesState, addEdge,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
@@ -17,6 +13,11 @@ import ContextMenu from '../components/canvas/onNodeContext'
 import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
+import { getStages } from '../api/stage'
+import { getStepTree, acceptStep, generateSteps } from '../api/step'
+// import { getStep } from '../api/step'
+
+
 import styles from './CanvasPage.module.css'
 import { HiOutlineUser } from 'react-icons/hi'
 
@@ -25,180 +26,46 @@ const nodeTypes = {
   requiredStepNode: RequiredStepNode,
 }
 
-const DUMMY_STAGES = [
-  { id: 1, sequence: 1, name: '아이디어 구체화', englishName: 'Ideation', status: 'completed' },
-  { id: 2, sequence: 2, name: '프로젝트 계획', englishName: 'Planning', status: 'completed' },
-  { id: 3, sequence: 3, name: '요구사항 정의', englishName: 'Requirement', status: 'active' },
-  { id: 4, sequence: 4, name: '설계', englishName: 'Design', status: 'locked' },
-  { id: 5, sequence: 5, name: '개발', englishName: 'Development', status: 'locked' },
-  { id: 6, sequence: 6, name: '테스트 및 검증', englishName: 'Test', status: 'locked' },
-]
+const STAGE_ENGLISH = {
+  1: 'Ideation', 2: 'Planning', 3: 'Requirement',
+  4: 'Design', 5: 'Development', 6: 'Test',
+}
 
-const INITIAL_NODES = [
-  {
-    id: 'req-1',
-    type: 'requiredStepNode',
+const X_GAP = 220
+const Y_GAP = 110
 
-    position: { x: 500, y: 200 },
-    data: {
-      label: '결과 분석 및 결함 기록',
-      status: 'ACCEPTED',
-      stageNumber: 1,
-      is_required: true,
-      mentoring: `### 📖 Step 설명
-
-이 Step에서는 프로젝트가 해결하려는 **문제** 또는 포착하려는 **기회**를 명확하게 정의합니다.
-
-중요한 것은 단순히 “이런 서비스가 있으면 좋겠다”가 아니라, **무엇이 문제인지**, **누가 어떤 상황에서 불편을 겪는지**, **왜 이 문제가 중요한지**를 분명하게 정리하는 것입니다.
-
-이 Step은 이후 사용자 분석, 컨셉 정의, 요구사항 정리의 출발점이 되므로, 문제를 가능한 한 구체적인 문장으로 설명할 수 있어야 합니다.
-
----
-
-### 👀 생각해보면 좋은 관점
-
-- 해결하려는 문제 또는 기회를 한두 문장으로 설명할 수 있는가?
-- 이 문제가 왜 중요한지 설명할 수 있는가?
-- 이 문제가 주로 어떤 상황이나 맥락에서 발생하는지 알고 있는가?
-- 현재 사람들이 사용하는 방식이나 기존 대안에는 어떤 한계가 있는가?
-
----
-
-### 🎯 이 Step의 목표
-
-- [ ]  문제/기회를 구체적으로 설명할 수 있다.
-- [ ]  문제의 중요도 또는 해결 가치를 말할 수 있다.
-- [ ]  문제의 발생 배경이나 상황을 설명할 수 있다.
-- [ ]  기존 대안의 한계 또는 미해결 지점을 정리할 수 있다.
-
----
-
-### ⚠️ 자주 하는 실수 ⚠️
-
-#### 1. 문제를 너무 넓게 쓰기
-
-- ❌ “프로젝트 관리가 어렵다”
-- ✅ “프로젝트 경험이 없는 대학생 팀은 초기 기획 단계에서 무엇부터 해야 할지 몰라 많은 시간을 낭비한다”
-
-문제는 가능한 한 **대상과 상황이 드러나게** 적는 것이 좋습니다.
-
-#### 2. 해결책을 먼저 정해두기
-
-이 Step은 “무엇을 만들까?”보다 먼저, “왜 이것이 필요한가?”를 분명히 하는 단계입니다.
-
-#### 3. 문제의 중요도를 설명하지 않기
-
-문제가 있다는 사실만으로는 부족합니다. 왜 해결할 가치가 있는지 함께 설명해야 설득력이 생깁니다.
-
-#### 4. 현재 방식의 한계를 놓치기
-
-이미 사람들이 다른 방식으로 문제를 해결하고 있을 수 있습니다. 그 방식이 왜 충분하지 않은지도 함께 봐야 합니다.
-
----
-
-### ✅ 한 줄 팁
-
-이 Step에서는 해결책을 서두르기보다, **문제 자체를 선명하게 설명하는 것**에 집중해보세요.`,
-      terms: `**TAM / SAM / SOM**\n\n전체 시장 규모(TAM), 접근 가능한 시장(SAM), 실제 목표 시장(SOM).\n\n---\n\n**페인 포인트 (Pain Point)**\n\n사용자가 현재 겪고 있는 불편함이나 해결되지 않은 문제.`,
-      artifact: {
-        description: "아이디어 목록 및 선정 근거 문서",
-        notion_template_url: "https://notion.so"
+function flattenTree(steps, depth = 0, counter = { y: 0 }, stageSequence) {
+  const nodes = []
+  const edges = []
+  for (const step of steps) {
+    const y = counter.y * Y_GAP
+    counter.y++
+    nodes.push({
+      id: step.step_id,
+      type: step.is_required ? 'requiredStepNode' : 'stepNode',
+      position: { x: depth * X_GAP + 50, y: y + 50 },
+      data: {
+        label: step.name,
+        status: step.status,
+        is_required: step.is_required,
+        stageNumber: stageSequence,
       },
-    },
-  },
-  {
-    id: 'step-1',
-    type: 'stepNode',
-    position: { x: 50, y: 150 },
-    data: { label: '사용자 인터뷰 계획 세우기', status: 'ACCEPTED', stageNumber: 1 },
-  },
-  {
-    id: 'step-2',
-    type: 'stepNode',
-    position: { x: 280, y: 80 },
-    data: {
-      label: '브레인 스토밍 수행',
-      status: 'ACCEPTED',
-      stageNumber: 1,
-      keep: true },
-  },
-  {
-    id: 'step-3',
-    type: 'stepNode',
-    position: { x: 280, y: 270 },
-    data: {
-      label: '시장 조사 분석',
-      status: 'READY',
-      stageNumber: 1,
-      is_required: false,
-      mentoring: `### 📖 Step 설명
-
-이 Step에서는 현재 시장에 어떤 서비스, 제품, 방식이 있는지 조사하고, 기존 대안이 어떤 점에서는 잘 작동하고 어떤 점에서는 부족한지 파악합니다.
-
-중요한 것은 단순히 경쟁사를 나열하는 것이 아니라, **기존 대안의 빈틈**과 **우리 아이디어가 들어갈 수 있는 기회**를 찾는 것입니다.
-
----
-
-### 🔥 추천 방법
-
-#### 1. 경쟁 서비스 찾아보기
-
-비슷한 문제를 해결하는 서비스나 제품을 3~5개 정도 찾아보세요.
-
-이때 중요한 것은 “있다/없다”가 아니라, 각 서비스가 **누구를 위한 것인지, 무슨 기능을 제공하는지, 무엇을 강점으로 내세우는지** 를 정리하는 것입니다.
-
-#### 2. 사용자 리뷰 찾아보기
-
-앱스토어 리뷰, 커뮤니티 글, 블로그 후기, 유튜브 댓글 등을 보면 실제 사용자가 **무엇을 좋아하고 무엇을 불편해하는지** 알 수 있습니다.
-
-리뷰를 볼 때는 그냥 읽고 넘기지 말고, 반복적으로 나오는 내용을 모아보세요.
-
-반복되는 불만은 **시장의 빈틈**일 가능성이 큽니다.
-
-#### 3. 현재의 대안 찾아보기
-
-경쟁 앱뿐 아니라 노션, 엑셀, 카톡처럼 사람들이 지금 실제로 어떤 방식으로 문제를 해결하고 있는지도 보세요.
-
-이런 방식은 **“경쟁 서비스”** 는 아닐 수 있지만, 실제로는 **가장 강력한 현재 대안**일 수 있습니다.
-
-#### 4. 차별점 한 줄로 정리하기
-
-조사 후에는 **“기존 방식은 ~하지만, 우리는 ~를 제공한다”** 형식으로 차별점을 정리해보세요.
-
-이 한 줄이 이후 핵심 컨셉 정의로 자연스럽게 이어집니다.
-
----
-
-### ⚠️ 자주 하는 실수
-
-#### 1. 서비스 이름만 모으고 끝내기
-
-경쟁사를 찾는 것 자체가 목적이 아닙니다. 각 서비스가 무엇을 잘하고, 무엇이 부족한지까지 봐야 의미가 있습니다.
-
-#### 2. 기능만 보고 사용자 반응은 안 보기
-
-겉으로 보기엔 좋아 보여도 실제 사용자는 불편할 수 있습니다. 리뷰나 후기에서 반복되는 문제를 꼭 확인해보세요.
-
-#### 3. 차별점을 막연하게 쓰기
-
-- ❌ “우리는 더 편리하다”
-- ✅ “기존 서비스는 초보자를 위한 단계별 안내가 부족하지만, 우리는 단계별 AI 멘토링을 제공한다”
-
-#### 4. 조사 결과를 문제 정의와 연결하지 않기
-
-시장 조사는 따로 노는 작업이 아니라, 우리가 정의한 문제를 더 분명하게 만들기 위한 과정입니다.
-
----
-
-### ✅ 한 줄 팁
-
-시장 조사의 핵심은 경쟁사 존재 여부가 아니라, **기존 대안이 놓치고 있는 문제와 우리가 들어갈 수 있는 틈을 찾는 것**입니다.`,
-      terms: `**TAM / SAM / SOM**\n\n전체 시장 규모(TAM), 접근 가능한 시장(SAM), 실제 목표 시장(SOM).\n\n---\n\n**페인 포인트 (Pain Point)**\n\n사용자가 현재 겪고 있는 불편함이나 해결되지 않은 문제.`,
-    },
-  },
-]
-
-const INITIAL_EDGES = []
+    })
+    if (step.parent_step_id) {
+      edges.push({
+        id: `e-${step.parent_step_id}-${step.step_id}`,
+        source: step.parent_step_id,
+        target: step.step_id,
+      })
+    }
+    if (step.children?.length) {
+      const { nodes: cn, edges: ce } = flattenTree(step.children, depth + 1, counter, stageSequence)
+      nodes.push(...cn)
+      edges.push(...ce)
+    }
+  }
+  return { nodes, edges }
+}
 
 export default function CanvasPage() {
   const { projectId } = useParams()
@@ -206,29 +73,123 @@ export default function CanvasPage() {
   const location = useLocation()
   const projectName = location.state?.projectName ?? 'Project'
 
-  const [currentStageId, setCurrentStageId] = useState(3)
-  const [selectedStageId, setSelectedStageId] = useState(3)
+  const [stages, setStages] = useState([])
+  const [currentStageSequence, setCurrentStageSequence] = useState(1)
+  const [selectedStageId, setSelectedStageId] = useState(null)
   const [navCollapsed, setNavCollapsed] = useState(false)
   const [selectedStep, setSelectedStep] = useState(null)
+  const [stepDetail, setStepDetail] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES)
+  const [nodes, setNodes, onNodesChange] = useNodesState([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
-  const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
-    []
-  )
+  const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
-  function handleNodeClick(event, node) {
+  // Stage 목록 조회
+  useEffect(() => {
+    if (!projectId) return
+    getStages(projectId).then((data) => {
+      const list = data.stages ?? []
+      setStages(list)
+      const active = list.find(s => s.is_active)
+      if (active) {
+        setCurrentStageSequence(active.stage_sequence)
+        setSelectedStageId(active.stage_id)
+      }
+    })
+  }, [projectId])
+
+  // Step 트리 조회
+  useEffect(() => {
+    if (!selectedStageId || !projectId) return
+    const stage = stages.find(s => s.stage_id === selectedStageId)
+    getStepTree(projectId, selectedStageId).then((data) => {
+      const { nodes: n, edges: e } = flattenTree(
+        data.steps ?? [], 0, { y: 0 }, stage?.stage_sequence
+      )
+      setNodes(n)
+      setEdges(e)
+    })
+  }, [selectedStageId])
+
+  // Stage UI 포맷 변환
+  const uiStages = stages.map(s => ({
+    id: s.stage_id,
+    sequence: s.stage_sequence,
+    name: s.stage_name,
+    englishName: STAGE_ENGLISH[s.stage_sequence] ?? '',
+    status: s.is_active ? 'active'
+      : s.stage_sequence < currentStageSequence ? 'completed'
+      : 'locked',
+  }))
+
+  const currentStageId = stages.find(s => s.is_active)?.stage_id ?? null
+
+  async function handleNodeClick(event, node) {
     setSelectedStep(node)
+    setStepDetail(null)
+    // const detail = await getStep(node.id)
+    // setStepDetail(detail)
+    setToast(`📌 ${node.data.label}을(를) 시작합니다!`)
     if (node.type === 'requiredStepNode') {
-      setToast('📌 아이디어를 구체화 하기 위한 문제 정의를 시작합니다!')
+      // setToast(`📌 ${detail.name}을(를) 시작합니다!`)
       setToastVisible(true)
       setTimeout(() => setToastVisible(false), 3000)
     }
+  }
+
+  async function handleAccept() {
+    if (!selectedStep) return
+
+    try {
+      await acceptStep(selectedStep.id)
+    } catch {
+      alert('Step 저장에 실패했어요. 다시 시도해주세요.')
+      return
+    }
+
+    let data
+    let retryCount = 0
+    while (retryCount < 3) {
+      try {
+        data = await generateSteps(selectedStep.id)
+        break
+      } catch {
+        retryCount++
+        if (retryCount === 3) {
+          alert('AI Step 생성에 실패했어요. 잠시 후 다시 시도해주세요.')
+          return
+        }
+      }
+    }
+
+    const stage = stages.find(s => s.stage_id === selectedStageId)
+    const newNodes = (data.generated_steps ?? []).map((s, i) => ({
+      id: s.step_id,
+      type: s.is_required ? 'requiredStepNode' : 'stepNode',
+      position: {
+        x: selectedStep.position.x + X_GAP,
+        y: selectedStep.position.y + (i - 1) * Y_GAP,
+      },
+      data: {
+        label: s.name,
+        status: s.status,
+        is_required: s.is_required,
+        stageNumber: stage?.stage_sequence,
+      },
+    }))
+    const newEdges = (data.generated_steps ?? []).map(s => ({
+      id: `e-${selectedStep.id}-${s.step_id}`,
+      source: selectedStep.id,
+      target: s.step_id,
+    }))
+    setNodes(prev => [...prev, ...newNodes])
+    setEdges(prev => [...prev, ...newEdges])
+    setSelectedStep(null)
+    setStepDetail(null)
   }
 
   function handleNodeContextMenu(event, node) {
@@ -249,6 +210,7 @@ export default function CanvasPage() {
 
   function handlePaneClick() {
     setSelectedStep(null)
+    setStepDetail(null)
   }
 
   return (
@@ -267,7 +229,7 @@ export default function CanvasPage() {
 
       <div className={styles.body}>
         <StageNavigator
-          stages={DUMMY_STAGES}
+          stages={uiStages}
           currentStageId={currentStageId}
           selectedStageId={selectedStageId}
           onSelectStage={(id) => setSelectedStageId(id)}
@@ -302,18 +264,17 @@ export default function CanvasPage() {
             maxZoom={2}
           >
             <Background variant="dots" gap={24} size={1.5} color="#C8C4E8" />
-            <Controls position="bottom-center" />
+            <Controls position="bottom-center" showInteractive={false} />
           </ReactFlow>
         </div>
 
-    
         <SidePanel
           step={selectedStep}
+          detail={stepDetail}
           isOpen={!!selectedStep}
-          onClose={() => setSelectedStep(null)}
-          onAccept={() => setSelectedStep(null)}
+          onClose={() => { setSelectedStep(null); setStepDetail(null) }}
+          onAccept={handleAccept}
         />
-        
 
         {contextMenu && (
           <ContextMenu
