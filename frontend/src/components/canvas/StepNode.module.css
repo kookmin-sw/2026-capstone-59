@@ -1,6 +1,7 @@
 .wrapper {
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .stageNumber {
@@ -51,7 +52,13 @@
 .accepted .label { color: #291C80; }
 
 /* CANCELED */
-.canceled .node { opacity: 0.45; }
+.canceled .stageNumber { color: #9092B8; }
+.canceled .node {
+  background: #FFFFFF;
+  border: 1.5px solid #E2DFFE;
+  border-left: 4px solid #9092B8;
+}
+.canceled .label { color: #1A1040; }
 
 /* KEEP */
 .keep .stageNumber { color: #EAB308; }
@@ -61,3 +68,15 @@
   border-left: 4px solid #EAB308;
 }
 .keep .label { color: #7A5C00; }
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #291C80;
+  position: absolute;
+  right: -6px;
+  top: 60%;
+  transform: translateY(-50%);
+  z-index: -1;
+}

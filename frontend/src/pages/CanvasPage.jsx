@@ -31,41 +31,70 @@ const STAGE_ENGLISH = {
   4: 'Design', 5: 'Development', 6: 'Test',
 }
 
-const X_GAP = 220
-const Y_GAP = 110
+const X_GAP = 300
+const Y_GAP = 120
 
-function flattenTree(steps, depth = 0, counter = { y: 0 }, stageSequence) {
+function flattenTree(steps, stageSequence) {
   const nodes = []
   const edges = []
-  for (const step of steps) {
-    const y = counter.y * Y_GAP
-    counter.y++
+
+  function build(node, depth, centerY) {
     nodes.push({
-      id: step.step_id,
-      type: step.is_required ? 'requiredStepNode' : 'stepNode',
-      position: { x: depth * X_GAP + 50, y: y + 50 },
+      id: node.step_id,
+      type: node.is_required ? 'requiredStepNode' : 'stepNode',
+      position: {
+        x: depth * X_GAP + 50,
+        y: centerY,
+      },
       data: {
-        label: step.name,
-        status: step.status,
-        is_required: step.is_required,
+        label: node.name,
+        status: node.status,
+        is_required: node.is_required,
         stageNumber: stageSequence,
+        step_id: node.step_id,
       },
     })
-    if (step.parent_step_id) {
+
+    if (node.parent_step_id) {
       edges.push({
-        id: `e-${step.parent_step_id}-${step.step_id}`,
-        source: step.parent_step_id,
-        target: step.step_id,
+        id: `e-${node.parent_step_id}-${node.step_id}`,
+        source: node.parent_step_id,
+        target: node.step_id,
+        type: 'straight',
+        style: {
+          stroke: '#291C80',
+          strokeWidth: 1.5,
+          strokeDasharray: '5,5',
+        },
       })
     }
-    if (step.children?.length) {
-      const { nodes: cn, edges: ce } = flattenTree(step.children, depth + 1, counter, stageSequence)
-      nodes.push(...cn)
-      edges.push(...ce)
-    }
+
+    const children = node.children ?? []
+    const count = children.length
+
+    if (count === 0) return
+
+    const totalHeight = (count - 1) * Y_GAP
+    const startY = centerY - totalHeight / 2
+
+    children.forEach((child, index) => {
+      const childY = startY + index * Y_GAP
+      build(child, depth + 1, childY)
+    })
   }
+
+  const rootGap = 260
+  const totalRootHeight = (steps.length - 1) * rootGap
+  const rootStartY = 200 - totalRootHeight / 2
+
+  steps.forEach((root, index) => {
+    const rootY = rootStartY + index * rootGap
+    build(root, 0, rootY)
+  })
+
   return { nodes, edges }
 }
+
 
 export default function CanvasPage() {
   const { projectId } = useParams()
@@ -108,7 +137,8 @@ export default function CanvasPage() {
     const stage = stages.find(s => s.stage_id === selectedStageId)
     getStepTree(projectId, selectedStageId).then((data) => {
       const { nodes: n, edges: e } = flattenTree(
-        data.steps ?? [], 0, { y: 0 }, stage?.stage_sequence
+        data.steps ?? [],
+        stage?.stage_sequence
       )
       setNodes(n)
       setEdges(e)
