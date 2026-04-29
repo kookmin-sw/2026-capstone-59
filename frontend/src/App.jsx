@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import ProjectListPage from './pages/ProjectListPage'
 import CreateProjectPage from './pages/CreateProjectPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
+import CanvasPage from './pages/CanvasPage'
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/projects" element={<ProjectListPage />} />
         <Route path="/projects/create" element={<CreateProjectPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/canvas/:projectId" element={<CanvasPage />} />
       </Routes>
     </BrowserRouter>
   )

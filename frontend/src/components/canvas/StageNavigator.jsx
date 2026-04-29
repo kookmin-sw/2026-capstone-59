@@ -1,0 +1,1 @@
+export default function StageNavigator() { return null }
