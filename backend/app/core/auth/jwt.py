@@ -18,7 +18,9 @@ def _create_token(subject: str, token_type: str, expires_delta: timedelta) -> st
         "iat": int(now.timestamp()),
         "exp": int((now + expires_delta).timestamp()),
     }
-    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
 
 
 def create_access_token(user_id: UUID) -> str:
