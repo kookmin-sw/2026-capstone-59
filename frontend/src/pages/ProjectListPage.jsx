@@ -205,7 +205,7 @@ export default function ProjectListPage() {
                   </div>
                 )}
               {sortedProjects.map((p) => (
-                <div key={p.project_id} className={styles.card} onClick={() => navigate(`/canvas/${p.project_id}`)}>
+                <div key={p.project_id} className={styles.card} onClick={() => navigate(`/canvas/${p.project_id}`, { state: { projectName: p.name ?? 'Project' } })}>
                   <div className={styles.cardThumb} />
                   <div className={styles.cardInfo}>
                     <div>
