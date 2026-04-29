@@ -212,7 +212,7 @@ export default function CanvasPage() {
   const [selectedStep, setSelectedStep] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
   const [toast, setToast] = useState(null)
-  const [toastVisible, setToastVisible] = useState(true)
+  const [toastVisible, setToastVisible] = useState(false)
 
   const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES)
   const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES)
@@ -225,7 +225,7 @@ export default function CanvasPage() {
   function handleNodeClick(event, node) {
     setSelectedStep(node)
     if (node.type === 'requiredStepNode') {
-      setToast('아이디어를 구체화 하기 위한 문제 정의를 시작합니다!')
+      setToast('📌 아이디어를 구체화 하기 위한 문제 정의를 시작합니다!')
       setToastVisible(true)
       setTimeout(() => setToastVisible(false), 3000)
     }
@@ -276,13 +276,15 @@ export default function CanvasPage() {
         />
 
         <div className={styles.canvasWrapper}>
-          {toast && (
-            <ToastAlarm
-              message={toast}
-              visible={toastVisible}
-              onToggle={() => setToastVisible(!toastVisible)}
-            />
-          )}
+          <ToastAlarm
+            message={toast}
+            visible={toastVisible}
+            onToggle={() => {
+              const next = !toastVisible
+              setToastVisible(next)
+              if (next) setTimeout(() => setToastVisible(false), 3000)
+            }}
+          />
 
           <ReactFlow
             nodes={nodes}
