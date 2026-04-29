@@ -13,6 +13,7 @@ import '@xyflow/react/dist/style.css'
 import StageNavigator from '../components/canvas/StageNavigator'
 import SidePanel from '../components/canvas/SidePanel'
 import ToastAlarm from '../components/canvas/ToastAlarm'
+import ContextMenu from '../components/canvas/onNodeContext'
 import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
@@ -25,20 +26,38 @@ const nodeTypes = {
 }
 
 const DUMMY_STAGES = [
-  { id: 1, name: '아이디어 구체화', englishName: 'Ideation', status: 'completed' },
-  { id: 2, name: '프로젝트 계획', englishName: 'Planning', status: 'completed' },
-  { id: 3, name: '요구사항 정의', englishName: 'Requirement', status: 'active' },
-  { id: 4, name: '설계', englishName: 'Design', status: 'locked' },
-  { id: 5, name: '개발', englishName: 'Development', status: 'locked' },
-  { id: 6, name: '테스트 및 검증', englishName: 'Test', status: 'locked' },
+  { id: 1, sequence: 1, name: '아이디어 구체화', englishName: 'Ideation', status: 'completed' },
+  { id: 2, sequence: 2, name: '프로젝트 계획', englishName: 'Planning', status: 'completed' },
+  { id: 3, sequence: 3, name: '요구사항 정의', englishName: 'Requirement', status: 'active' },
+  { id: 4, sequence: 4, name: '설계', englishName: 'Design', status: 'locked' },
+  { id: 5, sequence: 5, name: '개발', englishName: 'Development', status: 'locked' },
+  { id: 6, sequence: 6, name: '테스트 및 검증', englishName: 'Test', status: 'locked' },
 ]
 
 const INITIAL_NODES = [
   {
     id: 'req-1',
     type: 'requiredStepNode',
-    position: { x: 100, y: 150 },
-    data: { label: '문제/기회 정의', status: 'ready' },
+    position: { x: 500, y: 200 },
+    data: { label: '결과 분석 및 결함 기록' },
+  },
+  {
+    id: 'step-1',
+    type: 'stepNode',
+    position: { x: 50, y: 150 },
+    data: { label: '사용자 인터뷰 계획 세우기', status: 'ACCEPTED', stageNumber: 1 },
+  },
+  {
+    id: 'step-2',
+    type: 'stepNode',
+    position: { x: 280, y: 80 },
+    data: { label: '브레인 스토밍 수행', status: 'ACCEPTED', stageNumber: 1, keep: true },
+  },
+  {
+    id: 'step-3',
+    type: 'stepNode',
+    position: { x: 280, y: 270 },
+    data: { label: '시장 조사 분석', status: 'READY', stageNumber: 1 },
   },
 ]
 
@@ -54,6 +73,7 @@ export default function CanvasPage() {
   const [selectedStageId, setSelectedStageId] = useState(3)
   const [navCollapsed, setNavCollapsed] = useState(false)
   const [selectedStep, setSelectedStep] = useState(null)
+  const [contextMenu, setContextMenu] = useState(null)
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(true)
 
@@ -72,6 +92,22 @@ export default function CanvasPage() {
       setToastVisible(true)
       setTimeout(() => setToastVisible(false), 3000)
     }
+  }
+
+  function handleNodeContextMenu(event, node) {
+    event.preventDefault()
+    if (node.data?.status !== 'ACCEPTED') return
+    setContextMenu({ x: event.clientX, y: event.clientY, node })
+  }
+
+  function handleKeepToggle(nodeId) {
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === nodeId
+          ? { ...n, data: { ...n.data, keep: !n.data.keep } }
+          : n
+      )
+    )
   }
 
   function handlePaneClick() {
@@ -119,7 +155,9 @@ export default function CanvasPage() {
             onConnect={onConnect}
             onNodeClick={handleNodeClick}
             onPaneClick={handlePaneClick}
+            onNodeContextMenu={handleNodeContextMenu}
             nodeTypes={nodeTypes}
+            nodesDraggable={false}
             fitView
             minZoom={0.3}
             maxZoom={2}
@@ -134,6 +172,16 @@ export default function CanvasPage() {
             step={selectedStep}
             onClose={() => setSelectedStep(null)}
             onAccept={() => setSelectedStep(null)}
+          />
+        )}
+
+        {contextMenu && (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            node={contextMenu.node}
+            onKeepToggle={handleKeepToggle}
+            onClose={() => setContextMenu(null)}
           />
         )}
       </div>
