@@ -4,13 +4,15 @@ from mangum import Mangum
 
 from app.ai.routers import steps
 from app.core import exception_handlers
+from app.core.auth.csrf import verify_csrf
 from app.core.auth.dependencies import get_current_user_id
+from app.core.config import settings
 
 app = FastAPI(title="Poco AI Orchestrator")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -18,8 +20,11 @@ app.add_middleware(
 
 exception_handlers.register(app)
 
-# 모든 AI 라우터는 유효한 Bearer Access Token 필수 (DB 조회 없이 토큰만 검증)
-app.include_router(steps.router, tags=["ai"], dependencies=[Depends(get_current_user_id)])
+app.include_router(
+    steps.router,
+    tags=["ai"],
+    dependencies=[Depends(get_current_user_id), Depends(verify_csrf)],
+)
 
 
 @app.get("/health")
