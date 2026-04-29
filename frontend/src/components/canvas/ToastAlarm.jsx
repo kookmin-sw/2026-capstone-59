@@ -1,0 +1,1 @@
+export default function ToastAlarm() { return null }
