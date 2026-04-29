@@ -11,9 +11,7 @@ from app.core.database import Base
 class OAuthAccount(Base):
     __tablename__ = "oauth_account"
     __table_args__ = (
-        UniqueConstraint(
-            "provider", "provider_user_id", name="uq_oauth_provider_user"
-        ),
+        UniqueConstraint("provider", "provider_user_id", name="uq_oauth_provider_user"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -35,4 +33,6 @@ class OAuthAccount(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    user: Mapped["AppUser"] = relationship(back_populates="oauth_accounts")  # noqa: F821
+    user: Mapped["AppUser"] = relationship(
+        back_populates="oauth_accounts"
+    )  # noqa: F821

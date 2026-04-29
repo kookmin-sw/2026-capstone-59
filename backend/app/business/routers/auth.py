@@ -1,16 +1,19 @@
-from urllib.parse import urlencode
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Cookie, Depends, Query, Response
 from fastapi import status as http_status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.business.dependency import get_db
 from app.business.services import auth_service
+from app.core.auth.cookies import (
+    clear_auth_cookies,
+    generate_csrf_token,
+    set_auth_cookies,
+)
 from app.core.auth.dependencies import get_current_user
 from app.core.config import settings
+from app.core.exceptions import InvalidTokenError
 from app.core.models.app_user import AppUser as AppUserModel
-from app.core.schemas.auth import TokenRefreshRequest
 
 router = APIRouter()
 
@@ -33,32 +36,50 @@ def oauth_callback(
     state: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    """OAuth Provider 콜백 — code를 토큰으로 교환 후 프론트로 리다이렉트.
-    토큰은 URL fragment(#)에 담아 전달 (서버 로그 노출 방지)."""
     tokens = auth_service.handle_oauth_callback(db, provider, code)
-    fragment = urlencode(
-        {
-            "access_token": tokens.access_token,
-            "refresh_token": tokens.refresh_token,
-            "expires_in": tokens.expires_in,
-        }
-    )
-    return RedirectResponse(
-        url=f"{settings.FRONTEND_REDIRECT_URL}#{fragment}",
+    csrf = generate_csrf_token()
+
+    response = RedirectResponse(
+        url=settings.FRONTEND_REDIRECT_URL,
         status_code=http_status.HTTP_302_FOUND,
     )
+    set_auth_cookies(
+        response,
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token,
+        csrf_token=csrf,
+    )
+    return response
 
 
 @router.post("/refresh", status_code=http_status.HTTP_200_OK)
-def refresh_token(payload: TokenRefreshRequest):
-    """Refresh Token으로 Access Token 갱신."""
-    return _ok(auth_service.refresh_access_token(payload.refresh_token).model_dump())
+def refresh_token(
+    response: Response,
+    refresh_token: str | None = Cookie(
+        default=None, alias=settings.REFRESH_COOKIE_NAME
+    ),
+):
+    """Refresh Token 쿠키로 Access Token 갱신. 응답 쿠키도 모두 갱신."""
+    if not refresh_token:
+        raise InvalidTokenError("Refresh Token 쿠키가 없습니다.")
+
+    tokens = auth_service.refresh_access_token(refresh_token)
+    csrf = generate_csrf_token()
+    set_auth_cookies(
+        response,
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token,
+        csrf_token=csrf,
+    )
+    return _ok(None)
 
 
 @router.post("/logout", status_code=http_status.HTTP_200_OK)
-def logout(_: AppUserModel = Depends(get_current_user)):
-    """로그아웃 — Stateless JWT라 클라이언트가 토큰 폐기.
-    추후 token blacklist를 추가하려면 여기에서 처리."""
+def logout(
+    response: Response,
+    _: AppUserModel = Depends(get_current_user),
+):
+    clear_auth_cookies(response)
     return _ok(None)
 
 

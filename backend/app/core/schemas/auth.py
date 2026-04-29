@@ -10,10 +10,6 @@ class AuthTokenResponse(BaseModel):
     expires_in: int
 
 
-class TokenRefreshRequest(BaseModel):
-    refresh_token: str
-
-
 class UserProfileResponse(BaseModel):
     user_id: UUID
     email: str
