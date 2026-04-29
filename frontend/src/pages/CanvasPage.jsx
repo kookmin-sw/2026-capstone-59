@@ -25,9 +25,9 @@ const nodeTypes = {
 }
 
 const DUMMY_STAGES = [
-  { id: 1, name: '아이디어 구체화', englishName: 'Ideation', status: 'active' },
-  { id: 2, name: '프로젝트 계획', englishName: 'Planning', status: 'locked' },
-  { id: 3, name: '요구사항 정의', englishName: 'Requirement', status: 'locked' },
+  { id: 1, name: '아이디어 구체화', englishName: 'Ideation', status: 'completed' },
+  { id: 2, name: '프로젝트 계획', englishName: 'Planning', status: 'completed' },
+  { id: 3, name: '요구사항 정의', englishName: 'Requirement', status: 'active' },
   { id: 4, name: '설계', englishName: 'Design', status: 'locked' },
   { id: 5, name: '개발', englishName: 'Development', status: 'locked' },
   { id: 6, name: '테스트 및 검증', englishName: 'Test', status: 'locked' },
@@ -50,6 +50,8 @@ export default function CanvasPage() {
   const location = useLocation()
   const projectName = location.state?.projectName ?? 'Project'
 
+  const [currentStageId, setCurrentStageId] = useState(3)
+  const [selectedStageId, setSelectedStageId] = useState(3)
   const [navCollapsed, setNavCollapsed] = useState(false)
   const [selectedStep, setSelectedStep] = useState(null)
   const [toast, setToast] = useState(null)
@@ -93,7 +95,9 @@ export default function CanvasPage() {
       <div className={styles.body}>
         <StageNavigator
           stages={DUMMY_STAGES}
-          currentStageId={1}
+          currentStageId={currentStageId}
+          selectedStageId={selectedStageId}
+          onSelectStage={(id) => setSelectedStageId(id)}
           collapsed={navCollapsed}
           onToggle={() => setNavCollapsed(!navCollapsed)}
         />
