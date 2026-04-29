@@ -1,15 +1,28 @@
 import axios from 'axios'
 
+// csrf_token 쿠키에서 읽기
+function getCsrfToken() {
+  return document.cookie
+    .split('; ')
+    .find(row => row.startsWith('csrf_token='))
+    ?.split('=')[1]
+}
+
 const api = axios.create({
   baseURL: '/api',
+  withCredentials: true, // 쿠키 자동 전송 (fetch의 credentials: 'include'와 동일)
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
-  if (token) {  // 토큰 있을 때만 헤더 추가
-    config.headers.Authorization = `Bearer ${token}`
+  // POST/PUT/PATCH/DELETE 요청에만 CSRF 토큰 헤더 추가
+  const mutatingMethods = ['post', 'put', 'patch', 'delete']
+  if (mutatingMethods.includes(config.method)) {
+    const csrfToken = getCsrfToken()
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken
+    }
   }
-  return config  // 토큰 없으면 그냥 그대로 요청
+  return config
 })
 
 api.interceptors.response.use(
