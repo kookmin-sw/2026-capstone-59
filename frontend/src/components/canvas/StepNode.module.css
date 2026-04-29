@@ -1,0 +1,63 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.stageNumber {
+  font-size: 11px;
+  color: #9092B8;
+  font-weight: 450;
+  padding-left: 9px;
+}
+
+.node {
+  width: 180px;
+  min-height: 70px;
+  background: #FFFFFF;
+  border: 1.5px solid #E2DFFE;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(92, 69, 232, 0.06);
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1A1040;
+  margin: 0;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+/* READY */
+.ready .stageNumber { color: #9092B8; }
+.ready .node {
+  background: #FFFFFF;
+  border: 1.5px solid #E2DFFE;
+  border-left: 4px solid #9092B8;
+}
+.ready .label { color: #1A1040; }
+
+/* ACCEPTED */
+.accepted .stageNumber { color: #7B6FD0; }
+.accepted .node {
+  background: #EAE6FF;
+  border: 1.5px solid #C5BDFB;
+  border-left: 4px solid #5C45E8;
+}
+.accepted .label { color: #291C80; }
+
+/* CANCELED */
+.canceled .node { opacity: 0.45; }
+
+/* KEEP */
+.keep .stageNumber { color: #EAB308; }
+.keep .node {
+  background: #FFFBEC;
+  border: 1.5px solid #F0C040;
+  border-left: 4px solid #EAB308;
+}
+.keep .label { color: #7A5C00; }
