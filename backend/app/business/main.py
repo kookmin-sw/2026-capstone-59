@@ -4,13 +4,15 @@ from mangum import Mangum
 
 from app.business.routers import auth, projects, stages, steps
 from app.core import exception_handlers
+from app.core.auth.csrf import verify_csrf
 from app.core.auth.dependencies import get_current_user
+from app.core.config import settings
 
 app = FastAPI(title="Poco Business API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -18,14 +20,18 @@ app.add_middleware(
 
 exception_handlers.register(app)
 
-# /auth 는 인증 없이 공개
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
-# 나머지 라우터는 유효한 Bearer Access Token 필수
-_auth = [Depends(get_current_user)]
-app.include_router(projects.router, prefix="/projects", tags=["projects"], dependencies=_auth)
-app.include_router(stages.router, prefix="/stages", tags=["stages"], dependencies=_auth)
-app.include_router(steps.router, prefix="/steps", tags=["steps"], dependencies=_auth)
+_protected = [Depends(get_current_user), Depends(verify_csrf)]
+app.include_router(
+    projects.router, prefix="/projects", tags=["projects"], dependencies=_protected
+)
+app.include_router(
+    stages.router, prefix="/stages", tags=["stages"], dependencies=_protected
+)
+app.include_router(
+    steps.router, prefix="/steps", tags=["steps"], dependencies=_protected
+)
 
 
 @app.get("/health")

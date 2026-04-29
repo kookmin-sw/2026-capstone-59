@@ -26,7 +26,9 @@ def get_authorization_url(provider_name: str, state: str | None = None) -> str:
     return provider.get_authorization_url(state=state)
 
 
-def handle_oauth_callback(db: Session, provider_name: str, code: str) -> AuthTokenResponse:
+def handle_oauth_callback(
+    db: Session, provider_name: str, code: str
+) -> AuthTokenResponse:
     """OAuth 콜백 처리: code → 사용자 조회/생성 → JWT 발급."""
     provider = get_provider(provider_name)
 
@@ -49,9 +51,7 @@ def refresh_access_token(refresh_token: str) -> AuthTokenResponse:
 
 def get_user_profile(db: Session, user: AppUserModel) -> UserProfileResponse:
     oauth = (
-        db.query(OAuthAccountModel)
-        .filter(OAuthAccountModel.user_id == user.id)
-        .first()
+        db.query(OAuthAccountModel).filter(OAuthAccountModel.user_id == user.id).first()
     )
     return UserProfileResponse(
         user_id=user.id,

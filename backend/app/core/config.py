@@ -38,6 +38,18 @@ class Settings(BaseSettings):
     # 프론트엔드 OAuth 콜백 URL
     FRONTEND_REDIRECT_URL: str = "http://localhost/auth/callback"
 
+    # CORS (옵션 A: 프로덕션에서는 same-origin이라 비워두고, 개발에서만 명시)
+    CORS_ALLOWED_ORIGINS: list[str] = []
+
+    # Cookie
+    COOKIE_SECURE: bool = True  # 개발 HTTP 환경에서는 false로 설정
+    COOKIE_SAMESITE: str = "lax"  # same-site 가정
+    COOKIE_DOMAIN: str | None = None  # None이면 현재 호스트 자동 적용
+    ACCESS_COOKIE_NAME: str = "access_token"
+    REFRESH_COOKIE_NAME: str = "refresh_token"
+    CSRF_COOKIE_NAME: str = "csrf_token"
+    CSRF_HEADER_NAME: str = "X-CSRF-Token"
+
     @property
     def DATABASE_URL(self) -> str:
         url = (
