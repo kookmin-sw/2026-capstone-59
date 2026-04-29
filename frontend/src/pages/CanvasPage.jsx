@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   ReactFlow,
   Background,
@@ -47,6 +47,8 @@ const INITIAL_EDGES = []
 export default function CanvasPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const projectName = location.state?.projectName ?? 'Project'
 
   const [navCollapsed, setNavCollapsed] = useState(false)
   const [selectedStep, setSelectedStep] = useState(null)
@@ -79,10 +81,7 @@ export default function CanvasPage() {
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <span className={styles.logo} onClick={() => navigate('/projects')}>poco</span>
-          <span className={styles.projectLabel}>프로젝트 시작</span>
-        </div>
-        <div className={styles.headerCenter}>
-          <span className={styles.projectName}>Project 1</span>
+          <span className={styles.projectName}>{projectName}</span>
         </div>
         <div className={styles.headerRight}>
           <div className={styles.avatar}>

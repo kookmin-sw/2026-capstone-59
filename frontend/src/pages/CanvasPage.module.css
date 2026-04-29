@@ -27,13 +27,11 @@
 .logo {
   font-size: 18px;
   font-weight: 700;
-  color: var(--color-primary);
+  border-radius: 10px;
+  padding: 5px 6px;
+  background: var(--color-primary-light);
+  color: var(--color-white);
   cursor: pointer;
-}
-
-.projectLabel {
-  font-size: 13px;
-  color: var(--color-text-secondary);
 }
 
 .headerCenter {
