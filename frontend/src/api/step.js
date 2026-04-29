@@ -1,5 +1,8 @@
 import axios from 'axios'
 
+export const getStep = (stepId) =>
+  aiApi.get(`/steps/${stepId}`)
+
 function getCsrfToken() {
   return document.cookie
     .split('; ')
