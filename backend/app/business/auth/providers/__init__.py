@@ -1,10 +1,12 @@
 from app.business.auth.providers.base import OAuthProviderClient
 from app.business.auth.providers.google import GoogleOAuthProvider
+from app.business.auth.providers.naver import NaverOAuthProvider
 from app.core.enums import OAuthProvider
 from app.core.exceptions import UnsupportedOAuthProviderError
 
 _PROVIDERS: dict[OAuthProvider, OAuthProviderClient] = {
     OAuthProvider.GOOGLE: GoogleOAuthProvider(),
+    OAuthProvider.NAVER: NaverOAuthProvider(),
 }
 
 
