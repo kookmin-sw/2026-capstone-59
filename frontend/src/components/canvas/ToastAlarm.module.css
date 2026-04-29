@@ -1,0 +1,61 @@
+.pill {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 3px 16px;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: box-shadow 0.1s ease, opacity 0.1s ease;
+}
+
+.pillOpen {
+  top: 61px;
+  border-radius: 20px;
+  padding: 9px 16px;
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.message {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1040;
+  white-space: nowrap;
+  margin-right: 0;
+}
+
+.pillOpen .message {
+  max-width: 500px;
+  opacity: 1;
+  margin-right: 8px;
+  transition: max-width 0.4s ease, opacity 0.25s ease, margin-right 0.4s ease;
+}
+
+.pillFading {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.icon {
+  flex-shrink: 0;
+  color: #9E99C0;
+  transition: transform 0.3s ease;
+}
+
+.iconUp {
+  transform: rotate(180deg);
+}
