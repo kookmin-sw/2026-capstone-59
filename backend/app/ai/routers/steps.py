@@ -20,17 +20,12 @@ def generate_steps(step_id: UUID, db: Session = Depends(get_db)) -> dict:
     response = step_service.generate_steps(db, step_id)
     return _ok(response.model_dump())
 
-
 @router.post("/steps/{step_id}/accept", status_code=http_status.HTTP_200_OK)
-def accept_step(step_id: UUID) -> dict:
-    """Step Accept (상태 판정) — TODO: AI 충족 판단 구현."""
-    return _ok(
-        {
-            "step_id": str(step_id),
-            "status": "ACCEPTED",
-            "is_current_required_step_completed": False,
-        }
-    )
+def accept_step(step_id: UUID, db: Session = Depends(get_db)) -> dict:
+    response = step_service.accept_step(db, step_id)
+    return _ok(response)
+
+    
 
 
 @router.post(
