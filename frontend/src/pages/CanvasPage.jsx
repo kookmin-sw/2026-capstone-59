@@ -93,22 +93,31 @@ export default function CanvasPage() {
     setStepDetail(null)
     // const detail = await getStep(node.id)
     // setStepDetail(detail)
-    setToast(`📌 ${node.data.label}을(를) 시작합니다!`)
-    if (node.type === 'requiredStepNode') {
-      // setToast(`📌 ${detail.name}을(를) 시작합니다!`)
-      setToastVisible(true)
-      setTimeout(() => setToastVisible(false), 3000)
-    }
   }
 
   async function handleAccept() {
     if (!selectedStep) return
 
+    let acceptResult
     try {
-      await acceptStep(selectedStep.id)
+      acceptResult = await acceptStep(selectedStep.id)
     } catch {
       alert('Step 저장에 실패했어요. 다시 시도해주세요.')
       return
+    }
+
+    // 필수 Step Accept 시 "시작" 토스트
+    if (selectedStep.type === 'requiredStepNode') {
+      setToast(`📌 ${selectedStep.data.label}이(가) 시작됐어요!`)
+      setToastVisible(true)
+      setTimeout(() => setToastVisible(false), 3000)
+    }
+
+    // 필수 Step 완료 시 "종료" 토스트
+    if (acceptResult?.is_current_required_step_completed) {
+      setToast(`✅ ${selectedStep.data.label}이(가) 종료됐어요!`)
+      setToastVisible(true)
+      setTimeout(() => setToastVisible(false), 3000)
     }
 
     setNodes((nds) =>
