@@ -162,10 +162,23 @@
 /* 그리드 */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 230px);
-  gap: 16px;
-  flex: 1;
-  padding-top: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  column-gap: 20px;
+  row-gap: 28px;
+  align-content: start;
+  padding-top: 40px;
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .createCard {
@@ -177,6 +190,7 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 10;
+  gap: 20px;
 }
 
 .createCard:hover {
@@ -193,6 +207,7 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 10;
+  gap: 20px;
 }
 
 .card:hover {
@@ -242,10 +257,11 @@
 }
 
 .table td {
-  padding: 10px 16px;
+  padding: 18px 16px;
   font-size: 14px;
   color: var(--color-text);
   border-bottom: 1px solid var(--color-border);
+  
 }
 
 .table tr {
@@ -264,6 +280,7 @@
   border-radius: 4px;
   margin-right: 12px;
   vertical-align: middle;
+  
 }
 
 .moreBtn {
@@ -283,12 +300,14 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   margin-top: auto;
-  padding-top: 24px;
+  padding-top: 60px;
   padding-bottom: 24px;
+  gap: 30px;
 }
 
 .createBtn {
   display: flex;
+  min-width: 150px;
   padding: 10px 15px;
   border-radius: 8px;
   background-color: var(--color-primary);
@@ -306,7 +325,7 @@
 /* 페이지네이션 */
 .pagination {
   display: flex;
-  gap: 10px;
+  gap: 3px;
 }
 
 .pageBtn {

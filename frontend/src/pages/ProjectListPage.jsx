@@ -4,6 +4,7 @@ import { HiOutlineFolder, HiOutlineTrash } from 'react-icons/hi'
 import { HiOutlineUser } from 'react-icons/hi'
 import styles from './ProjectListPage.module.css'
 import { BsGrid, BsList, BsThreeDotsVertical, BsPencil, BsPlus } from 'react-icons/bs'
+import { getProjects, deleteProject } from '../api/projects'
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -16,62 +17,14 @@ function timeAgo(dateStr) {
   return `${days}일 전`
 }
 
-// TODO: 더미 데이터 — API 연동 후 제거
-const DUMMY_PROJECTS = [
-  {
-    project_id: '1',
-    name: '캡스톤 프로젝트',
-    member_count: 3,
-    duration_months: 2,
-    description: '대학생 중고거래 플랫폼',
-    constraint: '모바일 우선 개발',
-    prompt: '현재 팀원 3명이서 2개월 동안 캡스톤 프로젝트를 진행해야해. 주제는 아직 정하지 않았지만 대학생과 관련한 걸로 하고 싶어.',
-    updated_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-  },
-  {
-    project_id: '2',
-    name: '포트폴리오 사이트',
-    member_count: 1,
-    duration_months: 1,
-    description: '개인 포트폴리오 웹사이트',
-    constraint: null,
-    prompt: '1인 프로젝트로 개인 포트폴리오 사이트 만들고 싶어.',
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-  },
-  {
-    project_id: '3',
-    name: '쇼핑몰 앱',
-    member_count: 4,
-    duration_months: 6,
-    description: '의류 쇼핑몰 모바일 앱',
-    constraint: 'React Native 사용',
-    prompt: '팀원 4명이서 6개월 동안 의류 쇼핑몰 앱을 만들고 싶어.',
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-  },
-  {
-    project_id: '4',
-    name: null,
-    member_count: 2,
-    duration_months: 3,
-    description: null,
-    constraint: null,
-    prompt: '팀원 2명이서 사이드 프로젝트 하고 싶어.',
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-  },
-]
-
 export default function ProjectListPage() {
   const navigate = useNavigate()
-  const [projects, setProjects] = useState(DUMMY_PROJECTS)
+  const [projects, setProjects] = useState([])
   const [viewMode, setViewMode] = useState('grid')
   const [page, setPage] = useState(1)
-  const [totalCount, setTotalCount] = useState(DUMMY_PROJECTS.length)
+  const [totalCount, setTotalCount] = useState(0)
   const [sortBy, setSortBy] = useState('updated_at')
-  const size = 20
+  const size = 8
 
   const [openMenuId, setOpenMenuId] = useState(null)
   const [infoModal, setInfoModal] = useState(null)
@@ -88,14 +41,11 @@ export default function ProjectListPage() {
   // }, [page])
 
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (!e.target.closest(`.${styles.moreWrapper}`)) {
-        setOpenMenuId(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    getProjects({ page, size, sort_by: sortBy }).then((data) => {
+      setProjects(data.projects ?? [])
+      setTotalCount(data.total_count ?? 0)
+    })
+  }, [page, sortBy])
 
   const sortedProjects = [...projects].sort((a, b) => {
     if (sortBy === 'updated_at') return new Date(b.updated_at) - new Date(a.updated_at)
@@ -142,8 +92,13 @@ export default function ProjectListPage() {
     setInfoModal(null)
   }
 
-  function handleDelete() {
-    // TODO: API 연동 후 실제 DELETE 호출로 교체
+  async function handleDelete() {
+    try {
+      await deleteProject(deleteModal.project_id)
+    } catch {
+      alert('삭제에 실패했어요. 다시 시도해주세요.')
+      return
+    }
     setProjects(projects.filter((p) => p.project_id !== deleteModal.project_id))
     setTotalCount((prev) => prev - 1)
     setDeleteModal(null)
@@ -205,7 +160,7 @@ export default function ProjectListPage() {
                   </div>
                 )}
               {sortedProjects.map((p) => (
-                <div key={p.project_id} className={styles.card} onClick={() => navigate(`/canvas/${p.project_id}`)}>
+                <div key={p.project_id} className={styles.card} onClick={() => navigate(`/canvas/${p.project_id}`, { state: { projectName: p.name ?? 'Project' } })}>
                   <div className={styles.cardThumb} />
                   <div className={styles.cardInfo}>
                     <div>

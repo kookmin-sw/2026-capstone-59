@@ -1,0 +1,35 @@
+.wrapper {
+  position: relative;
+  width: 200px;
+  height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translate(-45%, -50%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+  word-break: keep-all;
+  max-width: 100px;
+  pointer-events: none;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #291C80;
+  position: absolute;
+  right:5px;
+  top: 47.5%;
+  transform: translateY(-50%);
+  z-index: -1;
+}
