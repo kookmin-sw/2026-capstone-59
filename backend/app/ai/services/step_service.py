@@ -1,4 +1,5 @@
 import uuid
+import json
 
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,9 @@ from app.core.schemas.bedrock import (
     RequiredStepStatusItem,
     DecisionHistoryItem,
     GeneratePayload,
+    SidePanelPayload,
+    SidePanelDecisionHistoryItem,
+    TargetStep,
 )
 from datetime import datetime, timezone
 from app.ai.services import orchestrator
@@ -23,6 +27,7 @@ from app.core.exceptions import StepAlreadyAcceptedError
 from app.core.models.project_required_step_status import ProjectRequiredStepStatus
 from app.core.models.required_step import RequiredStep as RequiredStepModel
 from app.ai.services.rag import retrieve
+from app.core.models.step import StepContent as StepContentModel
 
 
 
@@ -199,7 +204,7 @@ def _upsert_required_step_status(
     record.fulfilled_at = datetime.now(timezone.utc)
 
 
-def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateResponse:
+def generate_steps(db: Session, parent_step_id: uuid.UUID) -> dict:
     parent_step = db.get(StepModel, parent_step_id)
     if parent_step is None:
         raise StepNotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")
@@ -299,7 +304,8 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateRespon
             )
             for s in steps
         ]
-    )
+    ).model_dump()
+
 def _build_generate_payload(db: Session, parent_step: StepModel) -> GeneratePayload:
     project = parent_step.project
     stage = parent_step.stage
@@ -383,3 +389,126 @@ def _get_next_unfulfilled_required_step_id(
         query = query.filter(RequiredStepModel.id.not_in(fulfilled_ids))
     next_rs = query.order_by(RequiredStepModel.sequence).first()
     return next_rs.id if next_rs else None
+
+
+# 사이드 패널
+def get_step_detail(db: Session, step_id: uuid.UUID) -> dict:
+    step = db.get(StepModel, step_id)
+    if step is None:
+        raise StepNotFoundError()
+
+    # 필수 Step → DB에서 반환
+    if step.required_step_id is not None:
+        content = step.content
+        return {
+            "is_required": True,
+            "step_id": step.id,
+            "name": step.name,
+            "mentoring": json.loads(content.mentoring) if content.mentoring else None,
+            "dictionary": json.loads(content.dictionary) if content.dictionary else None,
+            "template_url": content.template_url if content else None, 
+        }
+
+    # 일반 Step → DB 캐시 확인 후 없으면 AI 호출
+    content = step.content
+    if content and content.mentoring:
+        return {
+            "is_required": False,
+            "step_id": step.id,
+            "name": step.name,
+            "mentoring": json.loads(content.mentoring) if content.mentoring else None,
+            "dictionary": json.loads(content.dictionary) if content.dictionary else None,
+        }
+
+    # AI 호출
+    payload = _build_side_panel_payload(db, step)
+    result = orchestrator.call_side_panel(payload)
+
+    # StepContent에 저장
+    if content is None:
+        content = StepContentModel(step_id=step.id)
+        db.add(content)
+
+    content.mentoring = json.dumps(result.get("mentoring"), ensure_ascii=False)  
+    content.dictionary = json.dumps(result.get("dictionary"), ensure_ascii=False)
+    db.commit()
+
+    return {
+        "is_required": False,
+        "step_id": step.id,
+        "name": step.name,
+        "mentoring": result.get("mentoring"),
+        "dictionary": result.get("dictionary"),
+    }
+
+
+def _build_side_panel_payload(db: Session, step: StepModel) -> SidePanelPayload:
+    project = step.project
+    stage = step.stage
+
+    accepted_steps = (
+        db.query(StepModel)
+        .filter(
+            StepModel.project_id == project.id,
+            StepModel.stage_id == stage.id,
+            StepModel.status == StepStatus.ACCEPTED,
+        )
+        .all()
+    )
+
+    all_required = (
+        db.query(RequiredStepModel)
+        .filter(RequiredStepModel.stage_id == stage.id)
+        .order_by(RequiredStepModel.sequence)
+        .all()
+    )
+    fulfilled_ids = {
+        row.required_step_id
+        for row in db.query(ProjectRequiredStepStatus).filter_by(
+            project_id=project.id, is_fulfilled=True
+        )
+    }
+
+    current_rs = next((rs for rs in all_required if rs.id not in fulfilled_ids), None)
+    current_required_step = None
+    if current_rs:
+        current_required_step = CurrentRequiredStep(
+            step_id=current_rs.id,
+            name=current_rs.name,
+            is_completed=False,
+            goal=current_rs.goal,
+            entry_criteria=current_rs.entry_criteria,
+            fulfillment_aspects=current_rs.fulfillment_aspects,
+            fulfillment_threshold=current_rs.fulfillment_threshold,
+        )
+
+    rag_results = retrieve(f"{stage.name} {step.name}")
+
+    return SidePanelPayload(
+        project_info=ProjectInfo(
+            project_id=project.id,
+            name=project.name,
+            duration_months=project.duration_month,
+            member_count=project.member_count,
+            description=project.description,
+            constraints=project.constraint_text,
+            initial_prompt=project.prompt,
+        ),
+        current_stage=CurrentStage(
+            stage_id=stage.id,
+            stage_number=stage.sequence,
+            name=stage.name,
+        ),
+        target_step=TargetStep(step_id=step.id, name=step.name),
+        decision_history=[
+            SidePanelDecisionHistoryItem(
+                step_id=s.id,
+                name=s.name,
+                status=s.status,
+                stage_number=stage.sequence,
+            )
+            for s in accepted_steps
+        ],
+        current_required_step=current_required_step,
+        rag_context={"results": rag_results},
+    )
