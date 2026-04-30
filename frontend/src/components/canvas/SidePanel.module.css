@@ -131,75 +131,150 @@
   border-radius: 4px;
 }
 
-.markdown {
+/* AI Mentoring 탭 */
+.mentoringJson {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mentoringDescription {
   font-size: 14px;
   color: #6B6D90;
   line-height: 1.8;
   font-weight: 600;
-}
-
-.markdown h1,
-.markdown h2,
-.markdown h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1A1040;
-  margin: 16px 0 6px;
-}
-
-.markdown h4 {
-  font-size: 15px;
-  font-weight: 700;
-  color: #3928AA;
-  margin: 16px 0 6px;
-}
-
-.markdown strong {
-  color: #190e5e;
-  font-weight: 700;
-}
-
-.markdown p {
-  margin: 0 0 10px;
-}
-
-.markdown ul {
-  padding-left: 16px;
-  margin: 6px 0;
-}
-
-.markdown li {
-  margin-bottom: 4px;
-  list-style: none;
-  padding-left: 4px;
-}
-
-.markdown li::before {
-  content: '•';
-  margin-right: 6px;
-  color: #5C45E8;
-}
-
-.markdown hr {
-  border: none;
-  border-top: 1px solid #EEEDF8;
-  margin: 14px 0;
-}
-
-.markdown blockquote {
-  background: #F4F2FF;
-  border-left: none;
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin: 12px 0;
-  font-size: 12px;
-  color: #5C45E8;
-}
-
-.markdown blockquote p {
   margin: 0;
 }
 
+.mentoringSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mentoringSectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #3928AA;
+  margin: 0;
+}
+
+.methodList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.methodCard {
+  background: #F4F2FF;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.methodTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1A1040;
+  margin: 0 0 4px;
+}
+
+.methodContent {
+  font-size: 14px;
+  line-height: 1.8;
+  font-weight: 600;
+  margin: 0;
+  color: #6B6D90;
+}
+
+.mistakeList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mistakeCard {
+  background: #F4F2FF;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mistakeTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1A1040;
+  margin: 0;
+}
+
+.mistakeBad {
+  font-size: 14px;
+  line-height: 1.8;
+  font-weight: 600;
+  margin: 0;
+  color: #6B6D90;
+}
+
+.mistakeGood {
+  font-size: 14px;
+  line-height: 1.8;
+  font-weight: 600;
+  margin: 0;
+  color: #6B6D90;
+}
+
+.tipBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #F4F2FF;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.tipIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.tipText {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0;
+  color: #5C45E8;
+  font-weight: 600;
+}
+
+/* Dictionary 탭 */
+.dictionaryList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dictionaryItem {
+  background: #F4F2FF;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.dictionaryTerm {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1A1040;
+  margin: 0 0 4px;
+}
+
+.dictionaryDefinition {
+  font-size: 14px;
+  line-height: 1.8;
+  font-weight: 600;
+  color: #6B6D90;
+  margin: 0;
+}
+
+/* Template 탭 */
 .templateTab {
   display: flex;
   flex-direction: column;

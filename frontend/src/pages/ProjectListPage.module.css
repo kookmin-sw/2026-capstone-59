@@ -163,9 +163,10 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  column-gap: 20px;
+  row-gap: 28px;
   align-content: start;
-  padding-top: 20px;
+  padding-top: 40px;
 }
 
 @media (max-width: 1100px) {
@@ -299,12 +300,14 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   margin-top: auto;
-  padding-top: 24px;
+  padding-top: 60px;
   padding-bottom: 24px;
+  gap: 30px;
 }
 
 .createBtn {
   display: flex;
+  min-width: 150px;
   padding: 10px 15px;
   border-radius: 8px;
   background-color: var(--color-primary);
@@ -322,7 +325,7 @@
 /* 페이지네이션 */
 .pagination {
   display: flex;
-  gap: 10px;
+  gap: 3px;
 }
 
 .pageBtn {

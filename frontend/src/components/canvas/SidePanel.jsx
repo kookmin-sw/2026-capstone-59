@@ -11,6 +11,64 @@ function NotionIcon({ size = 18 }) {
   )
 }
 
+function MentoringContent({ raw }) {
+  let data = null
+
+  if (raw && typeof raw === 'object') {
+    data = raw
+  } else if (typeof raw === 'string') {
+    try { data = JSON.parse(raw) } catch { data = null }
+  }
+
+  if (!data) {
+    return <div className={styles.markdown}><ReactMarkdown>{raw ?? ''}</ReactMarkdown></div>
+  }
+
+  return (
+    <div className={styles.mentoringJson}>
+      {data.description && (
+        <p className={styles.mentoringDescription}>{data.description}</p>
+      )}
+
+      {data.recommended_methods?.length > 0 && (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>추천 방법</h4>
+          <div className={styles.methodList}>
+            {data.recommended_methods.map((m, i) => (
+              <div key={i} className={styles.methodCard}>
+                <p className={styles.methodTitle}>{m.title}</p>
+                <p className={styles.methodContent}>{m.content}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {data.common_mistakes?.length > 0 && (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>자주 하는 실수</h4>
+          <div className={styles.mistakeList}>
+            {data.common_mistakes.map((m, i) => (
+              <div key={i} className={styles.mistakeCard}>
+                <p className={styles.mistakeTitle}>{m.mistake}</p>
+                <p className={styles.mistakeBad}>❌ {m.bad_example}</p>
+                <p className={styles.mistakeGood}>✅ {m.good_example}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {data.one_line_tip && (
+        <div className={styles.tipBox}>
+          <span className={styles.tipIcon}>💡</span>
+          <p className={styles.tipText}>{data.one_line_tip}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function SidePanel({ step, isOpen, onClose, onAccept }) {
   const [activeTab, setActiveTab] = useState('mentoring')
   const [lastStep, setLastStep] = useState(step)
@@ -20,11 +78,12 @@ export default function SidePanel({ step, isOpen, onClose, onAccept }) {
   }, [step])
 
   const current = step ?? lastStep
+  const status = current?.data?.status
 
   const isRequired = current?.data?.is_required ?? (current?.type === 'requiredStepNode')
   const name = current?.data?.label ?? ''
   const mentoring = current?.data?.mentoring ?? ''
-  const terms = current?.data?.terms ?? ''
+  const dictionary = current?.data?.dictionary ?? []
   const artifact = current?.data?.artifact ?? null
 
   const tabs = isRequired
@@ -65,14 +124,17 @@ export default function SidePanel({ step, isOpen, onClose, onAccept }) {
 
       <div className={styles.content}>
         {activeTab === 'mentoring' && (
-          <div className={styles.markdown}>
-            <ReactMarkdown>{mentoring}</ReactMarkdown>
-          </div>
+          <MentoringContent raw={mentoring} />
         )}
 
         {activeTab === 'dictionary' && (
-          <div className={styles.markdown}>
-            <ReactMarkdown>{terms}</ReactMarkdown>
+          <div className={styles.dictionaryList}>
+            {dictionary.map((item, i) => (
+              <div key={i} className={styles.dictionaryItem}>
+                <p className={styles.dictionaryTerm}>{item.term}</p>
+                <p className={styles.dictionaryDefinition}>{item.definition}</p>
+              </div>
+            ))}
           </div>
         )}
 
@@ -110,10 +172,12 @@ export default function SidePanel({ step, isOpen, onClose, onAccept }) {
       </div>
 
       <div className={styles.footer}>
-        <button className={styles.acceptBtn} onClick={onAccept}>
-          <HiCheck size={15} />
-          accept
-        </button>
+        {status !== 'ACCEPTED' && (
+          <button className={styles.acceptBtn} onClick={onAccept}>
+            <HiCheck size={15} />
+            accept
+          </button>
+        )}
       </div>
     </div>
   )
