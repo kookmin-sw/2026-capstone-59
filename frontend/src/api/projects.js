@@ -32,3 +32,4 @@ api.interceptors.response.use(
 
 export const getProjects = (params) => api.get('/projects', { params })
 export const createProject = (data) => api.post('/projects', data)
+export const deleteProject = (projectId) => api.delete(`/projects/${projectId}`)

@@ -15,8 +15,8 @@ import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
 import { getStages } from '../api/stage'
 import { getStepTree, acceptStep, generateSteps } from '../api/step'
-// import { getStep } from '../api/step'
 
+import { X_GAP, Y_GAP, STAGE_ENGLISH, makeEdge, flattenTree } from '../utils/canvasUtils'
 
 import styles from './CanvasPage.module.css'
 import { HiOutlineUser } from 'react-icons/hi'
@@ -25,76 +25,6 @@ const nodeTypes = {
   stepNode: StepNode,
   requiredStepNode: RequiredStepNode,
 }
-
-const STAGE_ENGLISH = {
-  1: 'Ideation', 2: 'Planning', 3: 'Requirement',
-  4: 'Design', 5: 'Development', 6: 'Test',
-}
-
-const X_GAP = 300
-const Y_GAP = 120
-
-function flattenTree(steps, stageSequence) {
-  const nodes = []
-  const edges = []
-
-  function build(node, depth, centerY) {
-    nodes.push({
-      id: node.step_id,
-      type: node.is_required ? 'requiredStepNode' : 'stepNode',
-      position: {
-        x: depth * X_GAP + 50,
-        y: centerY,
-      },
-      data: {
-        label: node.name,
-        status: node.status,
-        is_required: node.is_required,
-        stageNumber: stageSequence,
-        step_id: node.step_id,
-      },
-    })
-
-    if (node.parent_step_id) {
-      edges.push({
-        id: `e-${node.parent_step_id}-${node.step_id}`,
-        source: node.parent_step_id,
-        target: node.step_id,
-        type: 'straight',
-        style: {
-          stroke: '#291C80',
-          strokeWidth: 1.5,
-          strokeDasharray: '5,5',
-        },
-      })
-    }
-
-    const children = node.children ?? []
-    const count = children.length
-
-    if (count === 0) return
-
-    const totalHeight = (count - 1) * Y_GAP
-    const startY = centerY - totalHeight / 2
-
-    children.forEach((child, index) => {
-      const childY = startY + index * Y_GAP
-      build(child, depth + 1, childY)
-    })
-  }
-
-  const rootGap = 260
-  const totalRootHeight = (steps.length - 1) * rootGap
-  const rootStartY = 200 - totalRootHeight / 2
-
-  steps.forEach((root, index) => {
-    const rootY = rootStartY + index * rootGap
-    build(root, 0, rootY)
-  })
-
-  return { nodes, edges }
-}
-
 
 export default function CanvasPage() {
   const { projectId } = useParams()
@@ -219,17 +149,7 @@ export default function CanvasPage() {
         stageNumber: stage?.stage_sequence,
       },
     }))
-    const newEdges = (data.generated_steps ?? []).map(s => ({
-      id: `e-${selectedStep.id}-${s.step_id}`,
-      source: selectedStep.id,
-      target: s.step_id,
-      type: 'straight',
-      style: {
-        stroke: '#291C80',
-        strokeWidth: 1.5,
-        strokeDasharray: '5,5',
-      },
-    }))
+    const newEdges = (data.generated_steps ?? []).map(s => makeEdge(selectedStep.id, s.step_id))
     setNodes(prev => [...prev, ...newNodes])
     setEdges(prev => [...prev, ...newEdges])
     setSelectedStep(null)

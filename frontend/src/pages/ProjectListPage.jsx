@@ -4,7 +4,7 @@ import { HiOutlineFolder, HiOutlineTrash } from 'react-icons/hi'
 import { HiOutlineUser } from 'react-icons/hi'
 import styles from './ProjectListPage.module.css'
 import { BsGrid, BsList, BsThreeDotsVertical, BsPencil, BsPlus } from 'react-icons/bs'
-import { getProjects } from '../api/projects'
+import { getProjects, deleteProject } from '../api/projects'
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -92,8 +92,13 @@ export default function ProjectListPage() {
     setInfoModal(null)
   }
 
-  function handleDelete() {
-    // TODO: API 연동 후 실제 DELETE 호출로 교체
+  async function handleDelete() {
+    try {
+      await deleteProject(deleteModal.project_id)
+    } catch {
+      alert('삭제에 실패했어요. 다시 시도해주세요.')
+      return
+    }
     setProjects(projects.filter((p) => p.project_id !== deleteModal.project_id))
     setTotalCount((prev) => prev - 1)
     setDeleteModal(null)
