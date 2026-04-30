@@ -61,3 +61,23 @@ class GeneratePayload(BaseModel):
     decision_history: list[DecisionHistoryItem]
     current_step: AcceptedStepItem               # 방금 accept된 부모 step
     rag_context: dict = {}
+
+class TargetStep(BaseModel):
+    step_id: UUID
+    name: str
+
+
+class SidePanelDecisionHistoryItem(BaseModel):
+    step_id: UUID
+    name: str
+    status: str
+    stage_number: int
+
+
+class SidePanelPayload(BaseModel):
+    project_info: ProjectInfo
+    current_stage: CurrentStage
+    target_step: TargetStep
+    decision_history: list[SidePanelDecisionHistoryItem]
+    current_required_step: CurrentRequiredStep | None
+    rag_context: dict = {}
