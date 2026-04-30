@@ -1,22 +1,18 @@
 import json
-from uuid import UUID
 
-from app.ai.services.rag import retrieve
 from app.core.aws.bedrock import bedrock_runtime
 from app.core.config import settings
+from app.core.schemas.bedrock import AcceptPayload
 
-STEP_GENERATION_PROMPT = """\
-당신은 소프트웨어 개발 방법론 전문가입니다. 아래 프로젝트 컨텍스트를 바탕으로,
-사용자가 다음에 수행할 수 있는 Step 후보 3개를 제안하세요.
 
-프로젝트 컨텍스트:
-{context}
+ACCEPT_PROMPT = """\
+당신은 소프트웨어 개발 방법론 전문가입니다.
+아래 데이터를 바탕으로 현재 필수 Step의 목표 달성 여부를 판단하세요.
 
-관련 자료:
-{references}
-
-JSON 배열 형식으로만 답하세요. 각 원소는 {{"name": str, "guide": str}} 형태입니다.
+반드시 아래 JSON 형식만 출력하세요:
+{"is_current_required_step_completed": true 또는 false}
 """
+
 
 
 def _invoke_claude(prompt: str) -> str:
@@ -35,27 +31,7 @@ def _invoke_claude(prompt: str) -> str:
     return payload["content"][0]["text"]
 
 
-def generate_next_steps(payload: dict) -> dict:
-    context = payload.get("context", "")
-    refs = retrieve(context) if context else []
-    ref_text = "\n".join(r.get("content", {}).get("text", "") for r in refs)
-
-    prompt = STEP_GENERATION_PROMPT.format(context=context, references=ref_text)
-    # TODO: remove stub guard once Bedrock is wired
-    try:
-        raw = _invoke_claude(prompt)
-    except Exception as e:  # noqa: BLE001
-        return {"error": str(e), "steps": []}
-
-    return {"raw": raw}
-
-
-def generate_step_details(step_id: UUID, payload: dict) -> dict:
-    # TODO: implement guide/dictionary/mentoring/template 생성
-    return {
-        "step_id": str(step_id),
-        "todo": [],
-        "dictionary": [],
-        "recommendations": [],
-        "references": [],
-    }
+def call_accept(payload: AcceptPayload) -> dict:
+    message = ACCEPT_PROMPT + "\n\n" + json.dumps(payload.model_dump(), ensure_ascii=False)
+    raw = _invoke_claude(message)
+    return json.loads(raw)
