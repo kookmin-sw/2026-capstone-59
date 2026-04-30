@@ -1,0 +1,172 @@
+.nav {
+  background: #fff;
+  box-shadow: 2px 0 12px 0 rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 8px;
+  gap: 2px;
+  flex-shrink: 0;
+  overflow: hidden;
+  width: 260px;
+  border-radius: 0;
+  margin: 0;
+}
+
+.collapsed {
+  width: 48px;
+  height: fit-content;
+  padding: 16px 8px;
+  align-items: center;
+  border-radius: 10px;
+  margin: 10px;
+}
+
+.collapsed .header {
+  padding: 0;
+  justify-content: center;
+}
+
+.collapsed .list {
+  align-items: center;
+}
+
+.collapsed .item {
+  padding: 2px 0;
+  justify-content: center;
+  gap: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 4px;
+  padding-left: 12px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.08em;
+}
+
+.toggleBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  border: 1px solid #EEEDF8;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #FFFFFF;
+  transition: background 0.15s;
+}
+
+.selected {
+  background: #E2DFFE;
+}
+
+.current {
+  background: #F0EFFE;
+}
+
+.selected.current {
+  background: #E2DFFE;
+}
+
+.completed {
+  background: #F0EFFE;
+  cursor: pointer;
+}
+
+.selected.completed {
+  background: #E2DFFE;
+}
+
+.locked {
+  background: #FFFFFF;
+  opacity: 0.5;
+  cursor: default;
+}
+
+.badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: #E2DFFE;
+  color: #5C45E8;
+}
+
+.collapsed .selected .badge {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+.badgeCompleted {
+  background: #5C45E8;
+  color: #fff;
+}
+
+.badgeActive {
+  background: #C5BDFB;
+  color: #291C80;
+}
+
+.stageInfo {
+  display: flex;
+  flex-direction: column;
+  padding: 3px 0;
+  min-width: 0;
+}
+
+.stageName {
+  font-size: 12px;
+  font-weight: 650;
+  color: #1A1040;
+  white-space: nowrap;
+}
+
+.stageEnglish {
+  margin-top: -4px;
+  font-size: 11px;
+  color: #9E99C0;
+}
+
+.collapsed .item,
+.collapsed .selected,
+.collapsed .current,
+.collapsed .completed,
+.collapsed .locked {
+  background: transparent;
+  border: none;
+}

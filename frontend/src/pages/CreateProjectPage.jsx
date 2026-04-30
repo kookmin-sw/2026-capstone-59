@@ -109,7 +109,7 @@ export default function CreateProjectPage() {
     }
     setLoading(true)
     try {
-      await createProject({
+      const project = await createProject({
         name: name.trim() || null,
         member_count: Number(memberCount),
         duration_months: calcDurationMonths(),
@@ -117,7 +117,8 @@ export default function CreateProjectPage() {
         constraint: constraint.trim() || null,
         prompt: prompt.trim(),
       })
-      navigate('/projects')
+      navigate(`/canvas/${project.project_id}`, { state: { projectName: name.trim() || 'Project' } })
+
     } catch (err) {
       alert('생성 실패: ' + (err.message ?? '알 수 없는 오류'))
     } finally {
