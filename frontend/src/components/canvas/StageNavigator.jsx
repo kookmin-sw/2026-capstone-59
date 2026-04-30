@@ -62,7 +62,7 @@ export default function StageNavigator({
               onClick={() => isClickable && onSelectStage(stage.id)}
             >
               <div className={`${styles.badge} ${badgeClass}`}>
-                {isCompleted ? <BsCheckLg size={11} /> : stage.sequence}
+                {stage.sequence}
               </div>
               {!collapsed && (
                 <div className={styles.stageInfo}>
