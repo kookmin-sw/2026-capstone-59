@@ -162,10 +162,22 @@
 /* 그리드 */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 230px);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  flex: 1;
+  align-content: start;
   padding-top: 20px;
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .createCard {
@@ -177,6 +189,7 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 10;
+  gap: 20px;
 }
 
 .createCard:hover {
@@ -193,6 +206,7 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 10;
+  gap: 20px;
 }
 
 .card:hover {
@@ -242,10 +256,11 @@
 }
 
 .table td {
-  padding: 10px 16px;
+  padding: 18px 16px;
   font-size: 14px;
   color: var(--color-text);
   border-bottom: 1px solid var(--color-border);
+  
 }
 
 .table tr {
@@ -264,6 +279,7 @@
   border-radius: 4px;
   margin-right: 12px;
   vertical-align: middle;
+  
 }
 
 .moreBtn {

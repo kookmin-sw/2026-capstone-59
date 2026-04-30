@@ -6,7 +6,7 @@ export default function RequiredStepNode({ data }) {
 
   return (
     <div className={styles.wrapper}>
-      <Handle type="target" position={Position.Left} style={{ opacity: 0, left: 20, top: '48%' }} />
+      <Handle type="target" position={Position.Left} style={{ opacity: 0, left: 20, top: '47%' }} />
       <svg xmlns="http://www.w3.org/2000/svg" width="192" height="140" viewBox="0 0 192 140" fill="none">
         <g filter={`url(#f-${step_id})`}>
           <path d="M21.4411 74.2794C14.8481 70.4128 14.8542 60.8793 21.452 57.0211L95.2474 13.8676C98.3696 12.0418 102.234 12.0443 105.354 13.874L179.385 57.2911C185.978 61.1577 185.972 70.6912 179.374 74.5494L105.579 117.703C102.457 119.529 98.5918 119.526 95.4719 117.696L21.4411 74.2794Z" fill={`url(#g-${step_id})`}/>
@@ -31,7 +31,7 @@ export default function RequiredStepNode({ data }) {
       </svg>
       {status === 'ACCEPTED' && <div className={styles.dot} />}
       <span className={styles.label}>{label}</span>
-      <Handle type="source" position={Position.Right} style={{ opacity: 0, right: 15, top: '48%' }} />
+      <Handle type="source" position={Position.Right} style={{ opacity: 0, right: 15, top: '47%' }} />
     </div>
   )
 }

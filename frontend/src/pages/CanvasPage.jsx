@@ -181,6 +181,14 @@ export default function CanvasPage() {
       return
     }
 
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === selectedStep.id
+          ? { ...n, data: { ...n.data, status: 'ACCEPTED' } }
+          : n
+      )
+    )
+
     let data
     let retryCount = 0
     while (retryCount < 3) {
@@ -215,6 +223,12 @@ export default function CanvasPage() {
       id: `e-${selectedStep.id}-${s.step_id}`,
       source: selectedStep.id,
       target: s.step_id,
+      type: 'straight',
+      style: {
+        stroke: '#291C80',
+        strokeWidth: 1.5,
+        strokeDasharray: '5,5',
+      },
     }))
     setNodes(prev => [...prev, ...newNodes])
     setEdges(prev => [...prev, ...newEdges])
