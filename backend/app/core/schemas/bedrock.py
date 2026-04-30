@@ -47,3 +47,17 @@ class AcceptPayload(BaseModel):
     accepted_steps_in_required: list[AcceptedStepItem]
     accepted_step: AcceptedStepItem
     rag_context: dict = {}
+
+class DecisionHistoryItem(BaseModel):
+    step_id: UUID
+    name: str
+    status: str 
+
+
+class GeneratePayload(BaseModel):
+    project_info: ProjectInfo
+    current_stage: CurrentStage
+    current_required_step: CurrentRequiredStep | None
+    decision_history: list[DecisionHistoryItem]
+    current_step: AcceptedStepItem               # 방금 accept된 부모 step
+    rag_context: dict = {}
