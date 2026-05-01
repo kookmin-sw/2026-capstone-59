@@ -4,7 +4,9 @@ from ai.schemas.accept import AcceptInput, AcceptOutput
 from ai.schemas.common import (
     CommonMistake,
     DecisionHistoryItem,
+    DictionaryItem,
     GeneratedStep,
+    MentoringContent,
     ProjectInfo,
     RecommendedMethod,
     RequiredStepInfo,
@@ -28,6 +30,8 @@ __all__ = [
     "RecommendedMethod",
     "CommonMistake",
     "RetrievedChunk",
+    "MentoringContent",
+    "DictionaryItem",
     # generate
     "GenerateInput",
     "GenerateOutput",
