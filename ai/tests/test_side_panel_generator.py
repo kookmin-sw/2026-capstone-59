@@ -10,6 +10,8 @@ from ai.exceptions import AIGenerationFailedError
 from ai.schemas.common import (
     CommonMistake,
     DecisionHistoryItem,
+    DictionaryItem,
+    MentoringContent,
     ProjectInfo,
     RecommendedMethod,
     RequiredStepInfo,
@@ -87,19 +89,25 @@ def _input_minimal() -> SidePanelInput:
 
 def _valid_output() -> SidePanelOutput:
     return SidePanelOutput(
-        description="이 Step에서는 ...",
-        recommended_methods=[
-            RecommendedMethod(title="경쟁 서비스 찾기", content="3~5개 후보를 모은다."),
-            RecommendedMethod(title="사용자 리뷰 모으기", content="앱스토어 리뷰를 모은다."),
+        mentoring=MentoringContent(
+            description="이 Step에서는 ...",
+            recommended_methods=[
+                RecommendedMethod(title="경쟁 서비스 찾기", content="3~5개 후보를 모은다."),
+                RecommendedMethod(title="사용자 리뷰 모으기", content="앱스토어 리뷰를 모은다."),
+            ],
+            common_mistakes=[
+                CommonMistake(
+                    mistake="이름만 모으고 끝내기",
+                    bad_example="A사, B사가 있다",
+                    good_example="A사는 ~를 잘하지만 ~가 부족하다",
+                ),
+            ],
+            one_line_tip="기존 대안이 놓친 틈을 찾자.",
+        ),
+        dictionary=[
+            DictionaryItem(term="페르소나", definition="타겟 사용자를 대표하는 가상 인물"),
+            DictionaryItem(term="MVP", definition="최소 기능만 갖춘 초기 제품"),
         ],
-        common_mistakes=[
-            CommonMistake(
-                mistake="이름만 모으고 끝내기",
-                bad_example="A사, B사가 있다",
-                good_example="A사는 ~를 잘하지만 ~가 부족하다",
-            ),
-        ],
-        one_line_tip="기존 대안이 놓친 틈을 찾자.",
     )
 
 
@@ -154,9 +162,10 @@ class TestHappyPath:
         result = await service.generate_side_panel(_input_full())
 
         assert isinstance(result, SidePanelOutput)
-        assert len(result.recommended_methods) == 2
-        assert len(result.common_mistakes) == 1
-        assert result.one_line_tip == "기존 대안이 놓친 틈을 찾자."
+        assert len(result.mentoring.recommended_methods) == 2
+        assert len(result.mentoring.common_mistakes) == 1
+        assert result.mentoring.one_line_tip == "기존 대안이 놓친 틈을 찾자."
+        assert len(result.dictionary) == 2
 
     @pytest.mark.asyncio
     async def test_passes_side_panel_output_schema_to_llm(self):
@@ -390,3 +399,61 @@ class TestPromptAssembly:
         prompt = llm.invoke.await_args.args[0]
         # name, description, constraints 모두 None → "없음" 라벨
         assert "이름: 없음" in prompt
+
+
+# ---------------------------------------------------------------------------
+# 통합 테스트
+# ---------------------------------------------------------------------------
+
+
+class TestIntegration:
+    @pytest.mark.asyncio
+    async def test_happy_path_doj_and_custom_chunks(self):
+        service, _, _ = _make_service(
+            llm_return=_valid_output(),
+            doj_return=[
+                RetrievedChunk(text="DOJ 청크 A", relevance_score=0.92),
+                RetrievedChunk(text="DOJ 청크 B", relevance_score=0.85),
+            ],
+            custom_return=[
+                RetrievedChunk(text="Custom 청크 A", relevance_score=0.88),
+            ],
+        )
+
+        result = await service.generate_side_panel(_input_full())
+
+        assert isinstance(result, SidePanelOutput)
+
+    @pytest.mark.asyncio
+    async def test_custom_empty_no_custom_label_in_prompt(self):
+        service, llm, _ = _make_service(
+            doj_return=[RetrievedChunk(text="DOJ 청크만", relevance_score=0.9)],
+            custom_return=[],
+        )
+
+        await service.generate_side_panel(_input_full())
+
+        prompt = llm.invoke.await_args.args[0]
+        assert "[자체 문서]" not in prompt
+
+    @pytest.mark.asyncio
+    async def test_custom_failure_returns_side_panel_output(self):
+        service, _, _ = _make_service(
+            doj_return=[RetrievedChunk(text="DOJ 청크", relevance_score=0.9)],
+            custom_return=[],
+        )
+
+        result = await service.generate_side_panel(_input_full())
+
+        assert isinstance(result, SidePanelOutput)
+
+    @pytest.mark.asyncio
+    async def test_llm_schema_mismatch_propagates(self):
+        err = AIGenerationFailedError(
+            message="재시도 초과",
+            details={"last_error": {"type": "schema_validation_error", "attempt": 2}},
+        )
+        service, _, _ = _make_service(llm_side_effect=err)
+
+        with pytest.raises(AIGenerationFailedError):
+            await service.generate_side_panel(_input_full())

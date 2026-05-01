@@ -11,7 +11,7 @@ class TestAISettings:
     def test_default_values(self):
         settings = AISettings(_env_file=None)
         assert settings.AWS_REGION == "us-east-1"
-        assert settings.MODEL_ID == "us.anthropic.claude-sonnet-4-20250514-v1:0"
+        assert settings.MODEL_ID == "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         assert settings.KB_ID == ""
         assert settings.MAX_TOKENS == 4096
         assert settings.TEMPERATURE == 0.7
