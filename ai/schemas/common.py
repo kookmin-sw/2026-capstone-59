@@ -52,8 +52,8 @@ class RequiredStepInfo(BaseModel):
     is_completed: bool
     goal: str
     entry_criteria: str
-    fulfillment_aspects: list[str]
-    fulfillment_threshold: int
+    fulfillment_criteria: list[str]
+    minimum_fulfillment_count: int
 
 
 class RequiredStepStatus(BaseModel):
