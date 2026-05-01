@@ -1,7 +1,8 @@
 """side_panel 시나리오 입출력 스키마 — AI Dataset Spec v3.1 기반.
 
 일반 Step 사이드패널 콘텐츠 동적 생성:
-description + recommended_methods + common_mistakes + one_line_tip.
+mentoring 탭(description + recommended_methods + common_mistakes + one_line_tip)
++ dictionary 탭(term + definition 항목 목록).
 """
 
 from typing import Any, Optional
@@ -9,10 +10,10 @@ from typing import Any, Optional
 from pydantic import BaseModel
 
 from ai.schemas.common import (
-    CommonMistake,
     DecisionHistoryItem,
+    DictionaryItem,
+    MentoringContent,
     ProjectInfo,
-    RecommendedMethod,
     RequiredStepInfo,
     StageInfo,
     StepInfo,
@@ -31,9 +32,7 @@ class SidePanelInput(BaseModel):
 
 
 class SidePanelOutput(BaseModel):
-    """side_panel 시나리오 출력 — 일반 Step용."""
+    """side_panel 시나리오 출력 — 일반 Step용 (mentoring + dictionary 2탭 구조)."""
 
-    description: str
-    recommended_methods: list[RecommendedMethod]
-    common_mistakes: list[CommonMistake]
-    one_line_tip: str
+    mentoring: MentoringContent
+    dictionary: list[DictionaryItem]
