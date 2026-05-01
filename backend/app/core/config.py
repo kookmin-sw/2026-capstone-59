@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = ""
 
+    # Naver OAuth
+    NAVER_CLIENT_ID: str = ""
+    NAVER_CLIENT_SECRET: str = ""
+    NAVER_REDIRECT_URI: str = ""
+
     # 프론트엔드 OAuth 콜백 URL
     FRONTEND_REDIRECT_URL: str = "http://localhost/auth/callback"
 
