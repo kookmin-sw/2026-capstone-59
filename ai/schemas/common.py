@@ -91,3 +91,19 @@ class RetrievedChunk(BaseModel):
 
     text: str
     relevance_score: float
+
+
+class MentoringContent(BaseModel):
+    """사이드패널 멘토링 탭 콘텐츠."""
+
+    description: str
+    recommended_methods: list[RecommendedMethod]
+    common_mistakes: list[CommonMistake]
+    one_line_tip: str
+
+
+class DictionaryItem(BaseModel):
+    """사이드패널 용어 사전 항목."""
+
+    term: str
+    definition: str
