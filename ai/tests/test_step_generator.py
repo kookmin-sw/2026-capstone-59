@@ -58,13 +58,13 @@ def _required_step() -> RequiredStepInfo:
         is_completed=False,
         goal="사용자 정의",
         entry_criteria="문제/기회 맥락 존재",
-        fulfillment_aspects=[
+        fulfillment_criteria=[
             "1차 타겟 사용자군의 특성 정의",
             "사용자의 행동·습관·맥락 파악",
             "페르소나 정리",
             "사용자 검증 활동",
         ],
-        fulfillment_threshold=2,
+        minimum_fulfillment_count=2,
     )
 
 
@@ -174,7 +174,7 @@ class TestGenerateStepsHappyPath:
         assert "문제 정의 정리" in prompt
         # required step JSON 직렬화
         assert "대상 사용자 파악" in prompt
-        assert "fulfillment_aspects" in prompt
+        assert "fulfillment_criteria" in prompt
         # rag chunk
         assert "DOJ Ch3 Initiation 청크" in prompt
 
@@ -214,11 +214,11 @@ class TestCurrentRequiredStepBranch:
         # "현재 진행 중인 필수 Step" 섹션에 "없음"이 들어가야 한다
         assert "없음" in prompt
         # required step 정보가 없으므로 그 안의 값들이 prompt에 들어가면 안 됨
-        # (fulfillment_aspects 키 자체는 템플릿 본문에 등장하므로 값으로 검증)
+        # (fulfillment_criteria 키 자체는 템플릿 본문에 등장하므로 값으로 검증)
         assert "1차 타겟 사용자군의 특성 정의" not in prompt
         assert "대상 사용자 파악" not in prompt
         # JSON 직렬화 결과의 특징적 패턴도 없어야 함
-        assert "fulfillment_threshold" not in prompt
+        assert "minimum_fulfillment_count" not in prompt
 
     @pytest.mark.asyncio
     async def test_required_step_present_serialized_to_json(self):
@@ -227,8 +227,8 @@ class TestCurrentRequiredStepBranch:
         await service.generate_steps(_input_with_required())
 
         prompt = llm.invoke.await_args.args[0]
-        assert "fulfillment_aspects" in prompt
-        assert "fulfillment_threshold" in prompt
+        assert "fulfillment_criteria" in prompt
+        assert "minimum_fulfillment_count" in prompt
         assert "1차 타겟 사용자군의 특성 정의" in prompt
 
 
@@ -353,3 +353,47 @@ class TestDecisionHistorySerialization:
         # JSON 배열로 직렬화되어 status 키 포함
         assert '"status"' in prompt or "status" in prompt
         assert "사용자 조사" in prompt
+
+
+# ---------------------------------------------------------------------------
+# 통합 테스트
+# ---------------------------------------------------------------------------
+
+
+class TestIntegration:
+    @pytest.mark.asyncio
+    async def test_happy_path_chunks_and_valid_output(self):
+        service, _, rag = _make_service(
+            llm_return=_valid_output(),
+            rag_return=[
+                RetrievedChunk(text="DOJ Ch3 Initiation 문서", relevance_score=0.92),
+                RetrievedChunk(text="DOJ Ch4 System Concept 문서", relevance_score=0.85),
+            ],
+        )
+
+        result = await service.generate_steps(_input_with_required())
+
+        assert isinstance(result, GenerateOutput)
+        assert len(result.generated_steps) == 3
+
+    @pytest.mark.asyncio
+    async def test_empty_rag_proceeds_with_none_label_in_prompt(self):
+        service, llm, _ = _make_service(rag_return=[])
+
+        result = await service.generate_steps(_input_with_required())
+
+        prompt = llm.invoke.await_args.args[0]
+        assert "없음" in prompt
+        assert isinstance(result, GenerateOutput)
+        assert len(result.generated_steps) == 3
+
+    @pytest.mark.asyncio
+    async def test_llm_generation_failed_propagates(self):
+        err = AIGenerationFailedError(
+            message="재시도 초과",
+            details={"last_error": {"type": "schema_validation_error", "attempt": 2}},
+        )
+        service, _, _ = _make_service(llm_side_effect=err)
+
+        with pytest.raises(AIGenerationFailedError):
+            await service.generate_steps(_input_with_required())

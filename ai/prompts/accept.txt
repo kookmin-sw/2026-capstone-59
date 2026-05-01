@@ -6,16 +6,16 @@
 
 # 판단 기준 (측면 커버리지)
 
-각 필수 Step에는 충족 기준 측면(`fulfillment_aspects`) 4~5개가 정의되어 있다. 다음 절차로 판단하라:
+각 필수 Step에는 충족 기준 측면(`fulfillment_criteria`) 4~5개가 정의되어 있다. 다음 절차로 판단하라:
 
-1. **측면별 커버리지 평가** — `fulfillment_aspects` 각 항목에 대해, 그 측면의 핵심 활동이 `accepted_steps_in_required`(이 필수 Step 하위에서 Accept된 Step 목록)에 속한 어떤 Step의 `name` + `description`에서 **명확히 드러나는지**를 확인한다.
+1. **측면별 커버리지 평가** — `fulfillment_criteria` 각 항목에 대해, 그 측면의 핵심 활동이 `accepted_steps_in_required`(이 필수 Step 하위에서 Accept된 Step 목록)에 속한 어떤 Step의 `name` + `description`에서 **명확히 드러나는지**를 확인한다.
    - **명확히 드러난다 = 커버됨(1)**: 해당 측면이 가리키는 활동을 그 Step이 실제로 수행한 것이 자연스럽게 읽힌다.
    - **모호하다·간접적이다 = 미커버(0)**: 단어가 일부 겹쳐도 측면의 핵심 활동을 다루지 않으면 커버로 인정하지 않는다.
    - **여러 Step이 같은 측면을 다뤄도 1로 카운트** (커버리지는 측면 단위지 Step 단위가 아니다).
 
 2. **카운트** — 커버된 측면의 개수를 센다.
 
-3. **임계값 비교** — 커버된 측면 수가 `fulfillment_threshold` **이상**이면 `true`, **미만**이면 `false`.
+3. **임계값 비교** — 커버된 측면 수가 `minimum_fulfillment_count` **이상**이면 `true`, **미만**이면 `false`.
 
 ## description의 위상
 
@@ -51,10 +51,10 @@
 - 목표: {required_step_goal}
 
 ## 충족 기준 측면 (JSON 배열)
-{fulfillment_aspects}
+{fulfillment_criteria}
 
 ## 충족 임계값
-{fulfillment_threshold}개 이상의 측면이 커버되면 충족으로 판단한다.
+{minimum_fulfillment_count}개 이상의 측면이 커버되면 충족으로 판단한다.
 
 ## 이 필수 Step 하위에서 Accept된 Step 목록 (JSON, 각 항목에 name + description 포함)
 {accepted_steps_in_required}
