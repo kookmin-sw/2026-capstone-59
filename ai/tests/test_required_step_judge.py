@@ -46,13 +46,13 @@ def _required_step() -> RequiredStepInfo:
         is_completed=False,
         goal="정의된 문제로 불편을 겪는 구체적 사용자군을 식별하고 특성을 그린다.",
         entry_criteria="문제/기회에 관한 맥락이 존재한다.",
-        fulfillment_aspects=[
+        fulfillment_criteria=[
             "1차 타겟 사용자군의 특성 정의 (연령·상황·역할 등)",
             "사용자의 현재 행동·습관·맥락 파악",
             "사용자 페르소나 또는 시나리오 정리",
             "사용자 검증 활동 (인터뷰·관찰·설문 등)",
         ],
-        fulfillment_threshold=2,
+        minimum_fulfillment_count=2,
     )
 
 
@@ -213,13 +213,13 @@ class TestPromptAssembly:
         assert "정의된 문제로 불편을 겪는" in prompt
 
     @pytest.mark.asyncio
-    async def test_prompt_contains_all_fulfillment_aspects(self):
+    async def test_prompt_contains_all_fulfillment_criteria(self):
         service, llm = _make_service()
 
         await service.judge_required_step(_input_with_required())
 
         prompt = llm.invoke.await_args.args[0]
-        for aspect in _required_step().fulfillment_aspects:
+        for aspect in _required_step().fulfillment_criteria:
             assert aspect in prompt, f"측면이 누락됨: {aspect}"
 
     @pytest.mark.asyncio
@@ -266,7 +266,7 @@ class TestPromptAssembly:
         prompt = llm.invoke.await_args.args[0]
         # JSON 배열 직렬화 결과가 그대로 prompt에 들어가야 함
         expected = json.dumps(
-            _required_step().fulfillment_aspects, ensure_ascii=False
+            _required_step().fulfillment_criteria, ensure_ascii=False
         )
         assert expected in prompt
 
@@ -304,9 +304,47 @@ class TestPromptAssembly:
         for placeholder in [
             "{required_step_name}",
             "{required_step_goal}",
-            "{fulfillment_aspects}",
-            "{fulfillment_threshold}",
+            "{fulfillment_criteria}",
+            "{minimum_fulfillment_count}",
             "{accepted_steps_in_required}",
             "{accepted_step_name}",
         ]:
             assert placeholder not in prompt, f"미치환: {placeholder}"
+
+
+# ---------------------------------------------------------------------------
+# 통합 테스트
+# ---------------------------------------------------------------------------
+
+
+class TestIntegration:
+    @pytest.mark.asyncio
+    async def test_none_required_step_returns_false_llm_not_called(self):
+        service, llm = _make_service()
+
+        result = await service.judge_required_step(_input_without_required())
+
+        assert result.is_current_required_step_completed is False
+        llm.invoke.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_llm_returns_true_judge_returns_true(self):
+        service, llm = _make_service(
+            llm_return=AcceptOutput(is_current_required_step_completed=True)
+        )
+
+        result = await service.judge_required_step(_input_with_required())
+
+        assert result.is_current_required_step_completed is True
+        llm.invoke.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_schema_mismatch_error_propagates(self):
+        err = AIGenerationFailedError(
+            message="재시도 초과",
+            details={"last_error": {"type": "schema_validation_error"}},
+        )
+        service, _ = _make_service(llm_side_effect=err)
+
+        with pytest.raises(AIGenerationFailedError):
+            await service.judge_required_step(_input_with_required())
