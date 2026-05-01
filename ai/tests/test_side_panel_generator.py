@@ -58,8 +58,8 @@ def _required_step() -> RequiredStepInfo:
         is_completed=False,
         goal="문제를 어떤 해결책으로 풀지 정리",
         entry_criteria="문제와 사용자에 대한 맥락이 존재",
-        fulfillment_aspects=["해결 접근", "경쟁 비교", "차별점", "주요 기능"],
-        fulfillment_threshold=2,
+        fulfillment_criteria=["해결 접근", "경쟁 비교", "차별점", "주요 기능"],
+        minimum_fulfillment_count=2,
     )
 
 
@@ -334,7 +334,7 @@ class TestPromptAssembly:
 
         prompt = llm.invoke.await_args.args[0]
         assert "핵심 컨셉 정의" in prompt
-        assert "fulfillment_threshold" in prompt
+        assert "minimum_fulfillment_count" in prompt
 
     @pytest.mark.asyncio
     async def test_required_step_none_renders_label(self):
@@ -345,7 +345,7 @@ class TestPromptAssembly:
         prompt = llm.invoke.await_args.args[0]
         assert "없음" in prompt
         # required_step 직렬화 결과가 들어가면 안 됨
-        assert "fulfillment_threshold" not in prompt
+        assert "minimum_fulfillment_count" not in prompt
         assert "핵심 컨셉 정의" not in prompt
 
     @pytest.mark.asyncio

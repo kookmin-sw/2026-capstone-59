@@ -51,8 +51,8 @@ class RequiredStepJudge:
             [step.model_dump() for step in input_data.accepted_steps_in_required],
             ensure_ascii=False,
         )
-        fulfillment_aspects_json = json.dumps(
-            required_step.fulfillment_aspects,
+        fulfillment_criteria_json = json.dumps(
+            required_step.fulfillment_criteria,
             ensure_ascii=False,
         )
 
@@ -60,8 +60,8 @@ class RequiredStepJudge:
             _SCENARIO,
             required_step_name=required_step.name,
             required_step_goal=required_step.goal,
-            fulfillment_aspects=fulfillment_aspects_json,
-            fulfillment_threshold=str(required_step.fulfillment_threshold),
+            fulfillment_criteria=fulfillment_criteria_json,
+            minimum_fulfillment_count=str(required_step.minimum_fulfillment_count),
             accepted_steps_in_required=accepted_steps_json,
             accepted_step_name=input_data.accepted_step.name,
         )
@@ -74,8 +74,8 @@ class RequiredStepJudge:
                     "required_step_id": required_step.step_id,
                     "required_step_name": required_step.name,
                     "num_accepted_steps": len(input_data.accepted_steps_in_required),
-                    "num_aspects": len(required_step.fulfillment_aspects),
-                    "threshold": required_step.fulfillment_threshold,
+                    "num_aspects": len(required_step.fulfillment_criteria),
+                    "threshold": required_step.minimum_fulfillment_count,
                     "prompt_len": len(prompt),
                 },
                 ensure_ascii=False,
