@@ -20,10 +20,12 @@ def generate_steps(step_id: UUID, db: Session = Depends(get_db)) -> dict:
     response = step_service.generate_steps(db, step_id)
     return _ok(response)
 
+
 @router.post("/steps/{step_id}/accept", status_code=http_status.HTTP_200_OK)
 def accept_step(step_id: UUID, db: Session = Depends(get_db)) -> dict:
     response = step_service.accept_step(db, step_id)
     return _ok(response)
+
 
 @router.get("/steps/{step_id}", status_code=http_status.HTTP_200_OK)
 def get_step_detail(step_id: UUID, db: Session = Depends(get_db)) -> dict:
