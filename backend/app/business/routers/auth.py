@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Cookie, Depends, Query, Response
+from fastapi import Cookie, Depends, Query, Response
 from fastapi import status as http_status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.business.dependency import get_db
 from app.business.services import auth_service
+from app.core.api.route import EnvelopeRouter
 from app.core.auth.cookies import (
     clear_auth_cookies,
     generate_csrf_token,
@@ -14,16 +15,15 @@ from app.core.auth.dependencies import get_current_user
 from app.core.config import settings
 from app.core.exceptions import InvalidTokenError
 from app.core.models.app_user import AppUser as AppUserModel
+from app.core.schemas.auth import UserProfileResponse
 
-router = APIRouter()
-
-
-def _ok(data):
-    return {"status": "success", "data": data}
+router = EnvelopeRouter()
 
 
 @router.get("/{provider}/login")
-def oauth_login(provider: str, state: str | None = Query(default=None)):
+def oauth_login(
+    provider: str, state: str | None = Query(default=None)
+) -> RedirectResponse:
     """OAuth 인증 페이지로 리다이렉트."""
     url = auth_service.get_authorization_url(provider, state=state)
     return RedirectResponse(url=url, status_code=http_status.HTTP_302_FOUND)
@@ -35,7 +35,7 @@ def oauth_callback(
     code: str = Query(...),
     state: str | None = Query(default=None),
     db: Session = Depends(get_db),
-):
+) -> RedirectResponse:
     tokens = auth_service.handle_oauth_callback(db, provider, code)
     csrf = generate_csrf_token()
 
@@ -58,7 +58,7 @@ def refresh_token(
     refresh_token: str | None = Cookie(
         default=None, alias=settings.REFRESH_COOKIE_NAME
     ),
-):
+) -> None:
     """Refresh Token 쿠키로 Access Token 갱신. 응답 쿠키도 모두 갱신."""
     if not refresh_token:
         raise InvalidTokenError("Refresh Token 쿠키가 없습니다.")
@@ -71,22 +71,22 @@ def refresh_token(
         refresh_token=tokens.refresh_token,
         csrf_token=csrf,
     )
-    return _ok(None)
+    return None
 
 
 @router.post("/logout", status_code=http_status.HTTP_200_OK)
 def logout(
     response: Response,
     _: AppUserModel = Depends(get_current_user),
-):
+) -> None:
     clear_auth_cookies(response)
-    return _ok(None)
+    return None
 
 
 @router.get("/me", status_code=http_status.HTTP_200_OK)
 def get_me(
     user: AppUserModel = Depends(get_current_user),
     db: Session = Depends(get_db),
-):
+) -> UserProfileResponse:
     """현재 로그인 사용자 정보."""
-    return _ok(auth_service.get_user_profile(db, user).model_dump())
+    return auth_service.get_user_profile(db, user)
