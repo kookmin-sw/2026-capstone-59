@@ -4,7 +4,7 @@ from fastapi import Depends
 from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
-from app.business.dependency import get_db
+from app.core.database import get_db
 from app.business.services import step_service
 from app.core.api.route import EnvelopeRouter
 from app.core.schemas.step import RequiredStepListResponse, StepTreeResponse
