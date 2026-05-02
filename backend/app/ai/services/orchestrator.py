@@ -1,22 +1,9 @@
 import json
-from uuid import UUID
 
-from app.ai.services.rag import retrieve
 from app.core.aws.bedrock import bedrock_runtime
 from app.core.config import settings
+from app.core.schemas.bedrock import AcceptPayload, GeneratePayload, SidePanelPayload
 
-STEP_GENERATION_PROMPT = """\
-당신은 소프트웨어 개발 방법론 전문가입니다. 아래 프로젝트 컨텍스트를 바탕으로,
-사용자가 다음에 수행할 수 있는 Step 후보 3개를 제안하세요.
-
-프로젝트 컨텍스트:
-{context}
-
-관련 자료:
-{references}
-
-JSON 배열 형식으로만 답하세요. 각 원소는 {{"name": str, "guide": str}} 형태입니다.
-"""
 
 
 def _invoke_claude(prompt: str) -> str:
@@ -35,27 +22,56 @@ def _invoke_claude(prompt: str) -> str:
     return payload["content"][0]["text"]
 
 
-def generate_next_steps(payload: dict) -> dict:
-    context = payload.get("context", "")
-    refs = retrieve(context) if context else []
-    ref_text = "\n".join(r.get("content", {}).get("text", "") for r in refs)
+ACCEPT_PROMPT = """\
+당신은 소프트웨어 개발 방법론 전문가입니다.
+아래 데이터를 바탕으로 현재 필수 Step의 목표 달성 여부를 판단하세요.
 
-    prompt = STEP_GENERATION_PROMPT.format(context=context, references=ref_text)
-    # TODO: remove stub guard once Bedrock is wired
-    try:
-        raw = _invoke_claude(prompt)
-    except Exception as e:  # noqa: BLE001
-        return {"error": str(e), "steps": []}
+반드시 아래 JSON 형식만 출력하세요:
+{"is_current_required_step_completed": true 또는 false}
+"""
 
-    return {"raw": raw}
+def call_accept(payload: AcceptPayload) -> dict:
+    message = ACCEPT_PROMPT + "\n\n" + json.dumps(payload.model_dump(), ensure_ascii=False)
+    raw = _invoke_claude(message)
+    return json.loads(raw)
 
 
-def generate_step_details(step_id: UUID, payload: dict) -> dict:
-    # TODO: implement guide/dictionary/mentoring/template 생성
-    return {
-        "step_id": str(step_id),
-        "todo": [],
-        "dictionary": [],
-        "recommendations": [],
-        "references": [],
-    }
+GENERATE_PROMPT = """\
+당신은 소프트웨어 개발 방법론 전문가입니다.
+아래 데이터를 바탕으로 현재 프로젝트 상황에 적합한 다음 액션 Step 3개를 제안하세요.
+Step 이름은 구체적이고 실행 가능한 동사형으로 작성하세요.
+
+반드시 아래 JSON 형식만 출력하세요:
+{"generated_steps": [{"name": "Step 이름1"}, {"name": "Step 이름2"}, {"name": "Step 이름3"}]}
+"""
+
+
+def call_generate(payload: GeneratePayload) -> dict:
+    message = GENERATE_PROMPT + "\n\n" + json.dumps(payload.model_dump(), ensure_ascii=False)
+    raw = _invoke_claude(message)
+    return json.loads(raw)
+
+SIDE_PANEL_PROMPT = """\
+당신은 소프트웨어 개발 방법론 전문가입니다.
+아래 데이터를 바탕으로 사용자가 클릭한 Step에 대한 멘토링과 용어 사전을 생성하세요.
+이미 진행된 decision_history를 참고해 중복되지 않는 가이드를 제공하세요.
+
+반드시 아래 JSON 형식만 출력하세요:
+{
+  "mentoring": {
+    "description": "이 Step이 왜 필요한지, 무엇을 해야 하는지",
+    "recommended_methods": [{ "title": "...", "content": "..." }],
+    "common_mistakes": [{ "mistake": "...", "bad_example": "...", "good_example": "..." }],
+    "one_line_tip": "..."
+  },
+  "dictionary": [
+    { "term": "...", "definition": "..." }
+  ]
+}
+"""
+
+
+def call_side_panel(payload: SidePanelPayload) -> dict:
+    message = SIDE_PANEL_PROMPT + "\n\n" + json.dumps(payload.model_dump(), ensure_ascii=False)
+    raw = _invoke_claude(message)
+    return json.loads(raw)
