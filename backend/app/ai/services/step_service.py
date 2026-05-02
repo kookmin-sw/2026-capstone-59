@@ -30,7 +30,6 @@ from app.ai.services.rag import retrieve
 from app.core.models.step import StepContent as StepContentModel
 
 
-
 def _insert_closure_rows(
     db: Session, step_id: uuid.UUID, parent_step_id: uuid.UUID | None
 ) -> None:
@@ -78,11 +77,14 @@ def accept_step(db: Session, step_id: uuid.UUID) -> dict:
     # ④ Bedrock 호출 (필수 Step 영역 안에 있을 때만)
     is_completed = False
     if step.belonging_required_step_id is not None:
-        
+
         # DB에 이미 완료된 상태면 Bedrock 호출 스킵
         existing = db.get(
             ProjectRequiredStepStatus,
-            {"project_id": step.project_id, "required_step_id": step.belonging_required_step_id},
+            {
+                "project_id": step.project_id,
+                "required_step_id": step.belonging_required_step_id,
+            },
         )
         if existing and existing.is_fulfilled:
             is_completed = True  # 이미 완료 → Bedrock 호출 안 함
@@ -148,7 +150,6 @@ def _build_accept_payload(db: Session, step: StepModel) -> AcceptPayload:
     # rag_context: 현재 Stage + Step 이름으로 KB 검색
     rag_results = retrieve(f"{stage.name} {step.name}")
 
-
     return AcceptPayload(
         project_info=ProjectInfo(
             project_id=project.id,
@@ -174,8 +175,7 @@ def _build_accept_payload(db: Session, step: StepModel) -> AcceptPayload:
         ],
         current_required_step=current_required_step,
         accepted_steps_in_required=[
-            AcceptedStepItem(step_id=s.id, name=s.name)
-            for s in accepted_in_required
+            AcceptedStepItem(step_id=s.id, name=s.name) for s in accepted_in_required
         ],
         accepted_step=AcceptedStepItem(
             step_id=step.id,
@@ -306,6 +306,7 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> dict:
         ]
     ).model_dump()
 
+
 def _build_generate_payload(db: Session, parent_step: StepModel) -> GeneratePayload:
     project = parent_step.project
     stage = parent_step.stage
@@ -372,6 +373,8 @@ def _build_generate_payload(db: Session, parent_step: StepModel) -> GeneratePayl
         current_step=AcceptedStepItem(step_id=parent_step.id, name=parent_step.name),
         rag_context={"results": rag_results},
     )
+
+
 def _get_next_unfulfilled_required_step_id(
     db: Session, step: StepModel
 ) -> uuid.UUID | None:
@@ -381,9 +384,8 @@ def _get_next_unfulfilled_required_step_id(
             project_id=step.project_id, is_fulfilled=True
         )
     }
-    query = (
-        db.query(RequiredStepModel)
-        .filter(RequiredStepModel.stage_id == step.stage_id)
+    query = db.query(RequiredStepModel).filter(
+        RequiredStepModel.stage_id == step.stage_id
     )
     if fulfilled_ids:
         query = query.filter(RequiredStepModel.id.not_in(fulfilled_ids))
@@ -405,8 +407,10 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> dict:
             "step_id": step.id,
             "name": step.name,
             "mentoring": json.loads(content.mentoring) if content.mentoring else None,
-            "dictionary": json.loads(content.dictionary) if content.dictionary else None,
-            "template_url": content.template_url if content else None, 
+            "dictionary": (
+                json.loads(content.dictionary) if content.dictionary else None
+            ),
+            "template_url": content.template_url if content else None,
         }
 
     # 일반 Step → DB 캐시 확인 후 없으면 AI 호출
@@ -417,7 +421,9 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> dict:
             "step_id": step.id,
             "name": step.name,
             "mentoring": json.loads(content.mentoring) if content.mentoring else None,
-            "dictionary": json.loads(content.dictionary) if content.dictionary else None,
+            "dictionary": (
+                json.loads(content.dictionary) if content.dictionary else None
+            ),
         }
 
     # AI 호출
@@ -429,7 +435,7 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> dict:
         content = StepContentModel(step_id=step.id)
         db.add(content)
 
-    content.mentoring = json.dumps(result.get("mentoring"), ensure_ascii=False)  
+    content.mentoring = json.dumps(result.get("mentoring"), ensure_ascii=False)
     content.dictionary = json.dumps(result.get("dictionary"), ensure_ascii=False)
     db.commit()
 
