@@ -3,7 +3,7 @@ from fastapi import status as http_status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.business.dependency import get_db
+from app.core.database import get_db
 from app.business.services import auth_service
 from app.core.api.route import EnvelopeRouter
 from app.core.auth.cookies import (
