@@ -7,18 +7,21 @@ from app.core.enums import StepStatus
 from app.core.exceptions import StepNotFoundError
 from app.core.models.step import Step as StepModel
 from app.core.models.step import StepTree as StepTreeModel
-from app.core.schemas.step import StepGenerateResponse, GeneratedStep
-from app.core.schemas.bedrock import (
-    AcceptPayload,
+from app.core.schemas.step import (
     AcceptedStepItem,
+    AcceptRequest,
     CurrentRequiredStep,
     CurrentStage,
+    DecisionHistoryItem,
+    GeneratedStep,
+    GenerateRequest,
     ProjectInfo,
     RequiredStepStatusItem,
-    DecisionHistoryItem,
-    GeneratePayload,
-    SidePanelPayload,
     SidePanelDecisionHistoryItem,
+    SidePanelRequest,
+    StepAcceptResponse,
+    StepDetailResponse,
+    StepGenerateResponse,
     TargetStep,
 )
 from datetime import datetime, timezone
@@ -47,7 +50,7 @@ def _insert_closure_rows(
         )
 
 
-def accept_step(db: Session, step_id: uuid.UUID) -> dict:
+def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     # ① 조회 및 검증
     step = db.get(StepModel, step_id)
     if step is None:
@@ -89,8 +92,8 @@ def accept_step(db: Session, step_id: uuid.UUID) -> dict:
         if existing and existing.is_fulfilled:
             is_completed = True  # 이미 완료 → Bedrock 호출 안 함
         else:
-            payload = _build_accept_payload(db, step)
-            result = orchestrator.call_accept(payload)
+            request = _build_accept_request(db, step)
+            result = orchestrator.call_accept(request)
             is_completed = result.get("is_current_required_step_completed", False)
             if is_completed:
                 _upsert_required_step_status(
@@ -101,14 +104,14 @@ def accept_step(db: Session, step_id: uuid.UUID) -> dict:
 
     db.commit()
 
-    return {
-        "step_id": step_id,
-        "status": StepStatus.ACCEPTED,
-        "is_current_required_step_completed": is_completed,
-    }
+    return StepAcceptResponse(
+        step_id=step_id,
+        status=StepStatus.ACCEPTED,
+        is_current_required_step_completed=is_completed,
+    )
 
 
-def _build_accept_payload(db: Session, step: StepModel) -> AcceptPayload:
+def _build_accept_request(db: Session, step: StepModel) -> AcceptRequest:
     project = step.project
     stage = step.stage
 
@@ -150,7 +153,7 @@ def _build_accept_payload(db: Session, step: StepModel) -> AcceptPayload:
     # rag_context: 현재 Stage + Step 이름으로 KB 검색
     rag_results = retrieve(f"{stage.name} {step.name}")
 
-    return AcceptPayload(
+    return AcceptRequest(
         project_info=ProjectInfo(
             project_id=project.id,
             name=project.name,
@@ -204,15 +207,15 @@ def _upsert_required_step_status(
     record.fulfilled_at = datetime.now(timezone.utc)
 
 
-def generate_steps(db: Session, parent_step_id: uuid.UUID) -> dict:
+def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateResponse:
     parent_step = db.get(StepModel, parent_step_id)
     if parent_step is None:
         raise StepNotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")
 
     # ① Bedrock으로 일반 Step 이름 3개 생성
-    payload = _build_generate_payload(db, parent_step)
+    request = _build_generate_request(db, parent_step)
 
-    result = orchestrator.call_generate(payload)
+    result = orchestrator.call_generate(request)
     generated: list[dict] = result.get("generated_steps", [])
 
     # ② 부모가 필수 Step 영역에 속하면 자식도 같은 영역에 속함
@@ -304,10 +307,10 @@ def generate_steps(db: Session, parent_step_id: uuid.UUID) -> dict:
             )
             for s in steps
         ]
-    ).model_dump()
+    )
 
 
-def _build_generate_payload(db: Session, parent_step: StepModel) -> GeneratePayload:
+def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequest:
     project = parent_step.project
     stage = parent_step.stage
 
@@ -350,7 +353,7 @@ def _build_generate_payload(db: Session, parent_step: StepModel) -> GeneratePayl
 
     rag_results = retrieve(f"{stage.name} {parent_step.name}")
 
-    return GeneratePayload(
+    return GenerateRequest(
         project_info=ProjectInfo(
             project_id=project.id,
             name=project.name,
@@ -394,7 +397,7 @@ def _get_next_unfulfilled_required_step_id(
 
 
 # 사이드 패널
-def get_step_detail(db: Session, step_id: uuid.UUID) -> dict:
+def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
     step = db.get(StepModel, step_id)
     if step is None:
         raise StepNotFoundError()
@@ -402,33 +405,29 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> dict:
     # 필수 Step → DB에서 반환
     if step.required_step_id is not None:
         content = step.content
-        return {
-            "is_required": True,
-            "step_id": step.id,
-            "name": step.name,
-            "mentoring": json.loads(content.mentoring) if content.mentoring else None,
-            "dictionary": (
-                json.loads(content.dictionary) if content.dictionary else None
-            ),
-            "template_url": content.template_url if content else None,
-        }
+        return StepDetailResponse(
+            is_required=True,
+            step_id=step.id,
+            name=step.name,
+            mentoring=json.loads(content.mentoring) if content.mentoring else None,
+            dictionary=(json.loads(content.dictionary) if content.dictionary else None),
+            template_url=content.template_url if content else None,
+        )
 
     # 일반 Step → DB 캐시 확인 후 없으면 AI 호출
     content = step.content
     if content and content.mentoring:
-        return {
-            "is_required": False,
-            "step_id": step.id,
-            "name": step.name,
-            "mentoring": json.loads(content.mentoring) if content.mentoring else None,
-            "dictionary": (
-                json.loads(content.dictionary) if content.dictionary else None
-            ),
-        }
+        return StepDetailResponse(
+            is_required=False,
+            step_id=step.id,
+            name=step.name,
+            mentoring=json.loads(content.mentoring) if content.mentoring else None,
+            dictionary=(json.loads(content.dictionary) if content.dictionary else None),
+        )
 
     # AI 호출
-    payload = _build_side_panel_payload(db, step)
-    result = orchestrator.call_side_panel(payload)
+    request = _build_side_panel_request(db, step)
+    result = orchestrator.call_side_panel(request)
 
     # StepContent에 저장
     if content is None:
@@ -439,16 +438,16 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> dict:
     content.dictionary = json.dumps(result.get("dictionary"), ensure_ascii=False)
     db.commit()
 
-    return {
-        "is_required": False,
-        "step_id": step.id,
-        "name": step.name,
-        "mentoring": result.get("mentoring"),
-        "dictionary": result.get("dictionary"),
-    }
+    return StepDetailResponse(
+        is_required=False,
+        step_id=step.id,
+        name=step.name,
+        mentoring=result.get("mentoring"),
+        dictionary=result.get("dictionary"),
+    )
 
 
-def _build_side_panel_payload(db: Session, step: StepModel) -> SidePanelPayload:
+def _build_side_panel_request(db: Session, step: StepModel) -> SidePanelRequest:
     project = step.project
     stage = step.stage
 
@@ -490,7 +489,7 @@ def _build_side_panel_payload(db: Session, step: StepModel) -> SidePanelPayload:
 
     rag_results = retrieve(f"{stage.name} {step.name}")
 
-    return SidePanelPayload(
+    return SidePanelRequest(
         project_info=ProjectInfo(
             project_id=project.id,
             name=project.name,

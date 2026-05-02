@@ -2,7 +2,7 @@ import json
 
 from app.core.aws.bedrock import bedrock_runtime
 from app.core.config import settings
-from app.core.schemas.bedrock import AcceptPayload, GeneratePayload, SidePanelPayload
+from app.core.schemas.step import AcceptRequest, GenerateRequest, SidePanelRequest
 
 
 def _invoke_claude(prompt: str) -> str:
@@ -30,9 +30,9 @@ ACCEPT_PROMPT = """\
 """
 
 
-def call_accept(payload: AcceptPayload) -> dict:
+def call_accept(request: AcceptRequest) -> dict:
     message = (
-        ACCEPT_PROMPT + "\n\n" + json.dumps(payload.model_dump(), ensure_ascii=False)
+        ACCEPT_PROMPT + "\n\n" + json.dumps(request.model_dump(), ensure_ascii=False)
     )
     raw = _invoke_claude(message)
     return json.loads(raw)
@@ -48,9 +48,9 @@ Step 이름은 구체적이고 실행 가능한 동사형으로 작성하세요.
 """
 
 
-def call_generate(payload: GeneratePayload) -> dict:
+def call_generate(request: GenerateRequest) -> dict:
     message = (
-        GENERATE_PROMPT + "\n\n" + json.dumps(payload.model_dump(), ensure_ascii=False)
+        GENERATE_PROMPT + "\n\n" + json.dumps(request.model_dump(), ensure_ascii=False)
     )
     raw = _invoke_claude(message)
     return json.loads(raw)
@@ -76,11 +76,11 @@ SIDE_PANEL_PROMPT = """\
 """
 
 
-def call_side_panel(payload: SidePanelPayload) -> dict:
+def call_side_panel(request: SidePanelRequest) -> dict:
     message = (
         SIDE_PANEL_PROMPT
         + "\n\n"
-        + json.dumps(payload.model_dump(), ensure_ascii=False)
+        + json.dumps(request.model_dump(), ensure_ascii=False)
     )
     raw = _invoke_claude(message)
     return json.loads(raw)
