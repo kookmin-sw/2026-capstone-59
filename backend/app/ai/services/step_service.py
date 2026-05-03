@@ -51,7 +51,7 @@ def _build_current_stage(step: StepModel) -> CurrentStage:
     stage = step.stage
     return CurrentStage(
         stage_id=stage.id,
-        stage_number=stage.sequence,
+        stage_sequence=stage.sequence,
         name=stage.name,
     )
 
@@ -494,7 +494,7 @@ def _build_side_panel_request(db: Session, step: StepModel) -> SidePanelRequest:
                 step_id=s.id,
                 name=s.name,
                 status=s.status,
-                stage_number=stage.sequence,
+                stage_sequence=stage.sequence,
             )
             for s in accepted_steps
         ],
