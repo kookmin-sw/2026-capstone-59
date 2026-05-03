@@ -7,6 +7,7 @@ from app.core import exception_handlers
 from app.core.auth.csrf import verify_csrf
 from app.core.auth.dependencies import get_current_user_id
 from app.core.config import settings
+from app.core.schemas.health import HealthResponse
 
 app = FastAPI(title="Poco AI Orchestrator")
 
@@ -28,8 +29,8 @@ app.include_router(
 
 
 @app.get("/health")
-def health() -> dict:
-    return {"ok": True, "service": "ai"}
+def health() -> HealthResponse:
+    return HealthResponse(ok=True, service="ai")
 
 
 # Lambda B entrypoint
