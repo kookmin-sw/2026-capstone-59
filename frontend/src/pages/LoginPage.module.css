@@ -29,7 +29,7 @@
   justify-content: center;
   flex: 1;
   gap: 30px;
-  padding-bottom: 120px;
+  padding-bottom: 200px;
 }
 
 .title {
@@ -41,8 +41,9 @@
 .btnGroup {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 40px;
   width: 360px;
+  padding-top: 20px;
 }
 
 .socialBtn {
@@ -56,16 +57,6 @@
   align-items: center;
   justify-content: center;
   box-shadow: 2px 4px 10px 0 rgba(0, 0, 0, 0.15);
-}
-
-.kakao {
-  background-color: #FEE500;
-  gap: 20px;
-  color: #3C1E1E;
-}
-
-.kakao:hover {
-  background-color: #F5DC00;
 }
 
 .google {
