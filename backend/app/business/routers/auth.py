@@ -36,7 +36,7 @@ def oauth_callback(
     state: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> RedirectResponse:
-    tokens = auth_service.handle_oauth_callback(db, provider, code)
+    tokens = auth_service.handle_oauth_callback(db, provider, code, state=state)
     csrf = generate_csrf_token()
 
     response = RedirectResponse(
