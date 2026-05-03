@@ -408,12 +408,7 @@ def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequ
 def _get_next_unfulfilled_required_step_id(
     db: Session, step: StepModel
 ) -> uuid.UUID | None:
-    fulfilled_ids = {
-        row.required_step_id
-        for row in db.query(ProjectRequiredStepStatus).filter_by(
-            project_id=step.project_id, is_fulfilled=True
-        )
-    }
+    fulfilled_ids = _get_fulfilled_required_step_ids(db, step.project_id)
     query = db.query(RequiredStepModel).filter(
         RequiredStepModel.stage_id == step.stage_id
     )
