@@ -27,12 +27,12 @@ def get_authorization_url(provider_name: str, state: str | None = None) -> str:
 
 
 def handle_oauth_callback(
-    db: Session, provider_name: str, code: str
+    db: Session, provider_name: str, code: str, state: str | None = None
 ) -> AuthTokenResponse:
     """OAuth 콜백 처리: code → 사용자 조회/생성 → JWT 발급."""
     provider = get_provider(provider_name)
 
-    oauth_tokens = provider.exchange_code(code)
+    oauth_tokens = provider.exchange_code(code, state=state)
     user_info = provider.get_user_info(oauth_tokens.access_token)
 
     user = _get_or_create_user(db, provider_name, user_info, oauth_tokens)
