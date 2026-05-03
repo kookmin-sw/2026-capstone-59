@@ -25,7 +25,7 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectRespons
             db.query(ProjectModel)
             .filter(
                 ProjectModel.name == payload.name,
-                ProjectModel.is_deleted == False,
+                ProjectModel.is_deleted.is_(False),
             )
             .first()
         )
@@ -80,7 +80,7 @@ def list_projects(
     if sort_by not in ALLOWED_SORT:
         sort_by = "created_at"
 
-    query = db.query(ProjectModel).filter(ProjectModel.is_deleted == False)
+    query = db.query(ProjectModel).filter(ProjectModel.is_deleted.is_(False))
 
     if keyword:
         query = query.filter(ProjectModel.name.ilike(f"%{keyword}%"))
@@ -125,7 +125,7 @@ def update_project(
             .filter(
                 ProjectModel.name == payload.name,
                 ProjectModel.id != project_id,
-                ProjectModel.is_deleted == False,
+                ProjectModel.is_deleted.is_(False),
             )
             .first()
         )
@@ -155,7 +155,7 @@ def _get_project_or_raise(db: Session, project_id: UUID) -> ProjectModel:
         db.query(ProjectModel)
         .filter(
             ProjectModel.id == project_id,
-            ProjectModel.is_deleted == False,
+            ProjectModel.is_deleted.is_(False),
         )
         .first()
     )
@@ -171,7 +171,7 @@ def _get_current_stage_sequence(db: Session, project_id: UUID) -> int:
         .join(ProjectStageModel, ProjectStageModel.stage_id == StageModel.id)
         .filter(
             ProjectStageModel.project_id == project_id,
-            ProjectStageModel.is_active == True,
+            ProjectStageModel.is_active.is_(True),
         )
         .order_by(StageModel.sequence)
         .first()
@@ -196,7 +196,7 @@ def _generate_default_name(db: Session) -> str:
         db.query(ProjectModel.name)
         .filter(
             ProjectModel.name.ilike(f"{base}%"),
-            ProjectModel.is_deleted == False,
+            ProjectModel.is_deleted.is_(False),
         )
         .all()
     )
