@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BsChevronLeft, BsChevronRight, BsCheckLg } from 'react-icons/bs'
+import { BsChevronLeft, BsChevronRight } from 'react-icons/bs'
 import styles from './StageNavigator.module.css'
 
 export default function StageNavigator({
