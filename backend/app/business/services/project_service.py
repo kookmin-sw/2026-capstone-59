@@ -18,6 +18,8 @@ from app.core.schemas.project import (
     ProjectUpdateRequest,
 )
 
+_ALLOWED_SORT_COLUMNS: frozenset[str] = frozenset({"created_at", "updated_at", "name"})
+
 
 def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectResponse:
     if payload.name:
@@ -76,8 +78,7 @@ def list_projects(
     sort_order: str,
     keyword: str | None = None,
 ) -> ProjectListResponse:
-    ALLOWED_SORT = {"created_at", "updated_at", "name"}
-    if sort_by not in ALLOWED_SORT:
+    if sort_by not in _ALLOWED_SORT_COLUMNS:
         sort_by = "created_at"
 
     query = db.query(ProjectModel).filter(ProjectModel.is_deleted.is_(False))
