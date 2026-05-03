@@ -11,7 +11,7 @@ import json
 import logging
 import uuid
 from json import JSONDecodeError
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar
 
 from botocore.exceptions import BotoCoreError, ClientError
 from pydantic import BaseModel, ValidationError
@@ -78,7 +78,7 @@ class LLMClient:
             schema=expected_schema.__name__,
         )
 
-        last_error: dict[str, Any] | None = None
+        last_error: Optional[dict[str, Any]] = None
 
         for attempt in range(max_retries + 1):
             try:
@@ -106,7 +106,11 @@ class LLMClient:
                 raw = response["body"].read()
                 envelope = json.loads(raw)
                 text = envelope["content"][0]["text"]
-                payload = json.loads(text)
+                stripped = text.strip()
+                if stripped.startswith("```"):
+                    lines = stripped.splitlines()
+                    stripped = "\n".join(lines[1:-1]).strip()
+                payload = json.loads(stripped)
                 validated = expected_schema.model_validate(payload)
             except JSONDecodeError as exc:
                 last_error = {

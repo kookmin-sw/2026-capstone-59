@@ -12,6 +12,7 @@ import asyncio
 import logging
 import sys
 import uuid
+from typing import Optional
 
 import boto3
 
@@ -82,7 +83,7 @@ def _input_required(prompt: str) -> str:
         _fail("필수 항목입니다. 다시 입력해주세요.")
 
 
-def _input_optional(prompt: str) -> str | None:
+def _input_optional(prompt: str) -> Optional[str]:
     value = input(prompt).strip()
     return value or None
 
