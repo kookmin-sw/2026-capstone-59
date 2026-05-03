@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   ReactFlow, Background, Controls,
@@ -14,9 +14,9 @@ import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
 import { getStages } from '../api/stage'
-import { getStepTree, acceptStep, generateSteps } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, generateSteps } from '../api/step'
 
-import { X_GAP, Y_GAP, STAGE_ENGLISH, makeEdge, flattenTree } from '../utils/canvasUtils'
+import { STAGE_ENGLISH, flattenTree } from '../utils/canvasUtils'
 
 import styles from './CanvasPage.module.css'
 import { HiOutlineUser } from 'react-icons/hi'
@@ -42,12 +42,15 @@ export default function CanvasPage() {
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
 
+  const shownToasts = useRef(new Set())
+  const timerRef = useRef(null)
+  const currentRequiredStepName = useRef(null)
+
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
-  // Stage 목록 조회
   useEffect(() => {
     if (!projectId) return
     getStages(projectId).then((data) => {
@@ -61,21 +64,29 @@ export default function CanvasPage() {
     })
   }, [projectId])
 
-  // Step 트리 조회
+  function openToastOnce(key, message) {
+    if (shownToasts.current.has(key)) return
+    shownToasts.current.add(key)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setToast(message)
+    setToastVisible(true)
+    timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+  }
+
+  async function fetchAndRenderTree(stageId) {
+    const treeData = await getStepTree(projectId, stageId)
+    const stage = stages.find((s) => s.stage_id === stageId)
+    const { nodes: n, edges: e } = flattenTree(treeData.steps ?? [], stage?.stage_sequence)
+    setNodes(n)
+    setEdges(e)
+  }
+
   useEffect(() => {
     if (!selectedStageId || !projectId) return
-    const stage = stages.find(s => s.stage_id === selectedStageId)
-    getStepTree(projectId, selectedStageId).then((data) => {
-      const { nodes: n, edges: e } = flattenTree(
-        data.steps ?? [],
-        stage?.stage_sequence
-      )
-      setNodes(n)
-      setEdges(e)
-    })
-  }, [selectedStageId])
+    fetchAndRenderTree(selectedStageId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStageId, projectId])
 
-  // Stage UI 포맷 변환
   const uiStages = stages.map(s => ({
     id: s.stage_id,
     sequence: s.stage_sequence,
@@ -91,8 +102,12 @@ export default function CanvasPage() {
   async function handleNodeClick(event, node) {
     setSelectedStep(node)
     setStepDetail(null)
-    // const detail = await getStep(node.id)
-    // setStepDetail(detail)
+    try {
+      const detail = await getStepDetail(node.id)
+      setStepDetail(detail)
+    } catch {
+      // 상세 정보 로드 실패해도 노드 선택은 유지
+    }
   }
 
   async function handleAccept() {
@@ -106,33 +121,41 @@ export default function CanvasPage() {
       return
     }
 
-    // 필수 Step Accept 시 "시작" 토스트
     if (selectedStep.type === 'requiredStepNode') {
-      setToast(`📌 ${selectedStep.data.label}이(가) 시작됐어요!`)
-      setToastVisible(true)
-      setTimeout(() => setToastVisible(false), 3000)
-    }
-
-    // 필수 Step 완료 시 "종료" 토스트
-    if (acceptResult?.is_current_required_step_completed) {
-      setToast(`✅ ${selectedStep.data.label}이(가) 종료됐어요!`)
-      setToastVisible(true)
-      setTimeout(() => setToastVisible(false), 3000)
-    }
-
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.id === selectedStep.id
-          ? { ...n, data: { ...n.data, status: 'ACCEPTED' } }
-          : n
+      currentRequiredStepName.current = selectedStep.data.label
+      openToastOnce(
+        `required-start-${selectedStep.id}`,
+        `📌 ${selectedStep.data.label}이(가) 시작됐어요!`
       )
-    )
+    }
 
-    let data
+    if (acceptResult?.is_current_required_step_completed) {
+      const name = currentRequiredStepName.current ?? selectedStep.data.label
+      const isStageComplete = acceptResult?.is_current_stage_completed
+
+      const message = isStageComplete
+        ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
+        : `✅ ${name}이(가) 종료됐어요!`
+
+      if (timerRef.current) clearTimeout(timerRef.current)
+      setToast(message)
+      setToastVisible(true)
+      timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+
+      if (isStageComplete) {
+        getStages(projectId).then((data) => {
+          const list = data.stages ?? []
+          setStages(list)
+          const active = list.find(s => s.is_active)
+          if (active) setCurrentStageSequence(active.stage_sequence)
+        })
+      }
+    }
+
     let retryCount = 0
     while (retryCount < 3) {
       try {
-        data = await generateSteps(selectedStep.id)
+        await generateSteps(selectedStep.id)
         break
       } catch {
         retryCount++
@@ -143,24 +166,7 @@ export default function CanvasPage() {
       }
     }
 
-    const stage = stages.find(s => s.stage_id === selectedStageId)
-    const newNodes = (data.generated_steps ?? []).map((s, i) => ({
-      id: s.step_id,
-      type: s.is_required ? 'requiredStepNode' : 'stepNode',
-      position: {
-        x: selectedStep.position.x + X_GAP,
-        y: selectedStep.position.y + (i - 1) * Y_GAP,
-      },
-      data: {
-        label: s.name,
-        status: s.status,
-        is_required: s.is_required,
-        stageNumber: stage?.stage_sequence,
-      },
-    }))
-    const newEdges = (data.generated_steps ?? []).map(s => makeEdge(selectedStep.id, s.step_id))
-    setNodes(prev => [...prev, ...newNodes])
-    setEdges(prev => [...prev, ...newEdges])
+    await fetchAndRenderTree(selectedStageId)
     setSelectedStep(null)
     setStepDetail(null)
   }
@@ -217,7 +223,13 @@ export default function CanvasPage() {
             onToggle={() => {
               const next = !toastVisible
               setToastVisible(next)
-              if (next) setTimeout(() => setToastVisible(false), 3000)
+              if (next) {
+                if (currentRequiredStepName.current) {
+                  setToast(`📌 ${currentRequiredStepName.current} 진행 중이에요`)
+                }
+                if (timerRef.current) clearTimeout(timerRef.current)
+                timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+              }
             }}
           />
 
