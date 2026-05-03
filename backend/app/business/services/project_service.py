@@ -1,3 +1,4 @@
+import uuid
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -10,6 +11,9 @@ from app.core.models.project_required_step_status import (
 )
 from app.core.models.required_step import RequiredStep as RequiredStepModel
 from app.core.models.stage import Stage as StageModel
+from app.core.models.step import Step as StepModel
+from app.core.models.step import StepTree as StepTreeModel
+from app.core.enums import StepStatus
 from app.core.schemas.project import (
     ProjectCreateRequest,
     ProjectListItemResponse,
@@ -63,9 +67,33 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectRespons
             )
         )
 
+    _create_initial_steps_for_each_stage(db, project.id)
+
     db.commit()
     db.refresh(project)
     return _to_project_response(db, project)
+
+
+def _create_initial_steps_for_each_stage(db: Session, project_id: UUID) -> None:
+    """각 Stage의 첫 번째(sequence=1) Required Step을 루트 Step으로 생성."""
+    first_required_steps = (
+        db.query(RequiredStepModel).filter(RequiredStepModel.sequence == 1).all()
+    )
+    for rs in first_required_steps:
+        step = StepModel(
+            id=uuid.uuid4(),
+            project_id=project_id,
+            stage_id=rs.stage_id,
+            parent_step_id=None,
+            required_step_id=rs.id,
+            belonging_required_step_id=None,
+            name=rs.name,
+            status=StepStatus.READY,
+            sort_order=0,
+        )
+        db.add(step)
+        db.flush()
+        db.add(StepTreeModel(ancestor=step.id, descendant=step.id, depth=0))
 
 
 def list_projects(
