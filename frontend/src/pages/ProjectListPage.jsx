@@ -69,7 +69,7 @@ export default function ProjectListPage() {
     setEditData({
       name: project.name ?? '',
       member_count: project.member_count ?? '',
-      duration_months: project.duration_months ?? '',
+      duration_month: project.duration_month ?? '',
       description: project.description ?? '',
       constraint: project.constraint ?? '',
     })
@@ -272,7 +272,7 @@ export default function ProjectListPage() {
               {[
                 { label: '프로젝트 이름', key: 'name', type: 'input' },
                 { label: '프로젝트 인원', key: 'member_count', type: 'input', inputType: 'number', suffix: '명' },
-                { label: '프로젝트 기간', key: 'duration_months', type: 'input', inputType: 'number', suffix: '개월' },
+                { label: '프로젝트 기간', key: 'duration_month', type: 'input', inputType: 'number', suffix: '개월' },
                 { label: '프로젝트 설명', key: 'description', type: 'textarea' },
                 { label: '프로젝트 제약 사항', key: 'constraint', type: 'textarea' },
               ].map(({ label, key, type, inputType, suffix }) => (
