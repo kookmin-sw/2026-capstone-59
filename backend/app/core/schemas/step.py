@@ -79,7 +79,7 @@ class ProjectInfo(BaseModel):
 
 class CurrentStage(BaseModel):
     stage_id: UUID
-    stage_number: int
+    stage_sequence: int
     name: str
 
 
@@ -119,7 +119,7 @@ class SidePanelDecisionHistoryItem(BaseModel):
     step_id: UUID
     name: str
     status: str
-    stage_number: int
+    stage_sequence: int
 
 
 class AcceptRequest(BaseModel):
