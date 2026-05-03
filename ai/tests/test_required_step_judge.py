@@ -1,7 +1,7 @@
 """ai/services/required_step_judge.py 단위 테스트."""
 
 import json
-from typing import Any
+from typing import Any, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -66,8 +66,8 @@ def _required_steps_status() -> list[RequiredStepStatus]:
 
 
 def _input_with_required(
-    accepted_steps: list[StepInfo] | None = None,
-    accepted_step: StepInfo | None = None,
+    accepted_steps: Optional[list[StepInfo]] = None,
+    accepted_step: Optional[StepInfo] = None,
 ) -> AcceptInput:
     return AcceptInput(
         project_info=_project(),
