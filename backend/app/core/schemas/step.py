@@ -44,7 +44,7 @@ class RequiredStepItem(BaseModel):
 
 
 class RequiredStepListResponse(BaseModel):
-    required_step: list[RequiredStepItem]
+    required_steps: list[RequiredStepItem]
 
 
 class StepAcceptResponse(BaseModel):
