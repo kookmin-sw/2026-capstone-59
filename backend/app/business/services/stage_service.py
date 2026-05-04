@@ -14,7 +14,7 @@ def list_stages(db: Session, project_id: UUID) -> StageListResponse:
         db.query(ProjectModel)
         .filter(
             ProjectModel.id == project_id,
-            ProjectModel.is_deleted == False,
+            ProjectModel.is_deleted.is_(False),
         )
         .first()
     )
