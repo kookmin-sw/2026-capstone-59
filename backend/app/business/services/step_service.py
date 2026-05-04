@@ -39,7 +39,7 @@ def get_required_steps(db: Session, stage_id: uuid.UUID) -> RequiredStepListResp
         .all()
     )
     return RequiredStepListResponse(
-        required_step=[
+        required_steps=[
             RequiredStepItem(
                 step_id=rs.id,
                 name=rs.name,

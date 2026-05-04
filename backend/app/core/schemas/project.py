@@ -1,23 +1,23 @@
-from uuid import UUID
 from datetime import datetime
-from typing import Optional
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
 class ProjectCreateRequest(BaseModel):
-    name: Optional[str] = None
+    name: str | None = None
     duration_months: int
     member_count: int
-    description: Optional[str] = None
-    constraint: Optional[str] = None
+    description: str | None = None
+    constraint: str | None = None
     prompt: str
 
 
 class ProjectUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    duration_months: Optional[int] = None
-    member_count: Optional[int] = None
+    name: str | None = None
+    description: str | None = None
+    duration_months: int | None = None
+    member_count: int | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -34,11 +34,11 @@ class ProjectListItemResponse(BaseModel):
     name: str
     current_stage_sequence: int
     is_deleted: bool
-    member_count: Optional[int] = None
-    duration_month: Optional[int] = None
-    description: Optional[str] = None
-    constraint: Optional[str] = None
-    prompt: Optional[str] = None
+    member_count: int | None = None
+    duration_month: int | None = None
+    description: str | None = None
+    constraint: str | None = None
+    prompt: str | None = None
     created_at: datetime
     updated_at: datetime
 

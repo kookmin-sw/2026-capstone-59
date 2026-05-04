@@ -7,6 +7,7 @@ from app.core import exception_handlers
 from app.core.auth.csrf import verify_csrf
 from app.core.auth.dependencies import get_current_user
 from app.core.config import settings
+from app.core.schemas.health import HealthResponse
 
 app = FastAPI(title="Poco Business API")
 
@@ -35,8 +36,8 @@ app.include_router(
 
 
 @app.get("/health")
-def health() -> dict:
-    return {"ok": True, "service": "business"}
+def health() -> HealthResponse:
+    return HealthResponse(ok=True, service="business")
 
 
 handler = Mangum(app)
