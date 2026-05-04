@@ -1,8 +1,5 @@
 import axios from 'axios'
 
-export const getStep = (stepId) =>
-  aiApi.get(`/steps/${stepId}`)
-
 function getCsrfToken() {
   return document.cookie
     .split('; ')
@@ -10,13 +7,11 @@ function getCsrfToken() {
     ?.split('=')[1]
 }
 
-// Business API
 const api = axios.create({
   baseURL: '/api',
   withCredentials: true,
 })
 
-// AI API
 const aiApi = axios.create({
   baseURL: '/ai',
   withCredentials: true,
@@ -40,11 +35,9 @@ const addCsrfInterceptor = (instance) => {
 addCsrfInterceptor(api)
 addCsrfInterceptor(aiApi)
 
-// Business
 export const getStepTree = (projectId, stageId) =>
   api.get('/steps/tree', { params: { project_id: projectId, stage_id: stageId } })
 
-// AI
 export const generateSteps = (stepId) =>
   aiApi.post(`/steps/${stepId}/generate`)
 
@@ -53,3 +46,6 @@ export const acceptStep = (stepId) =>
 
 export const createNotionTemplate = (stepId) =>
   aiApi.post(`/steps/${stepId}/notion-template`)
+
+export const getStepDetail = (stepId) =>
+  aiApi.get(`/steps/${stepId}`)
