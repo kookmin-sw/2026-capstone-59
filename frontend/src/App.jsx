@@ -5,6 +5,7 @@ import ProjectListPage from './pages/ProjectListPage'
 import CreateProjectPage from './pages/CreateProjectPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import CanvasPage from './pages/CanvasPage'
+import PrivateRoute from './components/PrivateRoute'
 
 export default function App() {
   return (
@@ -12,10 +13,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/projects" element={<ProjectListPage />} />
-        <Route path="/projects/create" element={<CreateProjectPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/canvas/:projectId" element={<CanvasPage />} />
+        <Route path="/projects" element={<PrivateRoute><ProjectListPage /></PrivateRoute>} />
+        <Route path="/projects/create" element={<PrivateRoute><CreateProjectPage /></PrivateRoute>} />
+        <Route path="/canvas/:projectId" element={<PrivateRoute><CanvasPage /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   )
