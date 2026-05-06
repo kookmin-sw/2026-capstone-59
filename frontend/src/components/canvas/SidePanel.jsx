@@ -69,7 +69,7 @@ function MentoringContent({ raw }) {
   )
 }
 
-export default function SidePanel({ step, isOpen, onClose, onAccept }) {
+export default function SidePanel({ step, detail, isOpen, onClose, onAccept, hasChildren }) {
   const [activeTab, setActiveTab] = useState('mentoring')
   const [lastStep, setLastStep] = useState(step)
 
@@ -82,9 +82,11 @@ export default function SidePanel({ step, isOpen, onClose, onAccept }) {
 
   const isRequired = current?.data?.is_required ?? (current?.type === 'requiredStepNode')
   const name = current?.data?.label ?? ''
-  const mentoring = current?.data?.mentoring ?? ''
-  const dictionary = current?.data?.dictionary ?? []
-  const artifact = current?.data?.artifact ?? null
+
+  // node.data 대신 detail API 응답 사용
+  const mentoring = detail?.mentoring ?? ''
+  const dictionary = detail?.dictionary ?? []
+  const artifact = detail?.template_url ? { notion_template_url: detail.template_url } : null
 
   const tabs = isRequired
     ? ['mentoring', 'dictionary', 'template']
@@ -148,7 +150,7 @@ export default function SidePanel({ step, isOpen, onClose, onAccept }) {
               <div className={styles.templateCard}>
                 <div className={styles.templateCardTop}>
                   <span>📄</span>
-                  <span className={styles.templateCardTitle}>{artifact.description}</span>
+                  <span className={styles.templateCardTitle}>{name}</span>
                 </div>
                 <a
                   href={artifact.notion_template_url}
@@ -172,7 +174,7 @@ export default function SidePanel({ step, isOpen, onClose, onAccept }) {
       </div>
 
       <div className={styles.footer}>
-        {status !== 'ACCEPTED' && (
+        {(status !== 'ACCEPTED' || !hasChildren) && (
           <button className={styles.acceptBtn} onClick={onAccept}>
             <HiCheck size={15} />
             accept

@@ -128,32 +128,23 @@ export default function CanvasPage() {
     let acceptResult
     try {
       acceptResult = await acceptStep(selectedStep.id)
-    } catch {
-      alert('Step 저장에 실패했어요. 다시 시도해주세요.')
-      return
-    }
-
-    if (selectedStep.type === 'requiredStepNode') {
-      currentRequiredStepName.current = selectedStep.data.label
-      openToastOnce(
-        `required-start-${selectedStep.id}`,
-        `📌 ${selectedStep.data.label}이(가) 시작됐어요!`
-      )
+    } catch (err) {
+      if (err?.code !== 'STEP_ALREADY_ACCEPTED') {
+        alert('Step 생성에 실패했어요. 다시 시도해주세요.')
+        return
+      }
     }
 
     if (acceptResult?.is_current_required_step_completed) {
       const name = currentRequiredStepName.current ?? selectedStep.data.label
       const isStageComplete = acceptResult?.is_current_stage_completed
-
       const message = isStageComplete
         ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
         : `✅ ${name}이(가) 종료됐어요!`
-
       if (timerRef.current) clearTimeout(timerRef.current)
       setToast(message)
       setToastVisible(true)
       timerRef.current = setTimeout(() => setToastVisible(false), 3000)
-
       if (isStageComplete) {
         getStages(projectId).then((data) => {
           const list = data.stages ?? []
@@ -172,17 +163,24 @@ export default function CanvasPage() {
       } catch {
         retryCount++
         if (retryCount === 3) {
-          alert('AI Step 생성에 실패했어요. 잠시 후 다시 시도해주세요.')
+          alert('Step 생성에 실패했어요. 다시 시도해주세요.')
           return
         }
       }
+    }
+
+    if (selectedStep.type === 'requiredStepNode') {
+      currentRequiredStepName.current = selectedStep.data.label
+      openToastOnce(
+        `required-start-${selectedStep.id}`,
+        `📌 ${selectedStep.data.label}이(가) 시작됐어요!`
+      )
     }
 
     await fetchAndRenderTree(selectedStageId)
     setSelectedStep(null)
     setStepDetail(null)
   }
-
   function handleNodeContextMenu(event, node) {
     event.preventDefault()
     if (node.data?.status !== 'ACCEPTED') return
@@ -203,6 +201,8 @@ export default function CanvasPage() {
     setSelectedStep(null)
     setStepDetail(null)
   }
+
+  const selectedHasChildren = edges.some(e => e.source === selectedStep?.id)
 
   return (
     <div className={styles.layout}>
@@ -270,6 +270,7 @@ export default function CanvasPage() {
           step={selectedStep}
           detail={stepDetail}
           isOpen={!!selectedStep}
+          hasChildren={selectedHasChildren}
           onClose={() => { setSelectedStep(null); setStepDetail(null) }}
           onAccept={handleAccept}
         />
