@@ -26,42 +26,85 @@ function MentoringContent({ raw }) {
 
   return (
     <div className={styles.mentoringJson}>
+      {/* 공통: Step 설명 */}
       {data.description && (
-        <p className={styles.mentoringDescription}>{data.description}</p>
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
+          <p className={styles.mentoringDescription}>{data.description}</p>
+        </section>
       )}
 
+      {/* 필수 Step 전용: 생각해보면 좋은 관점 */}
+      {data.perspectives?.length > 0 && (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>👀 생각해보면 좋은 관점</h4>
+          <ul className={styles.perspectiveList}>
+            {data.perspectives.map((p, i) => (
+              <li key={i} className={styles.perspectiveItem}>{p}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* 필수 Step 전용: 이 Step의 목표 */}
+      {data.goals?.length > 0 && (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>🎯 이 Step의 목표</h4>
+          <ul className={styles.goalList}>
+            {data.goals.map((g, i) => (
+              <li key={i} className={styles.goalItem}>
+                <span className={styles.goalCheck}>✓</span>
+                {g}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* 일반 Step 전용: 추천 방법 */}
       {data.recommended_methods?.length > 0 && (
         <section className={styles.mentoringSection}>
-          <h4 className={styles.mentoringSectionTitle}>추천 방법</h4>
+          <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
           <div className={styles.methodList}>
             {data.recommended_methods.map((m, i) => (
-              <div key={i} className={styles.methodCard}>
-                <p className={styles.methodTitle}>{m.title}</p>
-                <p className={styles.methodContent}>{m.content}</p>
+              <div key={i} className={styles.methodItem}>
+                <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
+                {m.content.split('\n').filter(Boolean).map((line, j) => (
+                  <p key={j} className={styles.methodContent}>{line}</p>
+                ))}
               </div>
             ))}
           </div>
         </section>
       )}
 
+      {/* 공통: 자주 하는 실수 */}
       {data.common_mistakes?.length > 0 && (
         <section className={styles.mentoringSection}>
-          <h4 className={styles.mentoringSectionTitle}>자주 하는 실수</h4>
+          <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
           <div className={styles.mistakeList}>
             {data.common_mistakes.map((m, i) => (
-              <div key={i} className={styles.mistakeCard}>
-                <p className={styles.mistakeTitle}>{m.mistake}</p>
-                <p className={styles.mistakeBad}>❌ {m.bad_example}</p>
-                <p className={styles.mistakeGood}>✅ {m.good_example}</p>
+              <div key={i} className={styles.mistakeItem}>
+                <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>
+                {(m.bad_example || m.good_example) && (
+                  <div className={styles.mistakeExamples}>
+                    {m.bad_example && <p className={styles.mistakeBad}>❌ "{m.bad_example}"</p>}
+                    {m.good_example && <p className={styles.mistakeGood}>✅ "{m.good_example}"</p>}
+                  </div>
+                )}
+                {m.explanation && (
+                  <p className={styles.mistakeExplanation}>{m.explanation}</p>
+                )}
               </div>
             ))}
           </div>
         </section>
       )}
 
+      {/* 공통: 한 줄 팁 */}
       {data.one_line_tip && (
         <div className={styles.tipBox}>
-          <span className={styles.tipIcon}>💡</span>
+          <span className={styles.tipTitle}>💡 한 줄 팁</span>
           <p className={styles.tipText}>{data.one_line_tip}</p>
         </div>
       )}
