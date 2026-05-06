@@ -81,40 +81,48 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
 
     db.flush()
 
-    # ⑤ 가장 가까운 Required Step 찾아 fulfilled 해제
-    #    검색은 자기 자신 포함(target이 곧 Required Step일 수 있음).
-    search_steps = [step, *accepted_targets]
-    unfulfilled_rs_id = _find_nearest_required_step_id(search_steps, ancestor_rows)
-    if unfulfilled_rs_id is not None:
-        record = db.get(
-            ProjectRequiredStepStatusModel,
-            {
-                "project_id": step.project_id,
-                "required_step_id": unfulfilled_rs_id,
-            },
-        )
-        if record is not None:
-            record.is_fulfilled = False
-            record.fulfilled_at = None
+    # ⑤ Belonging Required Step 이후의 모든 Required Step 상태 fulfilled 해제
+    _unfulfill_required_steps_from(db, step)
 
     db.commit()
 
 
-def _find_nearest_required_step_id(
-    ancestor_steps: list[StepModel],
-    ancestor_rows: list[StepTreeModel],
-) -> uuid.UUID | None:
+def _unfulfill_required_steps_from(db: Session, step: StepModel) -> None:
+    """롤백 대상의 Belonging Required Step부터 같은 Stage의 이후(sequence ≥) 모든
+    Required Step의 ProjectRequiredStepStatus를 is_fulfilled=False로 되돌린다.
 
-    step_by_id = {s.id: s for s in ancestor_steps}
-    for row in ancestor_rows:
-        s = step_by_id.get(row.ancestor)
-        if s is None:
-            continue
-        if s.required_step_id is not None:
-            return s.required_step_id
-        if s.belonging_required_step_id is not None:
-            return s.belonging_required_step_id
-    return None
+    belonging_required_step_id가 없으면 step 자신의 required_step_id를 사용.
+    둘 다 없으면 (필수 Step 영역 밖) 아무 작업도 하지 않는다."""
+    base_rs_id = step.belonging_required_step_id or step.required_step_id
+    if base_rs_id is None:
+        return
+
+    base_rs = db.get(RequiredStepModel, base_rs_id)
+    if base_rs is None:
+        return
+
+    # 같은 Stage에서 sequence가 base 이상인 Required Step의 status 레코드 일괄 해제
+    target_rs_ids_subq = (
+        db.query(RequiredStepModel.id)
+        .filter(
+            RequiredStepModel.stage_id == base_rs.stage_id,
+            RequiredStepModel.sequence >= base_rs.sequence,
+        )
+        .subquery()
+    )
+    records = (
+        db.query(ProjectRequiredStepStatusModel)
+        .filter(
+            ProjectRequiredStepStatusModel.project_id == step.project_id,
+            ProjectRequiredStepStatusModel.required_step_id.in_(
+                db.query(target_rs_ids_subq)
+            ),
+        )
+        .all()
+    )
+    for record in records:
+        record.is_fulfilled = False
+        record.fulfilled_at = None
 
 
 def get_required_steps(db: Session, stage_id: uuid.UUID) -> RequiredStepListResponse:
