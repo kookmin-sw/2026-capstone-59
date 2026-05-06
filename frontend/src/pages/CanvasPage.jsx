@@ -100,6 +100,11 @@ export default function CanvasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStageId, projectId])
 
+  useEffect(() => {
+    setSelectedStep(null)
+    setStepDetail(null)
+  }, [selectedStageId])
+
   const uiStages = stages.map(s => ({
     id: s.stage_id,
     sequence: s.stage_sequence,
