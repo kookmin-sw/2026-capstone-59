@@ -14,7 +14,7 @@ import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
 import { getStages } from '../api/stage'
-import { getStepTree, getStepDetail, acceptStep, generateSteps } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, generateSteps, rollbackStep } from '../api/step'
 
 import { STAGE_ENGLISH, flattenTree } from '../utils/canvasUtils'
 
@@ -42,6 +42,7 @@ export default function CanvasPage() {
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
   const [rfInstance, setRfInstance] = useState(null)
+  const [rollbackModal, setRollbackModal] = useState(false)
 
   const shownToasts = useRef(new Set())
   const timerRef = useRef(null)
@@ -110,6 +111,12 @@ export default function CanvasPage() {
   }))
 
   const currentStageId = stages.find(s => s.is_active)?.stage_id ?? null
+  const targetSeq = stages.find(s => s.stage_id === selectedStageId)?.stage_sequence ?? 0
+  const currentSeq = stages.find(s => s.stage_id === currentStageId)?.stage_sequence ?? 0
+  const stagesToClear = uiStages
+    .filter(s => s.sequence > targetSeq && s.sequence <= currentSeq)
+    .map(s => s.name)
+    .join(', ')
 
   async function handleNodeClick(event, node) {
     setSelectedStep(node)
@@ -125,6 +132,34 @@ export default function CanvasPage() {
   async function handleAccept() {
     if (!selectedStep) return
 
+    if (selectedStageId !== currentStageId) {
+      setRollbackModal(selectedStageId)
+      return
+    }
+
+    await executeAccept()
+  }
+
+  async function handleRollbackConfirm() {
+    setRollbackModal(null)
+    try {
+      await rollbackStep(selectedStep.id)
+    } catch {
+      alert('롤백에 실패했어요. 다시 시도해주세요.')
+      return
+    }
+    const data = await getStages(projectId)
+    const list = data.stages ?? []
+    setStages(list)
+    const active = list.find(s => s.is_active)
+    if (active) {
+      setCurrentStageSequence(active.stage_sequence)
+      setSelectedStageId(active.stage_id)
+    }
+    await fetchAndRenderTree(selectedStageId)
+  }
+
+  async function executeAccept() {
     let acceptResult
     try {
       acceptResult = await acceptStep(selectedStep.id)
@@ -181,6 +216,7 @@ export default function CanvasPage() {
     setSelectedStep(null)
     setStepDetail(null)
   }
+
   function handleNodeContextMenu(event, node) {
     event.preventDefault()
     if (node.data?.status !== 'ACCEPTED') return
@@ -283,6 +319,26 @@ export default function CanvasPage() {
             onKeepToggle={handleKeepToggle}
             onClose={() => setContextMenu(null)}
           />
+        )}
+
+        {rollbackModal && (
+          <div className={styles.overlay} onClick={() => setRollbackModal(null)}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+              <div className={styles.iconWrap}>⚠️</div>
+              <p className={styles.title}>선택한 Step으로 돌아가시겠습니까?</p>
+              <p className={styles.desc}>
+                {stagesToClear}의 모든 진행 내역이 삭제됩니다. 계속 하시겠습니까?
+              </p>
+              <div className={styles.actions}>
+                <button className={styles.cancelBtn} onClick={() => setRollbackModal(null)}>
+                  취소
+                </button>
+                <button className={styles.rollbackBtn} onClick={handleRollbackConfirm}>
+                  롤백하기
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
