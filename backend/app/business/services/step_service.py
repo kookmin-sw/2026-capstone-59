@@ -49,13 +49,14 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
         raise InvalidRollbackTargetError("자식 Step이 있는 Step은 롤백할 수 없습니다.")
 
     # ② 클로저 테이블로 조상 + 자기 자신을 depth 오름차순으로 조회
+    #    depth=0(자기 자신)은 ACCEPTED 처리에서 제외 — Accept API에서 별도로 처리.
     ancestor_rows = (
         db.query(StepTreeModel)
         .filter(StepTreeModel.descendant == step_id)
         .order_by(StepTreeModel.depth.asc())
         .all()
     )
-    ancestor_ids = {row.ancestor for row in ancestor_rows}
+    ancestor_ids = {row.ancestor for row in ancestor_rows if row.depth > 0}
 
     # ③ 프로젝트의 기존 ACCEPTED 흐름을 모두 CANCELED 처리
     previously_accepted = (
@@ -69,15 +70,21 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
     for s in previously_accepted:
         s.status = StepStatus.CANCELED
 
-    # ④ 롤백 대상 + 조상들을 ACCEPTED 처리
-    accepted_targets = db.query(StepModel).filter(StepModel.id.in_(ancestor_ids)).all()
-    for s in accepted_targets:
-        s.status = StepStatus.ACCEPTED
+    # ④ 조상들만 ACCEPTED 처리 (롤백 대상은 Accept API에서 처리)
+    accepted_targets: list[StepModel] = []
+    if ancestor_ids:
+        accepted_targets = (
+            db.query(StepModel).filter(StepModel.id.in_(ancestor_ids)).all()
+        )
+        for s in accepted_targets:
+            s.status = StepStatus.ACCEPTED
 
     db.flush()
 
     # ⑤ 가장 가까운 Required Step 찾아 fulfilled 해제
-    unfulfilled_rs_id = _find_nearest_required_step_id(accepted_targets, ancestor_rows)
+    #    검색은 자기 자신 포함(target이 곧 Required Step일 수 있음).
+    search_steps = [step, *accepted_targets]
+    unfulfilled_rs_id = _find_nearest_required_step_id(search_steps, ancestor_rows)
     if unfulfilled_rs_id is not None:
         record = db.get(
             ProjectRequiredStepStatusModel,
