@@ -29,7 +29,7 @@ def get_current_user(
         db.query(AppUserModel)
         .filter(
             AppUserModel.id == user_id,
-            AppUserModel.is_deleted == False,  # noqa: E712
+            AppUserModel.is_deleted.is_(False),
         )
         .first()
     )
