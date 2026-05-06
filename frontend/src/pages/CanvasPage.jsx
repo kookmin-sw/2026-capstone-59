@@ -41,6 +41,7 @@ export default function CanvasPage() {
   const [contextMenu, setContextMenu] = useState(null)
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
+  const [rfInstance, setRfInstance] = useState(null)
 
   const shownToasts = useRef(new Set())
   const timerRef = useRef(null)
@@ -80,6 +81,17 @@ export default function CanvasPage() {
     setNodes(n)
     setEdges(e)
   }
+
+  useEffect(() => {
+    if (!rfInstance || nodes.length === 0) return
+    if (nodes.length >= 4) {
+      ;(async () => {
+        await rfInstance.fitView({ duration: 0, padding: 0.1 })
+        const { y, zoom } = rfInstance.getViewport()
+        rfInstance.setViewport({ x: 80 - 50 * zoom, y, zoom }, { duration: 200 })
+      })()
+    }
+  }, [nodes, rfInstance])
 
   useEffect(() => {
     if (!selectedStageId || !projectId) return
@@ -244,8 +256,9 @@ export default function CanvasPage() {
             onNodeContextMenu={handleNodeContextMenu}
             nodeTypes={nodeTypes}
             nodesDraggable={false}
-            fitView
-            minZoom={0.3}
+            onInit={setRfInstance}
+            defaultViewport={{ x: -10, y: 0, zoom: 1 }}
+            minZoom={0.01}
             maxZoom={2}
           >
             <Background variant="dots" gap={24} size={1.5} color="#C8C4E8" />
