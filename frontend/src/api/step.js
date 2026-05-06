@@ -49,3 +49,6 @@ export const createNotionTemplate = (stepId) =>
 
 export const getStepDetail = (stepId) =>
   aiApi.get(`/steps/${stepId}`)
+
+export const rollbackStep = (stepId) =>
+  api.post(`/steps/${stepId}/rollback`)
