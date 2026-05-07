@@ -114,7 +114,7 @@ class SidePanelGenerator:
             json.dumps(
                 {
                     "event": "side_panel_generator_invoke",
-                    "project_id": project.project_id,
+                    "project_id": str(project.project_id),
                     "stage_sequence": stage.stage_sequence,
                     "target_step_name": target.name,
                     "doj_chunks": len(doj_chunks),
