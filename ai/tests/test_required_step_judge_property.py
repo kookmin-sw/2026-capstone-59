@@ -45,7 +45,7 @@ _project_st = st.builds(
 _stage_st = st.builds(
     StageInfo,
     stage_id=_step_id,
-    stage_number=st.integers(min_value=1, max_value=6),
+    stage_sequence=st.integers(min_value=1, max_value=6),
     name=_safe_text,
 )
 
