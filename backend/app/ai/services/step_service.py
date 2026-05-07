@@ -154,7 +154,8 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
             .all()
         )
         for sibling in siblings:
-            sibling.status = StepStatus.CANCELED
+            if sibling.required_step_id is None:
+                sibling.status = StepStatus.CANCELED
 
     db.flush()
 
