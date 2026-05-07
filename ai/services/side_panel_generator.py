@@ -80,13 +80,13 @@ class SidePanelGenerator:
         )
 
         decision_history_json = json.dumps(
-            [item.model_dump() for item in input_data.decision_history],
+            [item.model_dump(mode='json') for item in input_data.decision_history],
             ensure_ascii=False,
         )
 
         if input_data.current_required_step is not None:
             required_step_info = json.dumps(
-                input_data.current_required_step.model_dump(),
+                input_data.current_required_step.model_dump(mode='json'),
                 ensure_ascii=False,
             )
         else:
