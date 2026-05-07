@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.business.services import project_service
 from app.core.api.route import EnvelopeRouter
+from app.core.auth.dependencies import get_current_user
+from app.core.models.app_user import AppUser as AppUserModel
 from app.core.schemas.project import (
     ProjectCreateRequest,
     ProjectListResponse,
@@ -19,9 +21,11 @@ router = EnvelopeRouter()
 
 @router.post("", status_code=http_status.HTTP_201_CREATED)
 def create_project(
-    payload: ProjectCreateRequest, db: Session = Depends(get_db)
+    payload: ProjectCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: AppUserModel = Depends(get_current_user),
 ) -> ProjectResponse:
-    return project_service.create_project(db, payload)
+    return project_service.create_project(db, payload, current_user.id)
 
 
 @router.get("", status_code=http_status.HTTP_200_OK)
