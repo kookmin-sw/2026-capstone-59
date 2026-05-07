@@ -24,7 +24,7 @@ class StageInfo(BaseModel):
     """현재 Stage 정보."""
 
     stage_id: str
-    stage_number: int
+    stage_sequence: int
     name: str
 
 
@@ -41,7 +41,7 @@ class DecisionHistoryItem(BaseModel):
     step_id: str
     name: str
     status: str
-    stage_number: Optional[int] = None
+    stage_sequence: Optional[int] = None
 
 
 class RequiredStepInfo(BaseModel):

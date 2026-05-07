@@ -54,17 +54,17 @@ class StepGenerator:
         stage = input_data.current_stage
         project = input_data.project_info
 
-        rag_query = f"Stage {stage.stage_number} {stage.name} activities"
+        rag_query = f"Stage {stage.stage_sequence} {stage.name} activities"
         chunks = await self.rag.search_doj(rag_query)
 
         decision_history_json = json.dumps(
-            [item.model_dump() for item in input_data.decision_history],
+            [item.model_dump(mode='json') for item in input_data.decision_history],
             ensure_ascii=False,
         )
 
         if input_data.current_required_step is not None:
             required_step_info = json.dumps(
-                input_data.current_required_step.model_dump(),
+                input_data.current_required_step.model_dump(mode='json'),
                 ensure_ascii=False,
             )
         else:
@@ -80,7 +80,7 @@ class StepGenerator:
             description=_coerce(project.description, _NONE_LABEL),
             constraints=_coerce(project.constraints, _NONE_LABEL),
             initial_prompt=project.initial_prompt,
-            stage_number=str(stage.stage_number),
+            stage_sequence=str(stage.stage_sequence),
             stage_name=stage.name,
             decision_history=decision_history_json,
             current_step_name=input_data.current_step.name,
@@ -93,7 +93,7 @@ class StepGenerator:
                 {
                     "event": "step_generator_invoke",
                     "project_id": project.project_id,
-                    "stage_number": stage.stage_number,
+                    "stage_sequence": stage.stage_sequence,
                     "rag_chunks": len(chunks),
                     "has_required_step": input_data.current_required_step is not None,
                     "prompt_len": len(prompt),
