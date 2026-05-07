@@ -27,10 +27,10 @@ class RequiredStep(Base):
     # AI 판단 근거 컬럼
     goal: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
     entry_criteria: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
-    fulfillment_aspects: Mapped[list] = mapped_column(
+    fulfillment_criteria: Mapped[list] = mapped_column(
         JSONB, nullable=False, server_default="[]"
     )
-    fulfillment_threshold: Mapped[int] = mapped_column(
+    minimum_fulfillment_count: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="2"
     )
     doj_reference: Mapped[str | None] = mapped_column(Text, nullable=True)
