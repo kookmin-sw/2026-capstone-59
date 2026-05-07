@@ -61,6 +61,15 @@ class ProjectNotFoundError(PocoError):
         )
 
 
+class ProjectForbiddenError(PocoError):
+    def __init__(self, message: str = "해당 프로젝트에 대한 접근 권한이 없습니다."):
+        super().__init__(
+            code="PROJECT_FORBIDDEN",
+            message=message,
+            status_code=http_status.HTTP_403_FORBIDDEN,
+        )
+
+
 class StageNotFoundError(PocoError):
     def __init__(self, message: str = "Stage를 찾을 수 없습니다."):
         super().__init__(

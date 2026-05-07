@@ -50,7 +50,7 @@ def _project_minimal() -> ProjectInfo:
 
 
 def _stage() -> StageInfo:
-    return StageInfo(stage_id="stage-1", stage_number=1, name="아이디어 구체화")
+    return StageInfo(stage_id="stage-1", stage_sequence=1, name="아이디어 구체화")
 
 
 def _required_step() -> RequiredStepInfo:
@@ -381,7 +381,7 @@ class TestPromptAssembly:
             "{description}",
             "{constraints}",
             "{initial_prompt}",
-            "{stage_number}",
+            "{stage_sequence}",
             "{stage_name}",
             "{target_step_name}",
             "{decision_history}",

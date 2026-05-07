@@ -1,3 +1,4 @@
+import json
 import uuid
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from app.core.models.project_required_step_status import (
 from app.core.models.required_step import RequiredStep as RequiredStepModel
 from app.core.models.stage import Stage as StageModel
 from app.core.models.step import Step as StepModel
+from app.core.models.step import StepContent as StepContentModel
 from app.core.models.step import StepTree as StepTreeModel
 from app.core.enums import StepStatus
 from app.core.schemas.project import (
@@ -25,7 +27,9 @@ from app.core.schemas.project import (
 _ALLOWED_SORT_COLUMNS: frozenset[str] = frozenset({"created_at", "updated_at", "name"})
 
 
-def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectResponse:
+def create_project(
+    db: Session, payload: ProjectCreateRequest, user_id: UUID
+) -> ProjectResponse:
     if payload.name:
         existing = (
             db.query(ProjectModel)
@@ -40,6 +44,7 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectRespons
 
     project = ProjectModel(
         name=payload.name if payload.name is not None else _generate_default_name(db),
+        user_id=user_id,
         duration_month=payload.duration_months,
         member_count=payload.member_count,
         description=payload.description,
@@ -96,6 +101,12 @@ def _create_initial_steps_for_each_stage(db: Session, project_id: UUID) -> None:
         db.add(step)
         db.flush()
         db.add(StepTreeModel(ancestor=step.id, descendant=step.id, depth=0))
+        if rs.default_mentoring is not None or rs.default_dictionary is not None:
+            db.add(StepContentModel(
+                step_id=step.id,
+                mentoring=json.dumps(rs.default_mentoring, ensure_ascii=False) if rs.default_mentoring else None,
+                dictionary=json.dumps(rs.default_dictionary, ensure_ascii=False) if rs.default_dictionary else None,
+            ))
 
 
 def list_projects(
@@ -105,11 +116,15 @@ def list_projects(
     sort_by: str,
     sort_order: str,
     keyword: str | None = None,
+    user_id: UUID | None = None,
 ) -> ProjectListResponse:
     if sort_by not in _ALLOWED_SORT_COLUMNS:
         sort_by = "created_at"
 
-    query = db.query(ProjectModel).filter(ProjectModel.is_deleted.is_(False))
+    query = db.query(ProjectModel).filter(
+        ProjectModel.is_deleted.is_(False),
+        ProjectModel.user_id == user_id,
+    )
 
     if keyword:
         query = query.filter(ProjectModel.name.ilike(f"%{keyword}%"))
