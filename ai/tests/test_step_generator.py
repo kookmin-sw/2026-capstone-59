@@ -48,7 +48,7 @@ def _project_minimal() -> ProjectInfo:
 
 
 def _stage() -> StageInfo:
-    return StageInfo(stage_id="stage-1", stage_number=1, name="아이디어 구체화")
+    return StageInfo(stage_id="stage-1", stage_sequence=1, name="아이디어 구체화")
 
 
 def _required_step() -> RequiredStepInfo:
@@ -142,7 +142,7 @@ class TestGenerateStepsHappyPath:
         assert len(result.generated_steps) == 3
 
     @pytest.mark.asyncio
-    async def test_rag_query_uses_stage_number_and_name(self):
+    async def test_rag_query_uses_stage_sequence_and_name(self):
         service, _, rag = _make_service()
 
         await service.generate_steps(_input_with_required())

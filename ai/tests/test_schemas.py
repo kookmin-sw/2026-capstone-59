@@ -34,7 +34,7 @@ PROJECT_INFO = {
 
 STAGE_INFO = {
     "stage_id": "stage-1",
-    "stage_number": 1,
+    "stage_sequence": 1,
     "name": "요구사항 분석",
 }
 
@@ -78,9 +78,9 @@ class TestProjectInfo:
 class TestStageInfo:
     def test_valid(self):
         m = StageInfo(**STAGE_INFO)
-        assert m.stage_number == 1
+        assert m.stage_sequence == 1
 
-    @pytest.mark.parametrize("missing", ["stage_id", "stage_number", "name"])
+    @pytest.mark.parametrize("missing", ["stage_id", "stage_sequence", "name"])
     def test_missing_required_field(self, missing):
         data = {k: v for k, v in STAGE_INFO.items() if k != missing}
         with pytest.raises(ValidationError):
@@ -102,7 +102,7 @@ class TestStepInfo:
 class TestDecisionHistoryItem:
     def test_valid(self):
         m = DecisionHistoryItem(step_id="s1", name="분석", status="accepted")
-        assert m.stage_number is None
+        assert m.stage_sequence is None
 
     def test_missing_status(self):
         with pytest.raises(ValidationError):
