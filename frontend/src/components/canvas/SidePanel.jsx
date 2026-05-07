@@ -47,16 +47,28 @@ function SectionSkeleton() {
   )
 }
 
-function RevealList({ items, renderItem, onComplete, itemDelay = 200 }) {
-  const [visibleCount, setVisibleCount] = useState(1)
+function RevealList({ items, renderItem, onComplete, itemDelay = 100 }) {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [doneIndices, setDoneIndices] = useState([])
 
-  useEffect(() => {
-    if (visibleCount >= items.length) { onComplete?.(); return }
-    const id = setTimeout(() => setVisibleCount(c => c + 1), itemDelay)
-    return () => clearTimeout(id)
-  }, [visibleCount, items.length])
+  const handleItemDone = useCallback((index) => {
+    setDoneIndices(prev => [...prev, index])
+    if (index + 1 >= items.length) {
+      setTimeout(() => onComplete?.(), 0)
+    } else {
+      setTimeout(() => setActiveIndex(index + 1), itemDelay)
+    }
+  }, [items.length, itemDelay, onComplete])
 
-  return <>{items.slice(0, visibleCount).map((item, i) => renderItem(item, i))}</>
+  return (
+    <>
+      {items.map((item, i) => {
+        if (doneIndices.includes(i)) return renderItem(item, i, false)
+        if (i === activeIndex) return renderItem(item, i, true, () => handleItemDone(i))
+        return null
+      })}
+    </>
+  )
 }
 
 const LOADING_SKELETONS = [
@@ -135,7 +147,11 @@ function MentoringContent({ raw, isLoading }) {
           <ul className={styles.perspectiveList}>
             <RevealList
               items={data.perspectives}
-              renderItem={(p, i) => <li key={i} className={styles.perspectiveItem}>{p}</li>}
+              renderItem={(p, i, isTyping, onItemDone) => (
+                <li key={i} className={styles.perspectiveItem}>
+                  {isTyping ? <TypewriterText text={p} onComplete={onItemDone} /> : p}
+                </li>
+              )}
               onComplete={onComplete}
             />
           </ul>
@@ -160,9 +176,10 @@ function MentoringContent({ raw, isLoading }) {
           <ul className={styles.goalList}>
             <RevealList
               items={data.goals}
-              renderItem={(g, i) => (
+              renderItem={(g, i, isTyping, onItemDone) => (
                 <li key={i} className={styles.goalItem}>
-                  <span className={styles.goalCheck}>✓</span>{g}
+                  <span className={styles.goalCheck}>✓</span>
+                  {isTyping ? <TypewriterText text={g} onComplete={onItemDone} /> : g}
                 </li>
               )}
               onComplete={onComplete}
@@ -194,12 +211,15 @@ function MentoringContent({ raw, isLoading }) {
             <RevealList
               items={data.recommended_methods}
               itemDelay={300}
-              renderItem={(m, i) => (
+              renderItem={(m, i, isTyping, onItemDone) => (
                 <div key={i} className={styles.methodItem}>
                   <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
-                  {m.content.split('\n').filter(Boolean).map((line, j) => (
-                    <p key={j} className={styles.methodContent}>{line}</p>
-                  ))}
+                  {isTyping
+                    ? <p className={styles.methodContent}><TypewriterText text={m.content} onComplete={onItemDone} /></p>
+                    : m.content.split('\n').filter(Boolean).map((line, j) => (
+                        <p key={j} className={styles.methodContent}>{line}</p>
+                      ))
+                  }
                 </div>
               )}
               onComplete={onComplete}
@@ -234,16 +254,20 @@ function MentoringContent({ raw, isLoading }) {
             <RevealList
               items={data.common_mistakes}
               itemDelay={300}
-              renderItem={(m, i) => (
+              renderItem={(m, i, isTyping, onItemDone) => (
                 <div key={i} className={styles.mistakeItem}>
-                  <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>
-                  {(m.bad_example || m.good_example) && (
+                  <p className={styles.mistakeTitle}>
+                    {isTyping
+                      ? <TypewriterText text={`${i + 1}. ${m.mistake}`} onComplete={onItemDone} />
+                      : `${i + 1}. ${m.mistake}`}
+                  </p>
+                  {!isTyping && (m.bad_example || m.good_example) && (
                     <div className={styles.mistakeExamples}>
                       {m.bad_example && <p className={styles.mistakeBad}>❌ "{m.bad_example}"</p>}
                       {m.good_example && <p className={styles.mistakeGood}>✅ "{m.good_example}"</p>}
                     </div>
                   )}
-                  {m.explanation && <p className={styles.mistakeExplanation}>{m.explanation}</p>}
+                  {!isTyping && m.explanation && <p className={styles.mistakeExplanation}>{m.explanation}</p>}
                 </div>
               )}
               onComplete={onComplete}
