@@ -44,7 +44,6 @@ export default function CanvasPage() {
   const [rfInstance, setRfInstance] = useState(null)
   const [rollbackModal, setRollbackModal] = useState(false)
 
-  const shownToasts = useRef(new Set())
   const timerRef = useRef(null)
   const currentRequiredStepName = useRef(null)
 
@@ -65,15 +64,6 @@ export default function CanvasPage() {
       }
     })
   }, [projectId])
-
-  function openToastOnce(key, message) {
-    if (shownToasts.current.has(key)) return
-    shownToasts.current.add(key)
-    if (timerRef.current) clearTimeout(timerRef.current)
-    setToast(message)
-    setToastVisible(true)
-    timerRef.current = setTimeout(() => setToastVisible(false), 3000)
-  }
 
   async function fetchAndRenderTree(stageId) {
     const treeData = await getStepTree(projectId, stageId)
@@ -161,7 +151,15 @@ export default function CanvasPage() {
       setCurrentStageSequence(active.stage_sequence)
       setSelectedStageId(active.stage_id)
     }
-    await fetchAndRenderTree(selectedStageId)
+  }
+
+  function findRequiredStep(nodeId) {
+    const parentEdge = edges.find(e => e.target === nodeId)
+    if (!parentEdge) return null
+    const parentNode = nodes.find(n => n.id === parentEdge.source)
+    if (!parentNode) return null
+    if (parentNode.type === 'requiredStepNode') return parentNode
+    return findRequiredStep(parentNode.id)
   }
 
   async function executeAccept() {
