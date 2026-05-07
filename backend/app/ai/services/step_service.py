@@ -10,9 +10,11 @@ from app.core.enums import StepStatus
 from app.core.exceptions import StepAlreadyAcceptedError, StepNotFoundError
 from app.core.models.project_required_step_status import ProjectRequiredStepStatus
 from app.core.models.required_step import RequiredStep as RequiredStepModel
+from app.core.models.project import ProjectStage
 from app.core.models.step import Step as StepModel
 from app.core.models.step import StepContent as StepContentModel
 from app.core.models.step import StepTree as StepTreeModel
+from app.core.models.stage import Stage as StageModel
 from app.core.schemas.step import (
     AcceptedStepItem,
     AcceptRequest,
@@ -192,6 +194,22 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     is_stage_completed = bool(all_required) and all(
         rs.id in updated_fulfilled_ids for rs in all_required
     )
+
+    if is_stage_completed:
+        next_stage = (
+            db.query(StageModel)
+            .filter(StageModel.sequence == step.stage.sequence + 1)
+            .first()
+        )
+        if next_stage:
+            next_project_stage = db.get(
+                ProjectStage,
+                {"project_id": step.project_id, "stage_id": next_stage.id},
+            )
+            if next_project_stage:
+                next_project_stage.is_active = True
+                db.commit()
+
     return StepAcceptResponse(
         step_id=step_id,
         status=StepStatus.ACCEPTED,
