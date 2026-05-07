@@ -92,7 +92,7 @@ class StepGenerator:
             json.dumps(
                 {
                     "event": "step_generator_invoke",
-                    "project_id": project.project_id,
+                    "project_id": str(project.project_id),
                     "stage_sequence": stage.stage_sequence,
                     "rag_chunks": len(chunks),
                     "has_required_step": input_data.current_required_step is not None,

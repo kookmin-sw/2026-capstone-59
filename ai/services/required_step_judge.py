@@ -39,7 +39,7 @@ class RequiredStepJudge:
                 json.dumps(
                     {
                         "event": "required_step_judge_skip",
-                        "project_id": input_data.project_info.project_id,
+                        "project_id": str(input_data.project_info.project_id),
                         "reason": "no_current_required_step",
                     },
                     ensure_ascii=False,
@@ -70,7 +70,7 @@ class RequiredStepJudge:
             json.dumps(
                 {
                     "event": "required_step_judge_invoke",
-                    "project_id": input_data.project_info.project_id,
+                    "project_id": str(input_data.project_info.project_id),
                     "required_step_id": required_step.step_id,
                     "required_step_name": required_step.name,
                     "num_accepted_steps": len(input_data.accepted_steps_in_required),
