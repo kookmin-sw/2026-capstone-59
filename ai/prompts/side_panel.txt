@@ -96,7 +96,7 @@
 - 초기 아이디어: {initial_prompt}
 
 ## 현재 Stage
-- Stage {stage_number}: {stage_name}
+- Stage {stage_sequence}: {stage_name}
 
 ## 클릭된 Step (사이드패널 생성 대상)
 - {target_step_name}

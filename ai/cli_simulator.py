@@ -35,7 +35,7 @@ from ai.services.required_step_judge import RequiredStepJudge
 from ai.services.side_panel_generator import SidePanelGenerator
 from ai.services.step_generator import StepGenerator
 
-_STAGE = StageInfo(stage_id="stage-1", stage_number=1, name="아이디어 구체화")
+_STAGE = StageInfo(stage_id="stage-1", stage_sequence=1, name="아이디어 구체화")
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +259,7 @@ async def _run(
             step_id=current_required.step_id,
             name=current_required.name,
             status="ACCEPTED",
-            stage_number=_STAGE.stage_number,
+            stage_sequence=_STAGE.stage_sequence,
         )
     )
     current_step = StepInfo(step_id=current_required.step_id, name=current_required.name)
@@ -296,7 +296,7 @@ async def _run(
                 step_id=picked_step_info.step_id,
                 name=picked_step_info.name,
                 status="ACCEPTED",
-                stage_number=_STAGE.stage_number,
+                stage_sequence=_STAGE.stage_sequence,
             )
         )
         accepted_steps_in_required.append(picked_step_info)
@@ -356,7 +356,7 @@ async def _run(
                     step_id=current_required.step_id,
                     name=current_required.name,
                     status="ACCEPTED",
-                    stage_number=_STAGE.stage_number,
+                    stage_sequence=_STAGE.stage_sequence,
                 )
             )
             current_step = StepInfo(

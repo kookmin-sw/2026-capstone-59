@@ -71,7 +71,7 @@ class SidePanelGenerator:
         project = input_data.project_info
         target = input_data.target_step
 
-        doj_query = f"Stage {stage.stage_number} {stage.name} {target.name}"
+        doj_query = f"Stage {stage.stage_sequence} {stage.name} {target.name}"
         custom_query = target.name
 
         doj_chunks, custom_chunks = await asyncio.gather(
@@ -102,7 +102,7 @@ class SidePanelGenerator:
             description=_coerce(project.description),
             constraints=_coerce(project.constraints),
             initial_prompt=project.initial_prompt,
-            stage_number=str(stage.stage_number),
+            stage_sequence=str(stage.stage_sequence),
             stage_name=stage.name,
             target_step_name=target.name,
             decision_history=decision_history_json,
@@ -115,7 +115,7 @@ class SidePanelGenerator:
                 {
                     "event": "side_panel_generator_invoke",
                     "project_id": project.project_id,
-                    "stage_number": stage.stage_number,
+                    "stage_sequence": stage.stage_sequence,
                     "target_step_name": target.name,
                     "doj_chunks": len(doj_chunks),
                     "custom_chunks": len(custom_chunks),
