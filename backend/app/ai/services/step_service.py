@@ -129,7 +129,7 @@ def _insert_closure_rows(
         )
 
 
-def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
+async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     # ① 조회 및 검증
     step = db.get(StepModel, step_id)
     if step is None:
@@ -172,8 +172,8 @@ def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
             is_completed = True  # 이미 완료 → Bedrock 호출 안 함
         else:
             request = _build_accept_request(db, step)
-            result = orchestrator.call_accept(request)
-            is_completed = result.get("is_current_required_step_completed", False)
+            result = await orchestrator.call_accept(request)
+            is_completed = result.is_current_required_step_completed
             if is_completed:
                 _upsert_required_step_status(
                     db,
@@ -252,15 +252,15 @@ def _upsert_required_step_status(
     record.fulfilled_at = datetime.now(timezone.utc)
 
 
-def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateResponse:
+async def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateResponse:
     parent_step = db.get(StepModel, parent_step_id)
     if parent_step is None:
         raise StepNotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")
 
     # ① Bedrock으로 일반 Step 이름 3개 생성
     request = _build_generate_request(db, parent_step)
-    result = orchestrator.call_generate(request)
-    generated: list[dict] = result.get("generated_steps", [])
+    result = await orchestrator.call_generate(request)
+    generated: list[dict] = result.generated_steps
 
     # ② 부모가 필수 Step 영역에 속하면 자식도 같은 영역에 속함
     belonging_rs_id = (
@@ -365,7 +365,7 @@ def _create_generated_step_nodes(
             parent_step_id=parent_step.id,
             required_step_id=None,
             belonging_required_step_id=belonging_rs_id,
-            name=item["name"],
+            name=item.name,
             status=StepStatus.READY,
             sort_order=i,
         )
@@ -419,7 +419,7 @@ def _get_next_unfulfilled_required_step_id(
 
 
 # 사이드 패널
-def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
+async def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
     step = db.get(StepModel, step_id)
     if step is None:
         raise StepNotFoundError()
@@ -449,23 +449,23 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
 
     # AI 호출
     request = _build_side_panel_request(db, step)
-    result = orchestrator.call_side_panel(request)
+    result = await orchestrator.call_side_panel(request)
 
     # StepContent에 저장
     if content is None:
         content = StepContentModel(step_id=step.id)
         db.add(content)
 
-    content.mentoring = json.dumps(result.get("mentoring"), ensure_ascii=False)
-    content.dictionary = json.dumps(result.get("dictionary"), ensure_ascii=False)
+    content.mentoring = json.dumps(result.mentoring.model_dump(), ensure_ascii=False)
+    content.dictionary = json.dumps([d.model_dump() for d in result.dictionary], ensure_ascii=False)
     db.commit()
 
     return StepDetailResponse(
         is_required=False,
         step_id=step.id,
         name=step.name,
-        mentoring=result.get("mentoring"),
-        dictionary=result.get("dictionary"),
+        mentoring=result.mentoring.model_dump(),
+        dictionary=[d.model_dump() for d in result.dictionary],
     )
 
 
