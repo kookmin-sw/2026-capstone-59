@@ -1,5 +1,5 @@
 export const X_GAP = 350
-export const Y_GAP = 90
+export const Y_GAP = 170
 
 export const STAGE_ENGLISH = {
   1: 'Ideation', 2: 'Planning', 3: 'Requirement',
@@ -31,7 +31,7 @@ export function flattenTree(steps, stageSequence) {
 
   function getSubtreeSize(node) {
     const children = node.children ?? []
-    if (children.length === 0) return 1
+    if (children.length === 0) return 0.6
     return children.reduce((sum, child) => sum + getSubtreeSize(child), 0)
   }
 
@@ -70,7 +70,7 @@ export function flattenTree(steps, stageSequence) {
   }
 
   const rootGap = 260
-  const rootStartY = 200 - (steps.length - 1) * rootGap / 2
+  const rootStartY = 280 - (steps.length - 1) * rootGap / 2
   steps.forEach((root, index) => build(root, 0, rootStartY + index * rootGap))
 
   return { nodes, edges }
