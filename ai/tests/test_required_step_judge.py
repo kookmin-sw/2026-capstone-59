@@ -36,7 +36,7 @@ def _project() -> ProjectInfo:
 
 
 def _stage() -> StageInfo:
-    return StageInfo(stage_id="stage-1", stage_number=1, name="아이디어 구체화")
+    return StageInfo(stage_id="stage-1", stage_sequence=1, name="아이디어 구체화")
 
 
 def _required_step() -> RequiredStepInfo:
