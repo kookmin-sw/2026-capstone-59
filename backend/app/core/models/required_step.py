@@ -35,4 +35,8 @@ class RequiredStep(Base):
     )
     doj_reference: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # 초기 Step 생성 시 StepContent로 복사되는 기본 콘텐츠
+    default_mentoring: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    default_dictionary: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+
     stage: Mapped["Stage"] = relationship(back_populates="required_steps")  # noqa: F821

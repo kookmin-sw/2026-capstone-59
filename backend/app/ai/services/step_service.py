@@ -424,15 +424,35 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
     if step is None:
         raise StepNotFoundError()
 
-    # 필수 Step → DB에서 반환
+    # 필수 Step → DB 캐시 반환. content가 없으면 RequiredStep 기본값으로 생성
     if step.required_step_id is not None:
         content = step.content
+        if content is None:
+            rs = db.get(RequiredStepModel, step.required_step_id)
+            content = StepContentModel(step_id=step.id)
+            if rs is not None:
+                if rs.default_mentoring is not None:
+                    content.mentoring = json.dumps(
+                        rs.default_mentoring, ensure_ascii=False
+                    )
+                if rs.default_dictionary is not None:
+                    content.dictionary = json.dumps(
+                        rs.default_dictionary, ensure_ascii=False
+                    )
+            db.add(content)
+            db.commit()
         return StepDetailResponse(
             is_required=True,
             step_id=step.id,
             name=step.name,
-            mentoring=json.loads(content.mentoring) if content.mentoring else None,
-            dictionary=(json.loads(content.dictionary) if content.dictionary else None),
+            mentoring=(
+                json.loads(content.mentoring) if content and content.mentoring else None
+            ),
+            dictionary=(
+                json.loads(content.dictionary)
+                if content and content.dictionary
+                else None
+            ),
             template_url=content.template_url if content else None,
         )
 
