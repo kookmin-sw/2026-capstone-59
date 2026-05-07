@@ -131,147 +131,199 @@
   border-radius: 4px;
 }
 
-/* AI Mentoring 탭 */
 .mentoringJson {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.mentoringDescription {
-  font-size: 14px;
-  color: #6B6D90;
-  line-height: 1.8;
-  font-weight: 600;
-  margin: 0;
-}
-
 .mentoringSection {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .mentoringSectionTitle {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  color: #3928AA;
+  color: #1b1158;
   margin: 0;
 }
 
-.methodList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.methodCard {
-  background: #F4F2FF;
-  border-radius: 8px;
-  padding: 10px 14px;
-}
-
-.methodTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1A1040;
-  margin: 0 0 4px;
-}
-
-.methodContent {
-  font-size: 14px;
-  line-height: 1.8;
-  font-weight: 600;
+.mentoringDescription {
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.7;
   margin: 0;
-  color: #6B6D90;
+  white-space: pre-line;
 }
 
-.mistakeList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mistakeCard {
-  background: #F4F2FF;
-  border-radius: 8px;
-  padding: 10px 14px;
+/* 필수 Step: 관점 */
+.perspectiveList {
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.mistakeTitle {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1A1040;
-  margin: 0;
+.perspectiveItem {
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.6;
+  padding-left: 14px;
+  position: relative;
 }
 
-.mistakeBad {
-  font-size: 14px;
-  line-height: 1.8;
-  font-weight: 600;
-  margin: 0;
-  color: #6B6D90;
+.perspectiveItem::before {
+  content: '·';
+  position: absolute;
+  left: 0;
 }
 
-.mistakeGood {
-  font-size: 14px;
-  line-height: 1.8;
-  font-weight: 600;
+/* 필수 Step: 목표 */
+.goalList {
+  list-style: none;
+  padding: 0;
   margin: 0;
-  color: #6B6D90;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
 
-.tipBox {
+.goalItem {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  background: #F4F2FF;
-  border-radius: 8px;
-  padding: 10px 14px;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.6;
 }
 
-.tipIcon {
+.goalCheck {
+  color: var(--color-primary);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* 일반 Step: 추천 방법 */
+.methodList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.methodItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.methodTitle {
   font-size: 14px;
+  font-weight: 600;
+  color: #291C80;
+  margin: 0;
+}
+
+.methodContent {
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* 공통: 자주 하는 실수 */
+.mistakeList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mistakeItem {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mistakeTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #291C80;
+  margin: 0;
+}
+
+.mistakeExamples {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 2px;
+}
+
+.mistakeBad,
+.mistakeGood {
+  font-size: 13px;
+  color: var(--color-text);
+  margin: 5px;
+  line-height: 1.6;
+}
+
+.mistakeExplanation {
+  font-size: 13px;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* 공통: 한 줄 팁 */
+.tipBox {
+  flex-direction: column;
+  display: flex;
+  gap: 10px;
+  background: #F5F4FD;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.tipTitle {
+  font-size: 13px;
+  font-weight: 600;
   flex-shrink: 0;
 }
 
 .tipText {
-  font-size: 12px;
-  line-height: 1.8;
-  margin: 0;
-  color: #5C45E8;
-  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text);
+  margin-bottom: 5px;
+  line-height: 1.6;
 }
 
 /* Dictionary 탭 */
 .dictionaryList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .dictionaryItem {
-  background: #F4F2FF;
-  border-radius: 8px;
-  padding: 10px 14px;
+  padding: 5px 0;
+  margin: 5px;
+  border-bottom: 1px solid #EEEDF8;
 }
 
 .dictionaryTerm {
   font-size: 14px;
   font-weight: 700;
-  color: #1A1040;
-  margin: 0 0 4px;
+  color: #291C80;
+  margin: -5px 0 5px;
 }
 
 .dictionaryDefinition {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.8;
   font-weight: 600;
   color: #6B6D90;
-  margin: 0;
+  margin: 0 0 10px;
 }
 
 /* Template 탭 */
