@@ -1,7 +1,7 @@
 """seed_required_step_data
 
 Revision ID: ababec8477d2
-Revises: 59036a725c7c
+Revises: d2b8f4c6e1a3
 Create Date: 2026-05-07 14:29:04.274242
 
 """
@@ -13,19 +13,18 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'ababec8477d2'
-down_revision: Union[str, Sequence[str], None] = '59036a725c7c'
+down_revision: Union[str, Sequence[str], None] = 'd2b8f4c6e1a3'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    from app.core.database import SessionLocal
+    from sqlalchemy.orm import Session
     from app.core.seeds.required_step import run
-    db = SessionLocal()
-    try:
+
+    bind = op.get_bind()
+    with Session(bind=bind) as db:
         run(db)
-    finally:
-        db.close()
 
 def downgrade() -> None:
     """Downgrade schema."""
