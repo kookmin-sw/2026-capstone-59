@@ -18,21 +18,21 @@ router = EnvelopeRouter()
 
 
 @router.post("/steps/{step_id}/generate", status_code=http_status.HTTP_201_CREATED)
-def generate_steps(
+async def generate_steps(
     step_id: UUID, db: Session = Depends(get_db)
 ) -> StepGenerateResponse:
     """현재 Step 기반으로 다음 후보 Step 3개를 AI로 생성."""
-    return step_service.generate_steps(db, step_id)
+    return await step_service.generate_steps(db, step_id)
 
 
 @router.post("/steps/{step_id}/accept", status_code=http_status.HTTP_200_OK)
-def accept_step(step_id: UUID, db: Session = Depends(get_db)) -> StepAcceptResponse:
-    return step_service.accept_step(db, step_id)
+async def accept_step(step_id: UUID, db: Session = Depends(get_db)) -> StepAcceptResponse:
+    return await step_service.accept_step(db, step_id)
 
 
 @router.get("/steps/{step_id}", status_code=http_status.HTTP_200_OK)
-def get_step_detail(step_id: UUID, db: Session = Depends(get_db)) -> StepDetailResponse:
-    return step_service.get_step_detail(db, step_id)
+async def get_step_detail(step_id: UUID, db: Session = Depends(get_db)) -> StepDetailResponse:
+    return await step_service.get_step_detail(db, step_id)
 
 
 @router.post(
