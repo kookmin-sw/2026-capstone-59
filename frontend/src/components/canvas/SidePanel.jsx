@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { HiX, HiCheck } from 'react-icons/hi'
 import styles from './SidePanel.module.css'
@@ -11,58 +11,203 @@ function NotionIcon({ size = 18 }) {
   )
 }
 
-function MentoringContent({ raw }) {
-  let data = null
+function TypewriterText({ text, speed = 18, onComplete }) {
+  const [displayed, setDisplayed] = useState('')
 
-  if (raw && typeof raw === 'object') {
-    data = raw
-  } else if (typeof raw === 'string') {
-    try { data = JSON.parse(raw) } catch { data = null }
-  }
+  useEffect(() => {
+    if (!text) {
+      const id = setTimeout(() => onComplete?.(), 0)
+      return () => clearTimeout(id)
+    }
+    let i = 0
+    const id = setInterval(() => {
+      i += 1
+      if (i >= text.length) {
+        clearInterval(id)
+        setDisplayed(text)
+        setTimeout(() => onComplete?.(), 0)
+      } else {
+        setDisplayed(text.slice(0, i))
+      }
+    }, speed)
+    return () => clearInterval(id)
+  }, [text, speed, onComplete])
 
-  if (!data) {
-    return <div className={styles.markdown}><ReactMarkdown>{raw ?? ''}</ReactMarkdown></div>
-  }
+  return <>{displayed}</>
+}
 
+function SectionSkeleton() {
   return (
-    <div className={styles.mentoringJson}>
-      {/* 공통: Step 설명 */}
-      {data.description && (
+    <div className={styles.mentoringSection}>
+      <div className={styles.skeletonTitle} />
+      <div className={styles.skeletonLine} />
+      <div className={styles.skeletonLine} />
+      <div className={styles.skeletonLineShort} />
+    </div>
+  )
+}
+
+function RevealList({ items, renderItem, onComplete, itemDelay = 200 }) {
+  const [visibleCount, setVisibleCount] = useState(1)
+
+  useEffect(() => {
+    if (visibleCount >= items.length) { onComplete?.(); return }
+    const id = setTimeout(() => setVisibleCount(c => c + 1), itemDelay)
+    return () => clearTimeout(id)
+  }, [visibleCount, items.length])
+
+  return <>{items.slice(0, visibleCount).map((item, i) => renderItem(item, i))}</>
+}
+
+const LOADING_SKELETONS = [
+  '📖 Step 설명',
+  '👀 생각해보면 좋은 관점',
+  '🎯 이 Step의 목표',
+  '🔥 추천 방법',
+  '💡 한 줄 팁',
+]
+
+function TitledSkeleton({ title }) {
+  return (
+    <div className={styles.mentoringSection}>
+      <h4 className={styles.mentoringSectionTitle}>{title}</h4>
+      <div className={styles.skeletonLine} />
+      <div className={styles.skeletonLine} />
+      <div className={styles.skeletonLineShort} />
+    </div>
+  )
+}
+
+function MentoringContent({ raw, isLoading }) {
+  const [revealedIndex, setRevealedIndex] = useState(-1)
+
+  useEffect(() => {
+    const reset = setTimeout(() => setRevealedIndex(-1), 0)
+    if (isLoading) return () => clearTimeout(reset)
+    const start = setTimeout(() => setRevealedIndex(0), 200)
+    return () => { clearTimeout(reset); clearTimeout(start) }
+  }, [raw, isLoading])
+
+  const advance = useCallback(() => setRevealedIndex(prev => prev + 1), [])
+
+  if (isLoading) {
+    return (
+      <div className={styles.mentoringJson}>
+        {LOADING_SKELETONS.map((title, i) => (
+          <TitledSkeleton key={i} title={title} />
+        ))}
+      </div>
+    )
+  }
+
+  let data = null
+  if (raw && typeof raw === 'object') data = raw
+  else if (typeof raw === 'string') { try { data = JSON.parse(raw) } catch { data = null } }
+
+  if (!data) return <div className={styles.markdown}><ReactMarkdown>{raw ?? ''}</ReactMarkdown></div>
+
+  const sections = [
+    data.description && {
+      key: 'desc',
+      skeleton: () => <TitledSkeleton title="📖 Step 설명" />,
+      active: (onComplete) => (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
+          <p className={styles.mentoringDescription}>
+            <TypewriterText text={data.description} onComplete={onComplete} />
+          </p>
+        </section>
+      ),
+      done: () => (
         <section className={styles.mentoringSection}>
           <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
           <p className={styles.mentoringDescription}>{data.description}</p>
         </section>
-      )}
+      ),
+    },
 
-      {/* 필수 Step 전용: 생각해보면 좋은 관점 */}
-      {data.perspectives?.length > 0 && (
+    data.perspectives?.length > 0 && {
+      key: 'persp',
+      skeleton: () => <TitledSkeleton title="👀 생각해보면 좋은 관점" />,
+      active: (onComplete) => (
         <section className={styles.mentoringSection}>
           <h4 className={styles.mentoringSectionTitle}>👀 생각해보면 좋은 관점</h4>
           <ul className={styles.perspectiveList}>
-            {data.perspectives.map((p, i) => (
-              <li key={i} className={styles.perspectiveItem}>{p}</li>
-            ))}
+            <RevealList
+              items={data.perspectives}
+              renderItem={(p, i) => <li key={i} className={styles.perspectiveItem}>{p}</li>}
+              onComplete={onComplete}
+            />
           </ul>
         </section>
-      )}
+      ),
+      done: () => (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>👀 생각해보면 좋은 관점</h4>
+          <ul className={styles.perspectiveList}>
+            {data.perspectives.map((p, i) => <li key={i} className={styles.perspectiveItem}>{p}</li>)}
+          </ul>
+        </section>
+      ),
+    },
 
-      {/* 필수 Step 전용: 이 Step의 목표 */}
-      {data.goals?.length > 0 && (
+    data.goals?.length > 0 && {
+      key: 'goals',
+      skeleton: () => <TitledSkeleton title="🎯 이 Step의 목표" />,
+      active: (onComplete) => (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>🎯 이 Step의 목표</h4>
+          <ul className={styles.goalList}>
+            <RevealList
+              items={data.goals}
+              renderItem={(g, i) => (
+                <li key={i} className={styles.goalItem}>
+                  <span className={styles.goalCheck}>✓</span>{g}
+                </li>
+              )}
+              onComplete={onComplete}
+            />
+          </ul>
+        </section>
+      ),
+      done: () => (
         <section className={styles.mentoringSection}>
           <h4 className={styles.mentoringSectionTitle}>🎯 이 Step의 목표</h4>
           <ul className={styles.goalList}>
             {data.goals.map((g, i) => (
               <li key={i} className={styles.goalItem}>
-                <span className={styles.goalCheck}>✓</span>
-                {g}
+                <span className={styles.goalCheck}>✓</span>{g}
               </li>
             ))}
           </ul>
         </section>
-      )}
+      ),
+    },
 
-      {/* 일반 Step 전용: 추천 방법 */}
-      {data.recommended_methods?.length > 0 && (
+    data.recommended_methods?.length > 0 && {
+      key: 'methods',
+      skeleton: () => <TitledSkeleton title="🔥 추천 방법" />,
+      active: (onComplete) => (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
+          <div className={styles.methodList}>
+            <RevealList
+              items={data.recommended_methods}
+              itemDelay={300}
+              renderItem={(m, i) => (
+                <div key={i} className={styles.methodItem}>
+                  <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
+                  {m.content.split('\n').filter(Boolean).map((line, j) => (
+                    <p key={j} className={styles.methodContent}>{line}</p>
+                  ))}
+                </div>
+              )}
+              onComplete={onComplete}
+            />
+          </div>
+        </section>
+      ),
+      done: () => (
         <section className={styles.mentoringSection}>
           <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
           <div className={styles.methodList}>
@@ -76,10 +221,37 @@ function MentoringContent({ raw }) {
             ))}
           </div>
         </section>
-      )}
+      ),
+    },
 
-      {/* 공통: 자주 하는 실수 */}
-      {data.common_mistakes?.length > 0 && (
+    data.common_mistakes?.length > 0 && {
+      key: 'mistakes',
+      skeleton: () => <TitledSkeleton title="⚠️ 자주 하는 실수" />,
+      active: (onComplete) => (
+        <section className={styles.mentoringSection}>
+          <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
+          <div className={styles.mistakeList}>
+            <RevealList
+              items={data.common_mistakes}
+              itemDelay={300}
+              renderItem={(m, i) => (
+                <div key={i} className={styles.mistakeItem}>
+                  <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>
+                  {(m.bad_example || m.good_example) && (
+                    <div className={styles.mistakeExamples}>
+                      {m.bad_example && <p className={styles.mistakeBad}>❌ "{m.bad_example}"</p>}
+                      {m.good_example && <p className={styles.mistakeGood}>✅ "{m.good_example}"</p>}
+                    </div>
+                  )}
+                  {m.explanation && <p className={styles.mistakeExplanation}>{m.explanation}</p>}
+                </div>
+              )}
+              onComplete={onComplete}
+            />
+          </div>
+        </section>
+      ),
+      done: () => (
         <section className={styles.mentoringSection}>
           <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
           <div className={styles.mistakeList}>
@@ -92,22 +264,41 @@ function MentoringContent({ raw }) {
                     {m.good_example && <p className={styles.mistakeGood}>✅ "{m.good_example}"</p>}
                   </div>
                 )}
-                {m.explanation && (
-                  <p className={styles.mistakeExplanation}>{m.explanation}</p>
-                )}
+                {m.explanation && <p className={styles.mistakeExplanation}>{m.explanation}</p>}
               </div>
             ))}
           </div>
         </section>
-      )}
+      ),
+    },
 
-      {/* 공통: 한 줄 팁 */}
-      {data.one_line_tip && (
+    data.one_line_tip && {
+      key: 'tip',
+      skeleton: () => <TitledSkeleton title="💡 한 줄 팁" />,
+      active: (onComplete) => (
+        <div className={styles.tipBox}>
+          <span className={styles.tipTitle}>💡 한 줄 팁</span>
+          <p className={styles.tipText}>
+            <TypewriterText text={data.one_line_tip} onComplete={onComplete} />
+          </p>
+        </div>
+      ),
+      done: () => (
         <div className={styles.tipBox}>
           <span className={styles.tipTitle}>💡 한 줄 팁</span>
           <p className={styles.tipText}>{data.one_line_tip}</p>
         </div>
-      )}
+      ),
+    },
+  ].filter(Boolean)
+
+  return (
+    <div className={styles.mentoringJson}>
+      {sections.map((section, i) => {
+        if (i > revealedIndex) return <div key={section.key}>{section.skeleton()}</div>
+        if (i === revealedIndex) return <div key={section.key}>{section.active(advance)}</div>
+        return <div key={section.key}>{section.done()}</div>
+      })}
     </div>
   )
 }
@@ -122,11 +313,9 @@ export default function SidePanel({ step, detail, isOpen, onClose, onAccept, has
 
   const current = step ?? lastStep
   const status = current?.data?.status
-
   const isRequired = current?.data?.is_required ?? (current?.type === 'requiredStepNode')
   const name = current?.data?.label ?? ''
 
-  // node.data 대신 detail API 응답 사용
   const mentoring = detail?.mentoring ?? ''
   const dictionary = detail?.dictionary ?? []
   const artifact = detail?.template_url ? { notion_template_url: detail.template_url } : null
@@ -169,17 +358,20 @@ export default function SidePanel({ step, detail, isOpen, onClose, onAccept, has
 
       <div className={styles.content}>
         {activeTab === 'mentoring' && (
-          <MentoringContent raw={mentoring} />
+          <MentoringContent raw={mentoring} isLoading={!detail} />
         )}
 
         {activeTab === 'dictionary' && (
           <div className={styles.dictionaryList}>
-            {dictionary.map((item, i) => (
-              <div key={i} className={styles.dictionaryItem}>
-                <p className={styles.dictionaryTerm}>{item.term}</p>
-                <p className={styles.dictionaryDefinition}>{item.definition}</p>
-              </div>
-            ))}
+            {!detail
+              ? [...Array(4)].map((_, i) => <SectionSkeleton key={i} />)
+              : dictionary.map((item, i) => (
+                  <div key={i} className={styles.dictionaryItem}>
+                    <p className={styles.dictionaryTerm}>{item.term}</p>
+                    <p className={styles.dictionaryDefinition}>{item.definition}</p>
+                  </div>
+                ))
+            }
           </div>
         )}
 

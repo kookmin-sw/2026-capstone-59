@@ -423,3 +423,58 @@
 .acceptBtn:hover {
   opacity: 0.85;
 }
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.skeletonTitle {
+  height: 16px;
+  width: 60%;
+  background: linear-gradient(90deg, #e8e6f7 25%, #d4d0f0 50%, #e8e6f7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.skeletonLine {
+  height: 12px;
+  width: 100%;
+  background: linear-gradient(90deg, #e8e6f7 25%, #d4d0f0 50%, #e8e6f7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.skeletonLineShort {
+  height: 12px;
+  width: 70%;
+  background: linear-gradient(90deg, #e8e6f7 25%, #d4d0f0 50%, #e8e6f7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.fadeInSection {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
