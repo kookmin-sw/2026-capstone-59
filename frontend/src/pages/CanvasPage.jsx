@@ -110,7 +110,7 @@ export default function CanvasPage() {
   const currentSeq = stages.find(s => s.stage_id === currentStageId)?.stage_sequence ?? 0
   const stagesToClear = uiStages
     .filter(s => s.sequence > targetSeq && s.sequence <= currentSeq)
-    .map(s => s.name)
+    .map(s => s.sequence)
     .join(', ')
 
   async function handleNodeClick(event, node) {
