@@ -108,11 +108,15 @@ def list_projects(
     sort_by: str,
     sort_order: str,
     keyword: str | None = None,
+    user_id: UUID | None = None,
 ) -> ProjectListResponse:
     if sort_by not in _ALLOWED_SORT_COLUMNS:
         sort_by = "created_at"
 
-    query = db.query(ProjectModel).filter(ProjectModel.is_deleted.is_(False))
+    query = db.query(ProjectModel).filter(
+        ProjectModel.is_deleted.is_(False),
+        ProjectModel.user_id == user_id,
+    )
 
     if keyword:
         query = query.filter(ProjectModel.name.ilike(f"%{keyword}%"))
