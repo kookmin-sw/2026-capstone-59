@@ -25,7 +25,9 @@ from app.core.schemas.project import (
 _ALLOWED_SORT_COLUMNS: frozenset[str] = frozenset({"created_at", "updated_at", "name"})
 
 
-def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectResponse:
+def create_project(
+    db: Session, payload: ProjectCreateRequest, user_id: UUID
+) -> ProjectResponse:
     if payload.name:
         existing = (
             db.query(ProjectModel)
@@ -40,6 +42,7 @@ def create_project(db: Session, payload: ProjectCreateRequest) -> ProjectRespons
 
     project = ProjectModel(
         name=payload.name if payload.name is not None else _generate_default_name(db),
+        user_id=user_id,
         duration_month=payload.duration_months,
         member_count=payload.member_count,
         description=payload.description,
