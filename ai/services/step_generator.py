@@ -99,6 +99,7 @@ class StepGenerator:
                     "prompt_len": len(prompt),
                 },
                 ensure_ascii=False,
+                default=str,
             )
         )
 
