@@ -87,8 +87,8 @@ def _get_current_required_step(
         is_completed=False,
         goal=current_rs.goal,
         entry_criteria=current_rs.entry_criteria,
-        fulfillment_aspects=current_rs.fulfillment_aspects,
-        fulfillment_threshold=current_rs.fulfillment_threshold,
+        fulfillment_criteria=current_rs.fulfillment_criteria,
+        minimum_fulfillment_count=current_rs.minimum_fulfillment_count,
     )
 
 
@@ -202,8 +202,8 @@ def _build_accept_request(db: Session, step: StepModel) -> AcceptRequest:
             is_completed=False,
             goal=current_rs.goal,
             entry_criteria=current_rs.entry_criteria,
-            fulfillment_aspects=current_rs.fulfillment_aspects,
-            fulfillment_threshold=current_rs.fulfillment_threshold,
+            fulfillment_criteria=current_rs.fulfillment_criteria,
+            minimum_fulfillment_count=current_rs.minimum_fulfillment_count,
         )
 
     accepted_in_required = (
