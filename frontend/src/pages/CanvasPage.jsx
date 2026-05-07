@@ -165,6 +165,19 @@ export default function CanvasPage() {
   }
 
   async function executeAccept() {
+    if (selectedStep.data?.status === 'CANCELED') {
+      try {
+        await rollbackStep(selectedStep.id)
+      } catch (err) {
+        const msg =
+          err?.code === 'INVALID_ROLLBACK_TARGET'
+            ? '자식 Step이 있는 노드는 롤백할 수 없어요.\n마지막 Step을 선택해주세요.'
+            : '롤백에 실패했어요. 다시 시도해주세요.'
+        alert(msg)
+        return
+      }
+    }
+
     let acceptResult
     try {
       acceptResult = await acceptStep(selectedStep.id)
