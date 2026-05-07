@@ -26,3 +26,8 @@ def get_required_steps(
 ) -> RequiredStepListResponse:
     """특정 Stage의 Required Step 목록 조회."""
     return step_service.get_required_steps(db, stage_id)
+
+
+@router.post("/{step_id}/rollback", status_code=http_status.HTTP_200_OK)
+def rollback_step(step_id: UUID, db: Session = Depends(get_db)) -> None:
+    return step_service.rollback_step(db, step_id)
