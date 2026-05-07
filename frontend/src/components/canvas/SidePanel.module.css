@@ -144,15 +144,15 @@
 }
 
 .mentoringSectionTitle {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--color-text);
+  color: #1b1158;
   margin: 0;
 }
 
 .mentoringDescription {
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   line-height: 1.7;
   margin: 0;
   white-space: pre-line;
@@ -161,8 +161,6 @@
 /* 필수 Step: 관점 */
 .perspectiveList {
   list-style: none;
-  padding: 0;
-  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -170,7 +168,7 @@
 
 .perspectiveItem {
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   line-height: 1.6;
   padding-left: 14px;
   position: relative;
@@ -189,15 +187,15 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .goalItem {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 4px;
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   line-height: 1.6;
 }
 
@@ -221,15 +219,15 @@
 }
 
 .methodTitle {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--color-text);
+  color: #291C80;
   margin: 0;
 }
 
 .methodContent {
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   line-height: 1.7;
   margin: 0;
 }
@@ -248,9 +246,9 @@
 }
 
 .mistakeTitle {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: var(--color-text);
+  color: #291C80;
   margin: 0;
 }
 
@@ -263,15 +261,15 @@
 
 .mistakeBad,
 .mistakeGood {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin: 0;
+  font-size: 13px;
+  color: var(--color-text);
+  margin: 5px;
   line-height: 1.6;
 }
 
 .mistakeExplanation {
-  font-size: 12px;
-  color: var(--color-text-secondary);
+  font-size: 13px;
+  color: var(--color-text);
   margin: 0;
   line-height: 1.6;
 }
@@ -296,7 +294,7 @@
 .tipText {
   font-size: 13px;
   color: var(--color-text);
-  margin: 0;
+  margin-bottom: 5px;
   line-height: 1.6;
 }
 
@@ -304,28 +302,28 @@
 .dictionaryList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .dictionaryItem {
-  background: #F4F2FF;
-  border-radius: 8px;
-  padding: 10px 14px;
+  padding: 5px 0;
+  margin: 5px;
+  border-bottom: 1px solid #EEEDF8;
 }
 
 .dictionaryTerm {
   font-size: 14px;
   font-weight: 700;
-  color: #1A1040;
-  margin: 0 0 4px;
+  color: #291C80;
+  margin: -5px 0 5px;
 }
 
 .dictionaryDefinition {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.8;
   font-weight: 600;
   color: #6B6D90;
-  margin: 0;
+  margin: 0 0 10px;
 }
 
 /* Template 탭 */
