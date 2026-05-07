@@ -48,7 +48,7 @@ class RequiredStepJudge:
             return AcceptOutput(is_current_required_step_completed=False)
 
         accepted_steps_json = json.dumps(
-            [step.model_dump() for step in input_data.accepted_steps_in_required],
+            [step.model_dump(mode='json') for step in input_data.accepted_steps_in_required],
             ensure_ascii=False,
         )
         fulfillment_criteria_json = json.dumps(
