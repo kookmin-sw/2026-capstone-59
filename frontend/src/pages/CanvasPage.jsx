@@ -137,12 +137,10 @@ export default function CanvasPage() {
 
   async function handleRollbackConfirm() {
     setRollbackModal(null)
-    try {
-      await rollbackStep(selectedStep.id)
-    } catch {
-      alert('롤백에 실패했어요. 다시 시도해주세요.')
-      return
-    }
+    currentRequiredStepName.current = null
+
+    await executeAccept()
+
     const data = await getStages(projectId)
     const list = data.stages ?? []
     setStages(list)
@@ -187,22 +185,27 @@ export default function CanvasPage() {
     }
 
     if (acceptResult?.is_current_required_step_completed) {
-      const name = currentRequiredStepName.current ?? selectedStep.data.label
-      const isStageComplete = acceptResult?.is_current_stage_completed
-      const message = isStageComplete
-        ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
-        : `✅ ${name}이(가) 종료됐어요!`
-      if (timerRef.current) clearTimeout(timerRef.current)
-      setToast(message)
-      setToastVisible(true)
-      timerRef.current = setTimeout(() => setToastVisible(false), 3000)
-      if (isStageComplete) {
-        getStages(projectId).then((data) => {
-          const list = data.stages ?? []
-          setStages(list)
-          const active = list.find(s => s.is_active)
-          if (active) setCurrentStageSequence(active.stage_sequence)
-        })
+      const requiredNode = selectedStep.type === 'requiredStepNode'
+        ? selectedStep
+        : findRequiredStep(selectedStep.id)
+      const name = requiredNode?.data?.label
+      if (name) {
+        const isStageComplete = acceptResult?.is_current_stage_completed
+        const message = isStageComplete
+          ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
+          : `✅ ${name}이(가) 종료됐어요!`
+        if (timerRef.current) clearTimeout(timerRef.current)
+        setToast(message)
+        setToastVisible(true)
+        timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+        if (isStageComplete) {
+          getStages(projectId).then((data) => {
+            const list = data.stages ?? []
+            setStages(list)
+            const active = list.find(s => s.is_active)
+            if (active) setCurrentStageSequence(active.stage_sequence)
+          })
+        }
       }
     }
 
@@ -222,10 +225,10 @@ export default function CanvasPage() {
 
     if (selectedStep.type === 'requiredStepNode') {
       currentRequiredStepName.current = selectedStep.data.label
-      openToastOnce(
-        `required-start-${selectedStep.id}`,
-        `📌 ${selectedStep.data.label}이(가) 시작됐어요!`
-      )
+      if (timerRef.current) clearTimeout(timerRef.current)
+      setToast(`📌 ${selectedStep.data.label}이(가) 시작됐어요!`)
+      setToastVisible(true)
+      timerRef.current = setTimeout(() => setToastVisible(false), 3000)
     }
 
     await fetchAndRenderTree(selectedStageId)
@@ -343,7 +346,7 @@ export default function CanvasPage() {
               <div className={styles.iconWrap}>⚠️</div>
               <p className={styles.title}>선택한 Step으로 돌아가시겠습니까?</p>
               <p className={styles.desc}>
-                {stagesToClear}의 모든 진행 내역이 삭제됩니다. 계속 하시겠습니까?
+                stage {stagesToClear}의 모든 진행 내역이 삭제됩니다. 계속 하시겠습니까?
               </p>
               <div className={styles.actions}>
                 <button className={styles.cancelBtn} onClick={() => setRollbackModal(null)}>
