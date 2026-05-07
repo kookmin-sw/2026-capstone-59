@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
 from app.core.exceptions import InvalidRollbackTargetError, StepNotFoundError
+from app.core.models.project import ProjectStage as ProjectStageModel
 from app.core.models.project_required_step_status import (
     ProjectRequiredStepStatus as ProjectRequiredStepStatusModel,
 )
 from app.core.models.required_step import RequiredStep as RequiredStepModel
+from app.core.models.stage import Stage as StageModel
 from app.core.models.step import Step as StepModel
 from app.core.models.step import StepTree as StepTreeModel
 from app.core.schemas.step import (
@@ -48,6 +50,9 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
     if has_child:
         raise InvalidRollbackTargetError("자식 Step이 있는 Step은 롤백할 수 없습니다.")
 
+    # ⓪ 롤백 대상이 현재 진행 Stage보다 낮은 Stage이면 윗 Stage들을 모두 정리
+    _wipe_upper_stages_if_needed(db, step)
+
     # ② 클로저 테이블로 조상 + 자기 자신을 depth 오름차순으로 조회
     #    depth=0(자기 자신)은 ACCEPTED 처리에서 제외 — Accept API에서 별도로 처리.
     ancestor_rows = (
@@ -85,6 +90,75 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
     _unfulfill_required_steps_from(db, step)
 
     db.commit()
+
+
+def _wipe_upper_stages_if_needed(db: Session, target_step: StepModel) -> None:
+    """롤백 대상이 현재 진행 중인 Stage보다 낮은 Stage라면 윗 Stage들의
+    Step / StepTree / ProjectRequiredStepStatus를 모두 삭제하고,
+    ProjectStage.is_active를 롤백 대상 Stage로 옮긴다."""
+    target_stage = target_step.stage
+    target_seq = target_stage.sequence
+
+    current_active_seq = (
+        db.query(StageModel.sequence)
+        .join(ProjectStageModel, ProjectStageModel.stage_id == StageModel.id)
+        .filter(
+            ProjectStageModel.project_id == target_step.project_id,
+            ProjectStageModel.is_active.is_(True),
+        )
+        .scalar()
+    )
+    if current_active_seq is None or current_active_seq <= target_seq:
+        return  # 윗 Stage가 없으므로 정리할 게 없음
+
+    upper_stage_ids = [
+        sid
+        for (sid,) in db.query(StageModel.id)
+        .filter(StageModel.sequence > target_seq)
+        .all()
+    ]
+    if not upper_stage_ids:
+        return
+
+    # ① 윗 Stage의 모든 Step 삭제 — parent_step_id FK가 자기 참조라
+    #    먼저 NULL 처리로 끊은 뒤 일괄 DELETE. StepTree는 ondelete=CASCADE로 자동 정리.
+    db.query(StepModel).filter(
+        StepModel.project_id == target_step.project_id,
+        StepModel.stage_id.in_(upper_stage_ids),
+    ).update({"parent_step_id": None}, synchronize_session=False)
+    db.flush()
+
+    db.query(StepModel).filter(
+        StepModel.project_id == target_step.project_id,
+        StepModel.stage_id.in_(upper_stage_ids),
+    ).delete(synchronize_session=False)
+
+    # ② 윗 Stage의 Required Step Status는 삭제하지 않고 fulfilled 만 해제
+    upper_rs_ids_subq = (
+        db.query(RequiredStepModel.id)
+        .filter(RequiredStepModel.stage_id.in_(upper_stage_ids))
+        .subquery()
+    )
+    db.query(ProjectRequiredStepStatusModel).filter(
+        ProjectRequiredStepStatusModel.project_id == target_step.project_id,
+        ProjectRequiredStepStatusModel.required_step_id.in_(
+            db.query(upper_rs_ids_subq)
+        ),
+    ).update(
+        {"is_fulfilled": False, "fulfilled_at": None},
+        synchronize_session=False,
+    )
+
+    # ③ ProjectStage.is_active 이동: 윗 Stage → False, 롤백 대상 Stage → True
+    db.query(ProjectStageModel).filter(
+        ProjectStageModel.project_id == target_step.project_id,
+        ProjectStageModel.stage_id.in_(upper_stage_ids),
+    ).update({"is_active": False}, synchronize_session=False)
+    db.query(ProjectStageModel).filter(
+        ProjectStageModel.project_id == target_step.project_id,
+        ProjectStageModel.stage_id == target_stage.id,
+    ).update({"is_active": True}, synchronize_session=False)
+    db.flush()
 
 
 def _unfulfill_required_steps_from(db: Session, step: StepModel) -> None:
