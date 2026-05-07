@@ -51,6 +51,7 @@ class StepAcceptResponse(BaseModel):
     step_id: UUID
     status: StepStatus
     is_current_required_step_completed: bool
+    is_current_stage_completed: bool
 
 
 class StepDetailResponse(BaseModel):

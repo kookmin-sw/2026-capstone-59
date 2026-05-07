@@ -182,11 +182,21 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
                 )
 
     db.commit()
-
+    # 스테이지 완료 여부 확인
+    all_required = (
+        db.query(RequiredStepModel)
+        .filter(RequiredStepModel.stage_id == step.stage_id)
+        .all()
+    )
+    updated_fulfilled_ids = _get_fulfilled_required_step_ids(db, step.project_id)
+    is_stage_completed = bool(all_required) and all(
+        rs.id in updated_fulfilled_ids for rs in all_required
+    )
     return StepAcceptResponse(
         step_id=step_id,
         status=StepStatus.ACCEPTED,
         is_current_required_step_completed=is_completed,
+        is_current_stage_completed=is_stage_completed, 
     )
 
 
