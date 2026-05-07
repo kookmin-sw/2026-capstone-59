@@ -43,6 +43,7 @@ class RequiredStepJudge:
                         "reason": "no_current_required_step",
                     },
                     ensure_ascii=False,
+                    default=str,
                 )
             )
             return AcceptOutput(is_current_required_step_completed=False)
@@ -79,6 +80,7 @@ class RequiredStepJudge:
                     "prompt_len": len(prompt),
                 },
                 ensure_ascii=False,
+                default=str,
             )
         )
 
