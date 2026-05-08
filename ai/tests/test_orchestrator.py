@@ -25,6 +25,8 @@ from ai.schemas.common import (
 from ai.schemas.generate import GenerateInput, GenerateOutput
 from ai.schemas.side_panel import SidePanelInput, SidePanelOutput
 from ai.services import (
+    accept_and_generate,
+    accept_and_generate_with_side_panels,
     generate_side_panel,
     generate_steps,
     judge_required_step,
@@ -467,3 +469,169 @@ class TestDeliveryInterface:
                     imported.add(node.module.split(".")[0])
             violations = imported & banned
             assert not violations, f"{path}: 백엔드 전용 패키지 import 발견 — {violations}"
+
+
+# ---------------------------------------------------------------------------
+# accept_and_generate
+# ---------------------------------------------------------------------------
+
+
+def _runtime_mock_for_accept_and_generate() -> MagicMock:
+    """accept → generate 순으로 invoke_model이 두 번 호출될 때 각각 올바른 응답을 반환."""
+    import io as _io
+    import json as _json
+
+    def _make_body(payload: dict) -> dict:
+        envelope = {"content": [{"type": "text", "text": _json.dumps(payload, ensure_ascii=False)}]}
+        return {"body": _io.BytesIO(_json.dumps(envelope, ensure_ascii=False).encode("utf-8"))}
+
+    mock = MagicMock()
+    mock.invoke_model.side_effect = [
+        _make_body({"is_current_required_step_completed": True}),
+        _make_body(_valid_generate_payload()),
+    ]
+    return mock
+
+
+class TestAcceptAndGenerate:
+    @pytest.mark.asyncio
+    async def test_returns_tuple_of_correct_types(self):
+        """병렬 실행 정상 흐름: (AcceptOutput, GenerateOutput) 튜플 반환."""
+        runtime = _runtime_mock_for_accept_and_generate()
+        agent = _bedrock_agent_mock()
+
+        result = await accept_and_generate(
+            accept_input=_accept_input(),
+            generate_input=_generate_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+        )
+
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+    @pytest.mark.asyncio
+    async def test_each_element_has_correct_type(self):
+        """반환 타입 검증: AcceptOutput과 GenerateOutput 각각."""
+        runtime = _runtime_mock_for_accept_and_generate()
+        agent = _bedrock_agent_mock()
+
+        accept_result, generate_result = await accept_and_generate(
+            accept_input=_accept_input(),
+            generate_input=_generate_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+        )
+
+        assert isinstance(accept_result, AcceptOutput)
+        assert isinstance(generate_result, GenerateOutput)
+        assert accept_result.is_current_required_step_completed is True
+        assert len(generate_result.generated_steps) == 3
+
+    @pytest.mark.asyncio
+    async def test_both_clients_called(self):
+        """병렬성 검증: runtime.invoke_model 2회, agent.retrieve 1회 호출."""
+        runtime = _runtime_mock_for_accept_and_generate()
+        agent = _bedrock_agent_mock()
+
+        await accept_and_generate(
+            accept_input=_accept_input(),
+            generate_input=_generate_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+        )
+
+        # accept(invoke) + generate(invoke) = 2회
+        assert runtime.invoke_model.call_count == 2
+        # generate만 RAG 사용 = 1회
+        assert agent.retrieve.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# accept_and_generate_with_side_panels
+# ---------------------------------------------------------------------------
+
+
+def _runtime_mock_for_full_pipeline() -> MagicMock:
+    """accept(1) + generate(1) + side_panel×3(3) = invoke_model 5회 응답."""
+    import io as _io
+    import json as _json
+
+    def _make_body(payload: dict) -> dict:
+        envelope = {"content": [{"type": "text", "text": _json.dumps(payload, ensure_ascii=False)}]}
+        return {"body": _io.BytesIO(_json.dumps(envelope, ensure_ascii=False).encode("utf-8"))}
+
+    mock = MagicMock()
+    mock.invoke_model.side_effect = [
+        _make_body({"is_current_required_step_completed": True}),   # accept
+        _make_body(_valid_generate_payload()),                        # generate
+        _make_body(_valid_side_panel_payload()),                     # side_panel Step 1
+        _make_body(_valid_side_panel_payload()),                     # side_panel Step 2
+        _make_body(_valid_side_panel_payload()),                     # side_panel Step 3
+    ]
+    return mock
+
+
+class TestAcceptAndGenerateWithSidePanels:
+    @pytest.mark.asyncio
+    async def test_returns_correct_types(self):
+        """반환 타입 검증: (AcceptOutput, GenerateOutput, list[SidePanelOutput])."""
+        runtime = _runtime_mock_for_full_pipeline()
+        agent = _bedrock_agent_mock()
+
+        result = await accept_and_generate_with_side_panels(
+            accept_input=_accept_input(),
+            generate_input=_generate_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+        )
+
+        accept_result, generate_result, sp_list = result
+        assert isinstance(accept_result, AcceptOutput)
+        assert isinstance(generate_result, GenerateOutput)
+        assert isinstance(sp_list, list)
+        assert all(isinstance(sp, SidePanelOutput) for sp in sp_list)
+
+    @pytest.mark.asyncio
+    async def test_side_panel_list_has_three_items(self):
+        """list[SidePanelOutput] 길이가 정확히 3."""
+        runtime = _runtime_mock_for_full_pipeline()
+        agent = _bedrock_agent_mock()
+
+        _, _, sp_list = await accept_and_generate_with_side_panels(
+            accept_input=_accept_input(),
+            generate_input=_generate_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+        )
+
+        assert len(sp_list) == 3
+
+    @pytest.mark.asyncio
+    async def test_invoke_and_retrieve_call_counts(self):
+        """invoke_model 5회 (accept 1 + generate 1 + side_panel 3), retrieve 7회 (generate 1 + side_panel 3×2)."""
+        runtime = _runtime_mock_for_full_pipeline()
+        agent = _bedrock_agent_mock()
+
+        await accept_and_generate_with_side_panels(
+            accept_input=_accept_input(),
+            generate_input=_generate_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+        )
+
+        assert runtime.invoke_model.call_count == 5
+        # generate: DOJ 1회 / side_panel 각 DOJ+Custom 2회 × 3 = 7회 합계
+        assert agent.retrieve.call_count == 7
