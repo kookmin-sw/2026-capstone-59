@@ -1,6 +1,7 @@
 import json
 import uuid
 from datetime import datetime, timezone
+import asyncio
 
 from sqlalchemy.orm import Session
 
@@ -29,7 +30,6 @@ from app.core.schemas.step import (
     SidePanelRequest,
     StepAcceptResponse,
     StepDetailResponse,
-    StepGenerateResponse,
     TargetStep,
 )
 
@@ -142,7 +142,7 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     # ② ACCEPTED 처리
     step.status = StepStatus.ACCEPTED
 
-    # ③ 형제 Step CANCELED
+    # ③ 형제 Step CANCELED (필수 Step 노드 제외)
     if step.parent_step_id is not None:
         siblings = (
             db.query(StepModel)
@@ -159,11 +159,12 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
 
     db.flush()
 
-    # ④ Bedrock 호출 (필수 Step 영역 안에 있을 때만)
+    # ④ accept + generate 병렬 호출
+    accept_request = _build_accept_request(db, step)
+    generate_request = _build_generate_request(db, step)
+
     is_completed = False
     if step.belonging_required_step_id is not None:
-
-        # DB에 이미 완료된 상태면 Bedrock 호출 스킵
         existing = db.get(
             ProjectRequiredStepStatus,
             {
@@ -172,20 +173,26 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
             },
         )
         if existing and existing.is_fulfilled:
-            is_completed = True  # 이미 완료 → Bedrock 호출 안 함
+            is_completed = True
+            generate_result = await orchestrator.call_generate(generate_request)
         else:
-            request = _build_accept_request(db, step)
-            result = await orchestrator.call_accept(request)
-            is_completed = result.is_current_required_step_completed
+            accept_result, generate_result = await asyncio.gather(
+                orchestrator.call_accept(accept_request),
+                orchestrator.call_generate(generate_request),
+            )
+            is_completed = accept_result.is_current_required_step_completed
             if is_completed:
                 _upsert_required_step_status(
                     db,
                     project_id=step.project_id,
                     required_step_id=step.belonging_required_step_id,
                 )
+    else:
+        generate_result = await orchestrator.call_generate(generate_request)
 
     db.commit()
-    # 스테이지 완료 여부 확인
+
+    # ⑤ 스테이지 완료 여부 확인
     all_required = (
         db.query(RequiredStepModel)
         .filter(RequiredStepModel.stage_id == step.stage_id)
@@ -211,11 +218,44 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
                 next_project_stage.is_active = True
                 db.commit()
 
+    # ⑥ generate 결과로 step 노드 생성
+    belonging_rs_id = step.belonging_required_step_id or step.required_step_id
+    steps: list[StepModel] = []
+    _attach_or_create_required_step_node(db, step, steps)
+    _create_generated_step_nodes(db, step, generate_result.generated_steps, belonging_rs_id, steps)
+    db.flush()
+
+    # ⑦ 일반 Step 사이드패널 병렬 생성
+    regular_steps = [s for s in steps if s.required_step_id is None]
+    side_panel_requests = [_build_side_panel_request(db, s) for s in regular_steps]
+    side_panel_results = await asyncio.gather(*[
+        orchestrator.call_side_panel(req) for req in side_panel_requests
+    ])
+
+    # ⑧ 사이드패널 DB 저장
+    for s, result in zip(regular_steps, side_panel_results):
+        content = StepContentModel(step_id=s.id)
+        content.mentoring = json.dumps(result.mentoring.model_dump(), ensure_ascii=False)
+        content.dictionary = json.dumps([d.model_dump() for d in result.dictionary], ensure_ascii=False)
+        db.add(content)
+
+    db.commit()
+    for s in steps:
+        db.refresh(s)
+
     return StepAcceptResponse(
-        step_id=step_id,
-        status=StepStatus.ACCEPTED,
         is_current_required_step_completed=is_completed,
-        is_current_stage_completed=is_stage_completed, 
+        is_current_stage_completed=is_stage_completed,
+        generated_steps=[
+            GeneratedStep(
+                step_id=s.id,
+                name=s.name,
+                status=s.status,
+                is_required=s.required_step_id is not None,
+                parent_step_id=s.parent_step_id,
+            )
+            for s in steps
+        ],
     )
 
 
@@ -280,46 +320,6 @@ def _upsert_required_step_status(
     record.is_fulfilled = True
     record.fulfilled_at = datetime.now(timezone.utc)
 
-
-async def generate_steps(db: Session, parent_step_id: uuid.UUID) -> StepGenerateResponse:
-    parent_step = db.get(StepModel, parent_step_id)
-    if parent_step is None:
-        raise StepNotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")
-
-    # ① Bedrock으로 일반 Step 이름 3개 생성
-    request = _build_generate_request(db, parent_step)
-    result = await orchestrator.call_generate(request)
-    generated: list[dict] = result.generated_steps
-
-    # ② 부모가 필수 Step 영역에 속하면 자식도 같은 영역에 속함
-    belonging_rs_id = (
-        parent_step.belonging_required_step_id or parent_step.required_step_id
-    )
-
-    steps: list[StepModel] = []
-
-    # ③ 필수 Step 노드 포함 여부 판단 + 생성/재사용
-    _attach_or_create_required_step_node(db, parent_step, steps)
-
-    # ④ 일반 Step 생성
-    _create_generated_step_nodes(db, parent_step, generated, belonging_rs_id, steps)
-
-    db.commit()
-    for step in steps:
-        db.refresh(step)
-
-    return StepGenerateResponse(
-        generated_steps=[
-            GeneratedStep(
-                step_id=s.id,
-                name=s.name,
-                status=s.status,
-                is_required=s.required_step_id is not None,
-                parent_step_id=s.parent_step_id,
-            )
-            for s in steps
-        ]
-    )
 
 
 def _attach_or_create_required_step_node(
@@ -448,7 +448,7 @@ def _get_next_unfulfilled_required_step_id(
 
 
 # 사이드 패널
-async def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
+def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
     step = db.get(StepModel, step_id)
     if step is None:
         raise StepNotFoundError()
@@ -485,36 +485,14 @@ async def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse
             template_url=content.template_url if content else None,
         )
 
-    # 일반 Step → DB 캐시 확인 후 없으면 AI 호출
+    # 일반 Step → DB에서 읽기
     content = step.content
-    if content and content.mentoring:
-        return StepDetailResponse(
-            is_required=False,
-            step_id=step.id,
-            name=step.name,
-            mentoring=json.loads(content.mentoring) if content.mentoring else None,
-            dictionary=(json.loads(content.dictionary) if content.dictionary else None),
-        )
-
-    # AI 호출
-    request = _build_side_panel_request(db, step)
-    result = await orchestrator.call_side_panel(request)
-
-    # StepContent에 저장
-    if content is None:
-        content = StepContentModel(step_id=step.id)
-        db.add(content)
-
-    content.mentoring = json.dumps(result.mentoring.model_dump(), ensure_ascii=False)
-    content.dictionary = json.dumps([d.model_dump() for d in result.dictionary], ensure_ascii=False)
-    db.commit()
-
     return StepDetailResponse(
         is_required=False,
         step_id=step.id,
         name=step.name,
-        mentoring=result.mentoring.model_dump(),
-        dictionary=[d.model_dump() for d in result.dictionary],
+        mentoring=json.loads(content.mentoring) if content and content.mentoring else None,
+        dictionary=json.loads(content.dictionary) if content and content.dictionary else None,
     )
 
 
