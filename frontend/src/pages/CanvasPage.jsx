@@ -84,7 +84,8 @@ export default function CanvasPage() {
           const detail = await getStepDetail(firstRequired.id)
           setStepDetail(detail)
         } catch {
-          // }
+          // 상세 정보 로드 실패해도 노드 선택은 유지
+        }
       }
     }
   }
