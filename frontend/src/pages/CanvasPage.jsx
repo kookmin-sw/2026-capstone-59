@@ -46,6 +46,7 @@ export default function CanvasPage() {
 
   const timerRef = useRef(null)
   const currentRequiredStepName = useRef(null)
+  const autoOpenedStageRef = useRef(null)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -71,6 +72,19 @@ export default function CanvasPage() {
     const { nodes: n, edges: e } = flattenTree(treeData.steps ?? [], stage?.stage_sequence)
     setNodes(n)
     setEdges(e)
+
+    if (autoOpenedStageRef.current !== stageId) {
+      const firstRequired = n.find((node) => node.type === 'requiredStepNode')
+      if (firstRequired) {
+        autoOpenedStageRef.current = stageId
+        setSelectedStep(firstRequired)
+        setStepDetail(null)
+        try {
+          const detail = await getStepDetail(firstRequired.id)
+          setStepDetail(detail)
+        } catch {}
+      }
+    }
   }
 
   useEffect(() => {
@@ -93,6 +107,7 @@ export default function CanvasPage() {
   useEffect(() => {
     setSelectedStep(null)
     setStepDetail(null)
+    autoOpenedStageRef.current = null
   }, [selectedStageId])
 
   const uiStages = stages.map(s => ({
