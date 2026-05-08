@@ -1,21 +1,17 @@
 import json
-import uuid
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.enums import StepStatus
 from app.core.exceptions import DuplicateProjectNameError, ProjectNotFoundError
 from app.core.models.project import Project as ProjectModel
-from app.core.models.project import ProjectStage as ProjectStageModel
-from app.core.models.project_required_step_status import (
-    ProjectRequiredStepStatus as ProjectRequiredStepStatusModel,
+from app.core.repositories import (
+    project as project_repo,
+    required_step as required_step_repo,
+    stage as stage_repo,
+    step as step_repo,
 )
-from app.core.models.required_step import RequiredStep as RequiredStepModel
-from app.core.models.stage import Stage as StageModel
-from app.core.models.step import Step as StepModel
-from app.core.models.step import StepContent as StepContentModel
-from app.core.models.step import StepTree as StepTreeModel
-from app.core.enums import StepStatus
 from app.core.schemas.project import (
     ProjectCreateRequest,
     ProjectListItemResponse,
@@ -31,48 +27,32 @@ def create_project(
     db: Session, payload: ProjectCreateRequest, user_id: UUID
 ) -> ProjectResponse:
     if payload.name:
-        existing = (
-            db.query(ProjectModel)
-            .filter(
-                ProjectModel.name == payload.name,
-                ProjectModel.is_deleted.is_(False),
-            )
-            .first()
-        )
+        existing = project_repo.get_active_project_by_name(db, payload.name)
         if existing:
             raise DuplicateProjectNameError()
 
-    project = ProjectModel(
-        name=payload.name if payload.name is not None else _generate_default_name(db),
-        user_id=user_id,
-        duration_month=payload.duration_months,
-        member_count=payload.member_count,
-        description=payload.description,
-        constraint_text=payload.constraint,
-        prompt=payload.prompt,
+    project = project_repo.add_project(
+        db,
+        ProjectModel(
+            name=(
+                payload.name if payload.name is not None else _generate_default_name(db)
+            ),
+            user_id=user_id,
+            duration_month=payload.duration_months,
+            member_count=payload.member_count,
+            description=payload.description,
+            constraint_text=payload.constraint,
+            prompt=payload.prompt,
+        ),
     )
-    db.add(project)
-    db.flush()
 
-    stages = db.query(StageModel).order_by(StageModel.sequence).all()
-    for i, stage in enumerate(stages):
-        db.add(
-            ProjectStageModel(
-                project_id=project.id,
-                stage_id=stage.id,
-                is_active=(i == 0),
-            )
-        )
+    stages = stage_repo.get_all_stages_ordered(db)
+    project_repo.create_initial_project_stages(db, project.id, [s.id for s in stages])
 
-    required_steps = db.query(RequiredStepModel).all()
-    for rs in required_steps:
-        db.add(
-            ProjectRequiredStepStatusModel(
-                project_id=project.id,
-                required_step_id=rs.id,
-                is_fulfilled=False,
-            )
-        )
+    required_steps = required_step_repo.get_all_required_steps(db)
+    project_repo.create_initial_project_rs_statuses(
+        db, project.id, [rs.id for rs in required_steps]
+    )
 
     _create_initial_steps_for_each_stage(db, project.id)
 
@@ -83,12 +63,9 @@ def create_project(
 
 def _create_initial_steps_for_each_stage(db: Session, project_id: UUID) -> None:
     """각 Stage의 첫 번째(sequence=1) Required Step을 루트 Step으로 생성."""
-    first_required_steps = (
-        db.query(RequiredStepModel).filter(RequiredStepModel.sequence == 1).all()
-    )
-    for rs in first_required_steps:
-        step = StepModel(
-            id=uuid.uuid4(),
+    for rs in required_step_repo.get_first_rs_of_stages(db):
+        step = step_repo.add_step(
+            db,
             project_id=project_id,
             stage_id=rs.stage_id,
             parent_step_id=None,
@@ -98,15 +75,22 @@ def _create_initial_steps_for_each_stage(db: Session, project_id: UUID) -> None:
             status=StepStatus.READY,
             sort_order=0,
         )
-        db.add(step)
-        db.flush()
-        db.add(StepTreeModel(ancestor=step.id, descendant=step.id, depth=0))
+        step_repo.insert_closure_self(db, step.id)
         if rs.default_mentoring is not None or rs.default_dictionary is not None:
-            db.add(StepContentModel(
-                step_id=step.id,
-                mentoring=json.dumps(rs.default_mentoring, ensure_ascii=False) if rs.default_mentoring else None,
-                dictionary=json.dumps(rs.default_dictionary, ensure_ascii=False) if rs.default_dictionary else None,
-            ))
+            step_repo.add_step_content(
+                db,
+                step.id,
+                mentoring=(
+                    json.dumps(rs.default_mentoring, ensure_ascii=False)
+                    if rs.default_mentoring
+                    else None
+                ),
+                dictionary=(
+                    json.dumps(rs.default_dictionary, ensure_ascii=False)
+                    if rs.default_dictionary
+                    else None
+                ),
+            )
 
 
 def list_projects(
@@ -121,19 +105,9 @@ def list_projects(
     if sort_by not in _ALLOWED_SORT_COLUMNS:
         sort_by = "created_at"
 
-    query = db.query(ProjectModel).filter(
-        ProjectModel.is_deleted.is_(False),
-        ProjectModel.user_id == user_id,
+    projects, total_count = project_repo.get_projects_by_user(
+        db, user_id, page, size, sort_by, sort_order, keyword
     )
-
-    if keyword:
-        query = query.filter(ProjectModel.name.ilike(f"%{keyword}%"))
-
-    sort_col = getattr(ProjectModel, sort_by)
-    query = query.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())
-
-    total_count = query.count()
-    projects = query.offset((page - 1) * size).limit(size).all()
 
     return ProjectListResponse(
         projects=[
@@ -161,27 +135,22 @@ def list_projects(
 def update_project(
     db: Session, project_id: UUID, payload: ProjectUpdateRequest
 ) -> ProjectResponse:
-    project = _get_project_or_raise(db, project_id)
+    project = get_project_or_raise(db, project_id)
 
     if payload.name is not None:
-        existing = (
-            db.query(ProjectModel)
-            .filter(
-                ProjectModel.name == payload.name,
-                ProjectModel.id != project_id,
-                ProjectModel.is_deleted.is_(False),
-            )
-            .first()
+        existing = project_repo.get_active_project_by_name(
+            db, payload.name, exclude_id=project_id
         )
         if existing:
             raise DuplicateProjectNameError()
-        project.name = payload.name
-    if payload.description is not None:
-        project.description = payload.description
-    if payload.duration_months is not None:
-        project.duration_month = payload.duration_months
-    if payload.member_count is not None:
-        project.member_count = payload.member_count
+
+    project_repo.update_project_fields(
+        project,
+        name=payload.name,
+        description=payload.description,
+        duration_month=payload.duration_months,
+        member_count=payload.member_count,
+    )
 
     db.commit()
     db.refresh(project)
@@ -189,38 +158,21 @@ def update_project(
 
 
 def delete_project(db: Session, project_id: UUID) -> None:
-    project = _get_project_or_raise(db, project_id)
-    project.is_deleted = True
+    project = get_project_or_raise(db, project_id)
+    project_repo.soft_delete_project(project)
     db.commit()
 
 
-def _get_project_or_raise(db: Session, project_id: UUID) -> ProjectModel:
-    project = (
-        db.query(ProjectModel)
-        .filter(
-            ProjectModel.id == project_id,
-            ProjectModel.is_deleted.is_(False),
-        )
-        .first()
-    )
+def get_project_or_raise(db: Session, project_id: UUID) -> ProjectModel:
+    project = project_repo.get_active_project_by_id(db, project_id)
     if not project:
         raise ProjectNotFoundError()
     return project
 
 
 def _get_current_stage_sequence(db: Session, project_id: UUID) -> int:
-    """is_active=True인 Stage의 sequence를 반환."""
-    row = (
-        db.query(StageModel.sequence)
-        .join(ProjectStageModel, ProjectStageModel.stage_id == StageModel.id)
-        .filter(
-            ProjectStageModel.project_id == project_id,
-            ProjectStageModel.is_active.is_(True),
-        )
-        .order_by(StageModel.sequence)
-        .first()
-    )
-    return row[0] if row else 1
+    seq = project_repo.get_active_stage_sequence(db, project_id)
+    return seq if seq is not None else 1
 
 
 def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
@@ -236,15 +188,7 @@ def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
 
 def _generate_default_name(db: Session) -> str:
     base = "새 프로젝트"
-    existing_names = (
-        db.query(ProjectModel.name)
-        .filter(
-            ProjectModel.name.ilike(f"{base}%"),
-            ProjectModel.is_deleted.is_(False),
-        )
-        .all()
-    )
-    existing_names = {row[0] for row in existing_names}
+    existing_names = project_repo.get_active_names_by_prefix(db, base)
 
     if base not in existing_names:
         return base

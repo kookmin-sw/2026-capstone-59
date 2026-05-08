@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import InvalidTokenError, UserNotFoundError
 from app.core.models.app_user import AppUser as AppUserModel
+from app.core.repositories import user as user_repo
 
 
 def get_current_user_id(
@@ -25,14 +26,7 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> AppUserModel:
     """JWT 검증 + DB에서 AppUser 조회. is_deleted 체크."""
-    user = (
-        db.query(AppUserModel)
-        .filter(
-            AppUserModel.id == user_id,
-            AppUserModel.is_deleted.is_(False),
-        )
-        .first()
-    )
+    user = user_repo.get_active_user(db, user_id)
     if not user:
         raise UserNotFoundError()
     return user
