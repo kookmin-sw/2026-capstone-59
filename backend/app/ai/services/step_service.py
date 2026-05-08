@@ -1,5 +1,7 @@
 import json
 import uuid
+import asyncio
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -7,13 +9,13 @@ from app.ai.services import orchestrator
 from app.ai.services.rag import retrieve
 from app.core.enums import StepStatus
 from app.core.exceptions import StepAlreadyAcceptedError, StepNotFoundError
+from app.core.models.project_required_step_status import ProjectRequiredStepStatus
+from app.core.models.required_step import RequiredStep as RequiredStepModel
+from app.core.models.project import ProjectStage
 from app.core.models.step import Step as StepModel
-from app.core.repositories import (
-    project as project_repo,
-    required_step as required_step_repo,
-    stage as stage_repo,
-    step as step_repo,
-)
+from app.core.models.step import StepContent as StepContentModel
+from app.core.models.step import StepTree as StepTreeModel
+from app.core.models.stage import Stage as StageModel
 from app.core.schemas.step import (
     AcceptedStepItem,
     AcceptRequest,
@@ -28,15 +30,12 @@ from app.core.schemas.step import (
     SidePanelRequest,
     StepAcceptResponse,
     StepDetailResponse,
-    StepGenerateResponse,
     TargetStep,
 )
 
 
-# ────────────────────────── 스키마 변환 헬퍼 ──────────────────────────
-
-
 def _build_project_info(step: StepModel) -> ProjectInfo:
+    """Step에서 ProjectInfo 스키마를 구성."""
     project = step.project
     return ProjectInfo(
         project_id=project.id,
@@ -50,6 +49,7 @@ def _build_project_info(step: StepModel) -> ProjectInfo:
 
 
 def _build_current_stage(step: StepModel) -> CurrentStage:
+    """Step에서 CurrentStage 스키마를 구성."""
     stage = step.stage
     return CurrentStage(
         stage_id=stage.id,
@@ -58,125 +58,231 @@ def _build_current_stage(step: StepModel) -> CurrentStage:
     )
 
 
-def _to_current_required_step(rs) -> CurrentRequiredStep:
-    return CurrentRequiredStep(
-        step_id=rs.id,
-        name=rs.name,
-        is_completed=False,
-        goal=rs.goal,
-        entry_criteria=rs.entry_criteria,
-        fulfillment_criteria=rs.fulfillment_criteria,
-        minimum_fulfillment_count=rs.minimum_fulfillment_count,
-    )
+def _get_fulfilled_required_step_ids(
+    db: Session, project_id: uuid.UUID
+) -> set[uuid.UUID]:
+    """프로젝트에서 이미 충족된 Required Step ID 집합."""
+    return {
+        row.required_step_id
+        for row in db.query(ProjectRequiredStepStatus).filter_by(
+            project_id=project_id, is_fulfilled=True
+        )
+    }
 
 
 def _get_current_required_step(
     db: Session, stage_id: uuid.UUID, fulfilled_ids: set[uuid.UUID]
 ) -> CurrentRequiredStep | None:
-    """현재 Stage 에서 미충족 첫 번째 Required Step 반환."""
-    all_required = required_step_repo.get_required_steps_in_stage(db, stage_id)
+    """현재 Stage에서 미충족 첫 번째 Required Step을 반환."""
+    all_required = (
+        db.query(RequiredStepModel)
+        .filter(RequiredStepModel.stage_id == stage_id)
+        .order_by(RequiredStepModel.sequence)
+        .all()
+    )
     current_rs = next((rs for rs in all_required if rs.id not in fulfilled_ids), None)
-    return _to_current_required_step(current_rs) if current_rs else None
+    if current_rs is None:
+        return None
+    return CurrentRequiredStep(
+        step_id=current_rs.id,
+        name=current_rs.name,
+        is_completed=False,
+        goal=current_rs.goal,
+        entry_criteria=current_rs.entry_criteria,
+        fulfillment_criteria=current_rs.fulfillment_criteria,
+        minimum_fulfillment_count=current_rs.minimum_fulfillment_count,
+    )
 
 
 def _get_required_steps_status(
     db: Session, stage_id: uuid.UUID, fulfilled_ids: set[uuid.UUID]
 ) -> list[RequiredStepStatusItem]:
+    """Stage의 전체 Required Step 상태 목록."""
+    all_required = (
+        db.query(RequiredStepModel)
+        .filter(RequiredStepModel.stage_id == stage_id)
+        .order_by(RequiredStepModel.sequence)
+        .all()
+    )
     return [
         RequiredStepStatusItem(
             name=rs.name,
             order=rs.sequence,
             is_completed=rs.id in fulfilled_ids,
         )
-        for rs in required_step_repo.get_required_steps_in_stage(db, stage_id)
+        for rs in all_required
     ]
 
 
-# ────────────────────────────── Accept ──────────────────────────────
+def _insert_closure_rows(
+    db: Session, step_id: uuid.UUID, parent_step_id: uuid.UUID | None
+) -> None:
+    db.add(StepTreeModel(ancestor=step_id, descendant=step_id, depth=0))
+    if parent_step_id is None:
+        return
+    parent_ancestors = (
+        db.query(StepTreeModel).filter(StepTreeModel.descendant == parent_step_id).all()
+    )
+    for row in parent_ancestors:
+        db.add(
+            StepTreeModel(
+                ancestor=row.ancestor, descendant=step_id, depth=row.depth + 1
+            )
+        )
 
 
 async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
-    step = step_repo.get_step(db, step_id)
+    # ① 조회 및 검증
+    step = db.get(StepModel, step_id)
     if step is None:
         raise StepNotFoundError()
     if step.status == StepStatus.ACCEPTED:
         raise StepAlreadyAcceptedError()
 
+    # ② ACCEPTED 처리
     step.status = StepStatus.ACCEPTED
 
-    # 형제 Step 중 일반 Step 만 CANCELED
+    # ③ 형제 Step CANCELED (필수 Step 노드 제외)
     if step.parent_step_id is not None:
-        for sibling in step_repo.get_ready_siblings(db, step.parent_step_id, step_id):
+        siblings = (
+            db.query(StepModel)
+            .filter(
+                StepModel.parent_step_id == step.parent_step_id,
+                StepModel.id != step_id,
+                StepModel.status == StepStatus.READY,
+            )
+            .all()
+        )
+        for sibling in siblings:
             if sibling.required_step_id is None:
                 sibling.status = StepStatus.CANCELED
 
     db.flush()
 
-    # Bedrock 호출 (필수 Step 영역 안에 있을 때만)
+    # ④ accept + generate 병렬 호출
+    accept_request = _build_accept_request(db, step)
+    generate_request = _build_generate_request(db, step)
+
     is_completed = False
     if step.belonging_required_step_id is not None:
-        existing = project_repo.get_required_step_status(
-            db, step.project_id, step.belonging_required_step_id
+        existing = db.get(
+            ProjectRequiredStepStatus,
+            {
+                "project_id": step.project_id,
+                "required_step_id": step.belonging_required_step_id,
+            },
         )
         if existing and existing.is_fulfilled:
             is_completed = True
+            generate_result = await orchestrator.call_generate(generate_request)
         else:
-            request = _build_accept_request(db, step)
-            result = await orchestrator.call_accept(request)
-            is_completed = result.is_current_required_step_completed
+            accept_result, generate_result = await asyncio.gather(
+                orchestrator.call_accept(accept_request),
+                orchestrator.call_generate(generate_request),
+            )
+            is_completed = accept_result.is_current_required_step_completed
             if is_completed:
-                project_repo.upsert_required_step_fulfilled(
-                    db, step.project_id, step.belonging_required_step_id
+                _upsert_required_step_status(
+                    db,
+                    project_id=step.project_id,
+                    required_step_id=step.belonging_required_step_id,
                 )
+    else:
+        generate_result = await orchestrator.call_generate(generate_request)
 
     db.commit()
 
-    # Stage 완료 여부 확인 + 다음 Stage 활성화
-    is_stage_completed = _check_and_advance_stage(db, step)
+    # ⑤ 스테이지 완료 여부 확인
+    all_required = (
+        db.query(RequiredStepModel)
+        .filter(RequiredStepModel.stage_id == step.stage_id)
+        .all()
+    )
+    updated_fulfilled_ids = _get_fulfilled_required_step_ids(db, step.project_id)
+    is_stage_completed = bool(all_required) and all(
+        rs.id in updated_fulfilled_ids for rs in all_required
+    )
+
+    if is_stage_completed:
+        next_stage = (
+            db.query(StageModel)
+            .filter(StageModel.sequence == step.stage.sequence + 1)
+            .first()
+        )
+        if next_stage:
+            next_project_stage = db.get(
+                ProjectStage,
+                {"project_id": step.project_id, "stage_id": next_stage.id},
+            )
+            if next_project_stage:
+                next_project_stage.is_active = True
+                db.commit()
+
+    # ⑥ generate 결과로 step 노드 생성
+    belonging_rs_id = step.belonging_required_step_id or step.required_step_id
+    steps: list[StepModel] = []
+    _attach_or_create_required_step_node(db, step, steps)
+    _create_generated_step_nodes(db, step, generate_result.generated_steps, belonging_rs_id, steps)
+    db.flush()
+
+    # ⑦ 일반 Step 사이드패널 병렬 생성
+    regular_steps = [s for s in steps if s.required_step_id is None]
+    side_panel_requests = [_build_side_panel_request(db, s) for s in regular_steps]
+    side_panel_results = await asyncio.gather(*[
+        orchestrator.call_side_panel(req) for req in side_panel_requests
+    ])
+
+    # ⑧ 사이드패널 DB 저장
+    for s, result in zip(regular_steps, side_panel_results):
+        content = StepContentModel(step_id=s.id)
+        content.mentoring = json.dumps(result.mentoring.model_dump(), ensure_ascii=False)
+        content.dictionary = json.dumps([d.model_dump() for d in result.dictionary], ensure_ascii=False)
+        db.add(content)
+
+    db.commit()
+    for s in steps:
+        db.refresh(s)
 
     return StepAcceptResponse(
-        step_id=step_id,
-        status=StepStatus.ACCEPTED,
         is_current_required_step_completed=is_completed,
         is_current_stage_completed=is_stage_completed,
+        generated_steps=[
+            GeneratedStep(
+                step_id=s.id,
+                name=s.name,
+                status=s.status,
+                is_required=s.required_step_id is not None,
+                parent_step_id=s.parent_step_id,
+            )
+            for s in steps
+        ],
     )
-
-
-def _check_and_advance_stage(db: Session, step: StepModel) -> bool:
-    """현재 Stage 의 모든 Required Step 충족됐으면 다음 Stage 를 활성화한다."""
-    all_required = required_step_repo.get_required_steps_in_stage(db, step.stage_id)
-    fulfilled_ids = project_repo.get_fulfilled_required_step_ids(db, step.project_id)
-    is_completed = bool(all_required) and all(
-        rs.id in fulfilled_ids for rs in all_required
-    )
-    if not is_completed:
-        return False
-
-    next_stage = stage_repo.get_stage_by_sequence(db, step.stage.sequence + 1)
-    if next_stage is None:
-        return True
-
-    next_ps = project_repo.get_project_stage(db, step.project_id, next_stage.id)
-    if next_ps is not None:
-        next_ps.is_active = True
-        db.commit()
-    return True
 
 
 def _build_accept_request(db: Session, step: StepModel) -> AcceptRequest:
-    fulfilled_ids = project_repo.get_fulfilled_required_step_ids(db, step.project_id)
+    fulfilled_ids = _get_fulfilled_required_step_ids(db, step.project_id)
 
-    current_rs = required_step_repo.get_required_step(
-        db, step.belonging_required_step_id
-    )
-    current_required_step = (
-        _to_current_required_step(current_rs)
-        if current_rs and current_rs.id not in fulfilled_ids
-        else None
-    )
+    current_rs = db.get(RequiredStepModel, step.belonging_required_step_id)
+    current_required_step = None
+    if current_rs and current_rs.id not in fulfilled_ids:
+        current_required_step = CurrentRequiredStep(
+            step_id=current_rs.id,
+            name=current_rs.name,
+            is_completed=False,
+            goal=current_rs.goal,
+            entry_criteria=current_rs.entry_criteria,
+            fulfillment_criteria=current_rs.fulfillment_criteria,
+            minimum_fulfillment_count=current_rs.minimum_fulfillment_count,
+        )
 
-    accepted_in_required = step_repo.get_accepted_steps_in_required(
-        db, step.project_id, step.belonging_required_step_id
+    accepted_in_required = (
+        db.query(StepModel)
+        .filter(
+            StepModel.project_id == step.project_id,
+            StepModel.belonging_required_step_id == step.belonging_required_step_id,
+            StepModel.status == StepStatus.ACCEPTED,
+        )
+        .all()
     )
 
     rag_results = retrieve(f"{step.stage.name} {step.name}")
@@ -196,49 +302,30 @@ def _build_accept_request(db: Session, step: StepModel) -> AcceptRequest:
     )
 
 
-# ────────────────────────────── Generate ──────────────────────────────
-
-
-async def generate_steps(
-    db: Session, parent_step_id: uuid.UUID
-) -> StepGenerateResponse:
-    parent_step = step_repo.get_step(db, parent_step_id)
-    if parent_step is None:
-        raise StepNotFoundError(f"Parent Step을 찾을 수 없습니다: {parent_step_id}")
-
-    request = _build_generate_request(db, parent_step)
-    result = await orchestrator.call_generate(request)
-    generated = result.generated_steps
-
-    belonging_rs_id = (
-        parent_step.belonging_required_step_id or parent_step.required_step_id
+def _upsert_required_step_status(
+    db: Session,
+    project_id: uuid.UUID,
+    required_step_id: uuid.UUID,
+) -> None:
+    record = db.get(
+        ProjectRequiredStepStatus,
+        {"project_id": project_id, "required_step_id": required_step_id},
     )
+    if record is None:
+        record = ProjectRequiredStepStatus(
+            project_id=project_id,
+            required_step_id=required_step_id,
+        )
+        db.add(record)
+    record.is_fulfilled = True
+    record.fulfilled_at = datetime.now(timezone.utc)
 
-    steps: list[StepModel] = []
-    _attach_or_create_required_step_node(db, parent_step, steps)
-    _create_generated_step_nodes(db, parent_step, generated, belonging_rs_id, steps)
-
-    db.commit()
-    for step in steps:
-        db.refresh(step)
-
-    return StepGenerateResponse(
-        generated_steps=[
-            GeneratedStep(
-                step_id=s.id,
-                name=s.name,
-                status=s.status,
-                is_required=s.required_step_id is not None,
-                parent_step_id=s.parent_step_id,
-            )
-            for s in steps
-        ]
-    )
 
 
 def _attach_or_create_required_step_node(
     db: Session, parent_step: StepModel, steps: list[StepModel]
 ) -> None:
+    """다음 미충족 필수 Step 노드를 재사용하거나 새로 생성하여 steps에 추가."""
     next_rs_id = _get_next_unfulfilled_required_step_id(db, parent_step)
     if next_rs_id is None:
         return
@@ -250,22 +337,32 @@ def _attach_or_create_required_step_node(
     if already_inside:
         return
 
-    existing_pending = step_repo.get_existing_pending_required_step(
-        db, parent_step.project_id, parent_step.stage_id, next_rs_id
+    # 기존 READY 필수 Step 노드 재사용
+    existing_pending = (
+        db.query(StepModel)
+        .filter(
+            StepModel.project_id == parent_step.project_id,
+            StepModel.stage_id == parent_step.stage_id,
+            StepModel.required_step_id == next_rs_id,
+            StepModel.status == StepStatus.READY,
+        )
+        .first()
     )
 
     if existing_pending:
         existing_pending.parent_step_id = parent_step.id
         existing_pending.sort_order = 0
-        step_repo.delete_closure_for_descendant(db, existing_pending.id)
+        db.query(StepTreeModel).filter(
+            StepTreeModel.descendant == existing_pending.id
+        ).delete()
         db.flush()
-        step_repo.insert_closure_with_parent(db, existing_pending.id, parent_step.id)
+        _insert_closure_rows(db, existing_pending.id, parent_step.id)
         db.flush()
         steps.append(existing_pending)
     else:
-        next_rs = required_step_repo.get_required_step(db, next_rs_id)
-        req_step = step_repo.add_step(
-            db,
+        next_rs = db.get(RequiredStepModel, next_rs_id)
+        req_step = StepModel(
+            id=uuid.uuid4(),
             project_id=parent_step.project_id,
             stage_id=parent_step.stage_id,
             parent_step_id=parent_step.id,
@@ -275,20 +372,23 @@ def _attach_or_create_required_step_node(
             status=StepStatus.READY,
             sort_order=0,
         )
-        step_repo.insert_closure_with_parent(db, req_step.id, parent_step.id)
+        db.add(req_step)
+        db.flush()
+        _insert_closure_rows(db, req_step.id, parent_step.id)
         steps.append(req_step)
 
 
 def _create_generated_step_nodes(
     db: Session,
     parent_step: StepModel,
-    generated: list,
+    generated: list[dict],
     belonging_rs_id: uuid.UUID | None,
     steps: list[StepModel],
 ) -> None:
+    """AI가 생성한 일반 Step 이름들로 Step 노드를 생성하여 steps에 추가."""
     for i, item in enumerate(generated, start=1):
-        step = step_repo.add_step(
-            db,
+        step = StepModel(
+            id=uuid.uuid4(),
             project_id=parent_step.project_id,
             stage_id=parent_step.stage_id,
             parent_step_id=parent_step.id,
@@ -298,17 +398,25 @@ def _create_generated_step_nodes(
             status=StepStatus.READY,
             sort_order=i,
         )
-        step_repo.insert_closure_with_parent(db, step.id, parent_step.id)
+        db.add(step)
+        db.flush()
+        _insert_closure_rows(db, step.id, parent_step.id)
         steps.append(step)
 
 
 def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequest:
-    fulfilled_ids = project_repo.get_fulfilled_required_step_ids(
-        db, parent_step.project_id
+    fulfilled_ids = _get_fulfilled_required_step_ids(db, parent_step.project_id)
+
+    accepted_steps = (
+        db.query(StepModel)
+        .filter(
+            StepModel.project_id == parent_step.project_id,
+            StepModel.stage_id == parent_step.stage_id,
+            StepModel.status == StepStatus.ACCEPTED,
+        )
+        .all()
     )
-    accepted_steps = step_repo.get_accepted_steps_in_stage(
-        db, parent_step.project_id, parent_step.stage_id
-    )
+
     rag_results = retrieve(f"{parent_step.stage.name} {parent_step.name}")
 
     return GenerateRequest(
@@ -329,96 +437,79 @@ def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequ
 def _get_next_unfulfilled_required_step_id(
     db: Session, step: StepModel
 ) -> uuid.UUID | None:
-    fulfilled_ids = project_repo.get_fulfilled_required_step_ids(db, step.project_id)
-    all_rs = required_step_repo.get_required_steps_in_stage(db, step.stage_id)
-    next_rs = next((rs for rs in all_rs if rs.id not in fulfilled_ids), None)
+    fulfilled_ids = _get_fulfilled_required_step_ids(db, step.project_id)
+    query = db.query(RequiredStepModel).filter(
+        RequiredStepModel.stage_id == step.stage_id
+    )
+    if fulfilled_ids:
+        query = query.filter(RequiredStepModel.id.not_in(fulfilled_ids))
+    next_rs = query.order_by(RequiredStepModel.sequence).first()
     return next_rs.id if next_rs else None
 
 
-# ──────────────────────────── 사이드 패널 ────────────────────────────
-
-
-async def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
-    step = step_repo.get_step(db, step_id)
+# 사이드 패널
+def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
+    step = db.get(StepModel, step_id)
     if step is None:
         raise StepNotFoundError()
 
-    # 필수 Step → DB 캐시 또는 RequiredStep 기본값으로 lazy 생성
+    # 필수 Step → DB 캐시 반환. content가 없으면 RequiredStep 기본값으로 생성
     if step.required_step_id is not None:
         content = step.content
         if content is None:
-            content = _create_default_step_content(db, step)
+            rs = db.get(RequiredStepModel, step.required_step_id)
+            content = StepContentModel(step_id=step.id)
+            if rs is not None:
+                if rs.default_mentoring is not None:
+                    content.mentoring = json.dumps(
+                        rs.default_mentoring, ensure_ascii=False
+                    )
+                if rs.default_dictionary is not None:
+                    content.dictionary = json.dumps(
+                        rs.default_dictionary, ensure_ascii=False
+                    )
+            db.add(content)
             db.commit()
         return StepDetailResponse(
             is_required=True,
             step_id=step.id,
             name=step.name,
-            mentoring=_loads_or_none(content.mentoring if content else None),
-            dictionary=_loads_or_none(content.dictionary if content else None),
+            mentoring=(
+                json.loads(content.mentoring) if content and content.mentoring else None
+            ),
+            dictionary=(
+                json.loads(content.dictionary)
+                if content and content.dictionary
+                else None
+            ),
             template_url=content.template_url if content else None,
         )
 
     # 일반 Step → DB 캐시 확인 후 없으면 AI 호출
     content = step.content
-    if content and content.mentoring:
-        return StepDetailResponse(
-            is_required=False,
-            step_id=step.id,
-            name=step.name,
-            mentoring=_loads_or_none(content.mentoring),
-            dictionary=_loads_or_none(content.dictionary),
-        )
-
-    request = _build_side_panel_request(db, step)
-    result = await orchestrator.call_side_panel(request)
-
-    if content is None:
-        content = step_repo.add_step_content(db, step.id)
-
-    content.mentoring = json.dumps(result.mentoring.model_dump(), ensure_ascii=False)
-    content.dictionary = json.dumps(
-        [d.model_dump() for d in result.dictionary], ensure_ascii=False
-    )
-    db.commit()
-
     return StepDetailResponse(
         is_required=False,
         step_id=step.id,
         name=step.name,
-        mentoring=result.mentoring.model_dump(),
-        dictionary=[d.model_dump() for d in result.dictionary],
+        mentoring=json.loads(content.mentoring) if content and content.mentoring else None,
+        dictionary=json.loads(content.dictionary) if content and content.dictionary else None,
     )
-
-
-def _create_default_step_content(db: Session, step: StepModel):
-    """RequiredStep 의 default_mentoring/dictionary 를 StepContent 로 복사."""
-    rs = required_step_repo.get_required_step(db, step.required_step_id)
-    mentoring = (
-        json.dumps(rs.default_mentoring, ensure_ascii=False)
-        if rs and rs.default_mentoring
-        else None
-    )
-    dictionary = (
-        json.dumps(rs.default_dictionary, ensure_ascii=False)
-        if rs and rs.default_dictionary
-        else None
-    )
-    return step_repo.add_step_content(
-        db, step.id, mentoring=mentoring, dictionary=dictionary
-    )
-
-
-def _loads_or_none(value: str | None):
-    return json.loads(value) if value else None
 
 
 def _build_side_panel_request(db: Session, step: StepModel) -> SidePanelRequest:
-    fulfilled_ids = project_repo.get_fulfilled_required_step_ids(db, step.project_id)
+    fulfilled_ids = _get_fulfilled_required_step_ids(db, step.project_id)
     stage = step.stage
 
-    accepted_steps = step_repo.get_accepted_steps_in_stage(
-        db, step.project_id, step.stage_id
+    accepted_steps = (
+        db.query(StepModel)
+        .filter(
+            StepModel.project_id == step.project_id,
+            StepModel.stage_id == step.stage_id,
+            StepModel.status == StepStatus.ACCEPTED,
+        )
+        .all()
     )
+
     rag_results = retrieve(f"{stage.name} {step.name}")
 
     return SidePanelRequest(
