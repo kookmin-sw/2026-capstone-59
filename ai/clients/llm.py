@@ -7,6 +7,7 @@ boto3 bedrock-runtime 클라이언트를 의존성 주입받아, 프롬프트를
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import uuid
@@ -82,7 +83,8 @@ class LLMClient:
 
         for attempt in range(max_retries + 1):
             try:
-                response = self.bedrock_client.invoke_model(
+                response = await asyncio.to_thread(
+                    self.bedrock_client.invoke_model,
                     modelId=self.model_id,
                     body=request_body,
                     contentType="application/json",
