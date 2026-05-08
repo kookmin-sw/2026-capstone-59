@@ -38,6 +38,9 @@ addCsrfInterceptor(aiApi)
 export const getStepTree = (projectId, stageId) =>
   api.get('/steps/tree', { params: { project_id: projectId, stage_id: stageId } })
 
+export const generateSteps = (stepId) =>
+  aiApi.post(`/steps/${stepId}/generate`)
+
 export const acceptStep = (stepId) =>
   aiApi.post(`/steps/${stepId}/accept`)
 

@@ -31,7 +31,15 @@ export default function ProjectListPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({})
   const [deleteModal, setDeleteModal] = useState(null)
-  
+
+  // TODO: API 연동 후 아래 주석 해제, 더미 데이터 및 초기값 제거
+  // useEffect(() => {
+  //   getProjects({ page, size }).then((data) => {
+  //     setProjects(data.projects)
+  //     setTotalCount(data.total_count)
+  //   })
+  // }, [page])
+
   useEffect(() => {
     getProjects({ page, size, sort_by: sortBy }).then((data) => {
       setProjects(data.projects ?? [])
@@ -99,7 +107,7 @@ export default function ProjectListPage() {
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
-        <div className={styles.logo}onClick={() => navigate('/projects')}style={{ cursor: 'pointer' }}><span>poco</span></div>
+        <div className={styles.logo}onClick={() => navigate('/')}style={{ cursor: 'pointer' }}><span>poco</span></div>
       </header>
 
       <div className={styles.body}>
