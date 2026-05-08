@@ -188,7 +188,19 @@ export default function CanvasPage() {
   }
 
   async function executeAccept() {
-    if (selectedStep.data?.status === 'CANCELED') {
+    const status = selectedStep.data?.status
+
+    const needsRollback = status === 'CANCELED' || (status === 'READY' && (() => {
+      const parentEdge = edges.find(e => e.target === selectedStep.id)
+      if (!parentEdge) return false
+      const siblings = nodes.filter(n =>
+        n.id !== selectedStep.id &&
+        edges.some(e => e.source === parentEdge.source && e.target === n.id)
+      )
+      return siblings.some(n => n.data?.status === 'ACCEPTED')
+    })())
+
+    if (needsRollback) {
       try {
         await rollbackStep(selectedStep.id)
       } catch (err) {
