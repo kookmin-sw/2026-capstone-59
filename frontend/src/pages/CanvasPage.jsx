@@ -14,7 +14,7 @@ import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
 import { getStages } from '../api/stage'
-import { getStepTree, getStepDetail, acceptStep, generateSteps, rollbackStep } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, rollbackStep } from '../api/step'
 
 import { STAGE_ENGLISH, flattenTree } from '../utils/canvasUtils'
 
@@ -35,7 +35,9 @@ export default function CanvasPage() {
   const [stages, setStages] = useState([])
   const [currentStageSequence, setCurrentStageSequence] = useState(1)
   const [selectedStageId, setSelectedStageId] = useState(null)
-  const [navCollapsed, setNavCollapsed] = useState(false)
+  const [navCollapsed, setNavCollapsed] = useState(
+    () => localStorage.getItem('navCollapsed') === 'true'
+  )
   const [selectedStep, setSelectedStep] = useState(null)
   const [stepDetail, setStepDetail] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
@@ -46,6 +48,8 @@ export default function CanvasPage() {
 
   const timerRef = useRef(null)
   const currentRequiredStepName = useRef(null)
+  const autoOpenedStageRef = useRef(null)
+  const shouldFitViewRef = useRef(false)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -58,8 +62,13 @@ export default function CanvasPage() {
       const list = data.stages ?? []
       setStages(list)
       const active = list.find(s => s.is_active)
-      if (active) {
-        setCurrentStageSequence(active.stage_sequence)
+      if (active) setCurrentStageSequence(active.stage_sequence)
+
+      const saved = sessionStorage.getItem(`selectedStage_${projectId}`)
+      const savedStage = list.find(s => s.stage_id === saved)
+      if (savedStage) {
+        setSelectedStageId(savedStage.stage_id)
+      } else if (active) {
         setSelectedStageId(active.stage_id)
       }
     })
@@ -71,21 +80,38 @@ export default function CanvasPage() {
     const { nodes: n, edges: e } = flattenTree(treeData.steps ?? [], stage?.stage_sequence)
     setNodes(n)
     setEdges(e)
+
+    if (autoOpenedStageRef.current !== stageId) {
+      const firstRequired = n.find((node) => node.type === 'requiredStepNode')
+      if (firstRequired) {
+        autoOpenedStageRef.current = stageId
+        setSelectedStep(firstRequired)
+        setStepDetail(null)
+        try {
+          const detail = await getStepDetail(firstRequired.id)
+          setStepDetail(detail)
+        } catch {
+          // 상세 정보 로드 실패해도 노드 선택은 유지
+        }
+      }
+    }
   }
 
   useEffect(() => {
     if (!rfInstance || nodes.length === 0) return
-    if (nodes.length >= 4) {
-      ;(async () => {
-        await rfInstance.fitView({ duration: 0, padding: 0.1 })
-        const { y, zoom } = rfInstance.getViewport()
-        rfInstance.setViewport({ x: 80 - 50 * zoom, y, zoom }, { duration: 200 })
-      })()
-    }
+    if (!shouldFitViewRef.current) return
+    shouldFitViewRef.current = false
+    if (nodes.length < 4) return
+    ;(async () => {
+      await rfInstance.fitView({ duration: 0, padding: 0.1 })
+      const { y, zoom } = rfInstance.getViewport()
+      rfInstance.setViewport({ x: 80 - 50 * zoom, y, zoom }, { duration: 200 })
+    })()
   }, [nodes, rfInstance])
 
   useEffect(() => {
     if (!selectedStageId || !projectId) return
+    shouldFitViewRef.current = true 
     fetchAndRenderTree(selectedStageId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStageId, projectId])
@@ -93,6 +119,7 @@ export default function CanvasPage() {
   useEffect(() => {
     setSelectedStep(null)
     setStepDetail(null)
+    autoOpenedStageRef.current = null
   }, [selectedStageId])
 
   const uiStages = stages.map(s => ({
@@ -161,7 +188,19 @@ export default function CanvasPage() {
   }
 
   async function executeAccept() {
-    if (selectedStep.data?.status === 'CANCELED') {
+    const status = selectedStep.data?.status
+
+    const needsRollback = status === 'CANCELED' || (status === 'READY' && (() => {
+      const parentEdge = edges.find(e => e.target === selectedStep.id)
+      if (!parentEdge) return false
+      const siblings = nodes.filter(n =>
+        n.id !== selectedStep.id &&
+        edges.some(e => e.source === parentEdge.source && e.target === n.id)
+      )
+      return siblings.some(n => n.data?.status === 'ACCEPTED')
+    })())
+
+    if (needsRollback) {
       try {
         await rollbackStep(selectedStep.id)
       } catch (err) {
@@ -205,20 +244,6 @@ export default function CanvasPage() {
             const active = list.find(s => s.is_active)
             if (active) setCurrentStageSequence(active.stage_sequence)
           })
-        }
-      }
-    }
-
-    let retryCount = 0
-    while (retryCount < 3) {
-      try {
-        await generateSteps(selectedStep.id)
-        break
-      } catch {
-        retryCount++
-        if (retryCount === 3) {
-          alert('Step 생성에 실패했어요. 다시 시도해주세요.')
-          return
         }
       }
     }
@@ -278,10 +303,16 @@ export default function CanvasPage() {
           stages={uiStages}
           currentStageId={currentStageId}
           selectedStageId={selectedStageId}
-          onSelectStage={(id) => setSelectedStageId(id)}
+          onSelectStage={(id) => {
+            setSelectedStageId(id)
+            sessionStorage.setItem(`selectedStage_${projectId}`, id)
+          }}
           collapsed={navCollapsed}
-          onToggle={() => setNavCollapsed(!navCollapsed)}
-        />
+          onToggle={() => {
+            const next = !navCollapsed
+            setNavCollapsed(next)
+            localStorage.setItem('navCollapsed', next)
+          }}        />
 
         <div className={styles.canvasWrapper}>
           <ToastAlarm
