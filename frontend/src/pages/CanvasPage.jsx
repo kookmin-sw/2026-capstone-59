@@ -47,6 +47,7 @@ export default function CanvasPage() {
   const timerRef = useRef(null)
   const currentRequiredStepName = useRef(null)
   const autoOpenedStageRef = useRef(null)
+  const shouldFitViewRef = useRef(false)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -82,24 +83,27 @@ export default function CanvasPage() {
         try {
           const detail = await getStepDetail(firstRequired.id)
           setStepDetail(detail)
-        } catch {}
+        } catch {
+          // }
       }
     }
   }
 
   useEffect(() => {
     if (!rfInstance || nodes.length === 0) return
-    if (nodes.length >= 4) {
-      ;(async () => {
-        await rfInstance.fitView({ duration: 0, padding: 0.1 })
-        const { y, zoom } = rfInstance.getViewport()
-        rfInstance.setViewport({ x: 80 - 50 * zoom, y, zoom }, { duration: 200 })
-      })()
-    }
+    if (!shouldFitViewRef.current) return
+    shouldFitViewRef.current = false
+    if (nodes.length < 4) return
+    ;(async () => {
+      await rfInstance.fitView({ duration: 0, padding: 0.1 })
+      const { y, zoom } = rfInstance.getViewport()
+      rfInstance.setViewport({ x: 80 - 50 * zoom, y, zoom }, { duration: 200 })
+    })()
   }, [nodes, rfInstance])
 
   useEffect(() => {
     if (!selectedStageId || !projectId) return
+    shouldFitViewRef.current = true 
     fetchAndRenderTree(selectedStageId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStageId, projectId])
