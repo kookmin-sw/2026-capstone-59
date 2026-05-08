@@ -14,7 +14,7 @@ import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
 import { getStages } from '../api/stage'
-import { getStepTree, getStepDetail, acceptStep, generateSteps, rollbackStep } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, rollbackStep } from '../api/step'
 
 import { STAGE_ENGLISH, flattenTree } from '../utils/canvasUtils'
 
@@ -244,20 +244,6 @@ export default function CanvasPage() {
             const active = list.find(s => s.is_active)
             if (active) setCurrentStageSequence(active.stage_sequence)
           })
-        }
-      }
-    }
-
-    let retryCount = 0
-    while (retryCount < 3) {
-      try {
-        await generateSteps(selectedStep.id)
-        break
-      } catch {
-        retryCount++
-        if (retryCount === 3) {
-          alert('Step 생성에 실패했어요. 다시 시도해주세요.')
-          return
         }
       }
     }
