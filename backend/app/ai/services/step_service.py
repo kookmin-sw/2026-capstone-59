@@ -160,8 +160,9 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     db.flush()
 
     # ④ accept + generate 병렬 호출
-    accept_request = _build_accept_request(db, step)
     generate_request = _build_generate_request(db, step)
+    if step.belonging_required_step_id is not None:
+        accept_request = _build_accept_request(db, step)
 
     is_completed = False
     if step.belonging_required_step_id is not None:
