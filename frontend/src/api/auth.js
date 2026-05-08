@@ -27,3 +27,4 @@ api.interceptors.response.use(
 )
 
 export const getMe = () => api.get('/auth/me')
+export const logout = () => api.post('/auth/logout')
