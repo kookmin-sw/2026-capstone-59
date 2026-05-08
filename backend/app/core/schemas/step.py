@@ -15,10 +15,6 @@ class GeneratedStep(BaseModel):
     parent_step_id: UUID | None
 
 
-class StepGenerateResponse(BaseModel):
-    generated_steps: list[GeneratedStep]
-
-
 class StepTreeNode(BaseModel):
     step_id: UUID
     name: str
@@ -48,10 +44,9 @@ class RequiredStepListResponse(BaseModel):
 
 
 class StepAcceptResponse(BaseModel):
-    step_id: UUID
-    status: StepStatus
     is_current_required_step_completed: bool
     is_current_stage_completed: bool
+    generated_steps: list[GeneratedStep]
 
 
 class StepDetailResponse(BaseModel):
