@@ -12,7 +12,7 @@ from app.core.auth.jwt import (
 from app.core.config import settings
 from app.core.exceptions import UserNotFoundError
 from app.core.models.app_user import AppUser as AppUserModel
-from app.core.models.oauth_account import OAuthAccount as OAuthAccountModel
+from app.core.repositories import user as user_repo
 from app.core.schemas.auth import (
     AuthTokenResponse,
     OAuthTokens,
@@ -50,9 +50,7 @@ def refresh_access_token(refresh_token: str) -> AuthTokenResponse:
 
 
 def get_user_profile(db: Session, user: AppUserModel) -> UserProfileResponse:
-    oauth = (
-        db.query(OAuthAccountModel).filter(OAuthAccountModel.user_id == user.id).first()
-    )
+    oauth = user_repo.get_oauth_by_user_id(db, user.id)
     return UserProfileResponse(
         user_id=user.id,
         email=user.email,
@@ -67,42 +65,34 @@ def _get_or_create_user(
     user_info: OAuthUserInfo,
     oauth_tokens: OAuthTokens,
 ) -> AppUserModel:
-    oauth = (
-        db.query(OAuthAccountModel)
-        .filter(
-            OAuthAccountModel.provider == provider_name,
-            OAuthAccountModel.provider_user_id == user_info.provider_user_id,
-        )
-        .first()
-    )
-
     expires_at = (
         datetime.now(timezone.utc) + timedelta(seconds=oauth_tokens.expires_in)
         if oauth_tokens.expires_in
         else None
     )
 
+    oauth = user_repo.get_oauth_by_provider_and_user(
+        db, provider_name, user_info.provider_user_id
+    )
+
     if oauth:
-        oauth.access_token = oauth_tokens.access_token
-        if oauth_tokens.refresh_token:
-            oauth.refresh_token = oauth_tokens.refresh_token
-        oauth.token_expires_at = expires_at
+        user_repo.update_oauth_tokens(
+            oauth,
+            access_token=oauth_tokens.access_token,
+            refresh_token=oauth_tokens.refresh_token,
+            token_expires_at=expires_at,
+        )
         db.commit()
 
-        user = db.get(AppUserModel, oauth.user_id)
-        if not user or user.is_deleted:
+        user = user_repo.get_active_user(db, oauth.user_id)
+        if not user:
             raise UserNotFoundError()
         return user
 
     # 신규 사용자 생성
-    user = AppUserModel(
-        email=user_info.email,
-        nickname=user_info.nickname,
-    )
-    db.add(user)
-    db.flush()
-
-    oauth = OAuthAccountModel(
+    user = user_repo.add_user(db, email=user_info.email, nickname=user_info.nickname)
+    user_repo.add_oauth_account(
+        db,
         user_id=user.id,
         provider=provider_name,
         provider_user_id=user_info.provider_user_id,
@@ -110,7 +100,6 @@ def _get_or_create_user(
         refresh_token=oauth_tokens.refresh_token,
         token_expires_at=expires_at,
     )
-    db.add(oauth)
     db.commit()
     db.refresh(user)
     return user
