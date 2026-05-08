@@ -35,7 +35,9 @@ export default function CanvasPage() {
   const [stages, setStages] = useState([])
   const [currentStageSequence, setCurrentStageSequence] = useState(1)
   const [selectedStageId, setSelectedStageId] = useState(null)
-  const [navCollapsed, setNavCollapsed] = useState(false)
+  const [navCollapsed, setNavCollapsed] = useState(
+    () => localStorage.getItem('navCollapsed') === 'true'
+  )
   const [selectedStep, setSelectedStep] = useState(null)
   const [stepDetail, setStepDetail] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
@@ -60,8 +62,13 @@ export default function CanvasPage() {
       const list = data.stages ?? []
       setStages(list)
       const active = list.find(s => s.is_active)
-      if (active) {
-        setCurrentStageSequence(active.stage_sequence)
+      if (active) setCurrentStageSequence(active.stage_sequence)
+
+      const saved = sessionStorage.getItem(`selectedStage_${projectId}`)
+      const savedStage = list.find(s => s.stage_id === saved)
+      if (savedStage) {
+        setSelectedStageId(savedStage.stage_id)
+      } else if (active) {
         setSelectedStageId(active.stage_id)
       }
     })
@@ -298,10 +305,16 @@ export default function CanvasPage() {
           stages={uiStages}
           currentStageId={currentStageId}
           selectedStageId={selectedStageId}
-          onSelectStage={(id) => setSelectedStageId(id)}
+          onSelectStage={(id) => {
+            setSelectedStageId(id)
+            sessionStorage.setItem(`selectedStage_${projectId}`, id)
+          }}
           collapsed={navCollapsed}
-          onToggle={() => setNavCollapsed(!navCollapsed)}
-        />
+          onToggle={() => {
+            const next = !navCollapsed
+            setNavCollapsed(next)
+            localStorage.setItem('navCollapsed', next)
+          }}        />
 
         <div className={styles.canvasWrapper}>
           <ToastAlarm
