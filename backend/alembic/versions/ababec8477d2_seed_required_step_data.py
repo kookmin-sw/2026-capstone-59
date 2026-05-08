@@ -19,12 +19,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    from sqlalchemy.orm import Session
-    from app.core.seeds.required_step import run
-
-    bind = op.get_bind()
-    with Session(bind=bind) as db:
-        run(db)
+    # default_mentoring / default_dictionary 컬럼은 a66f09fc3d71 마이그레이션에서
+    # 추가된 후 run(db)가 호출되므로 여기서는 실행하지 않는다.
+    pass
 
 def downgrade() -> None:
     """Downgrade schema."""
