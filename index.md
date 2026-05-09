@@ -24,7 +24,8 @@ body > header {
 @media (min-width: 900px) {
   html,
   body {
-    padding-left: 210px !important;
+    padding-left: 165px !important;
+    padding-right: 45px !important;
     margin-left: 0 !important;
     box-sizing: border-box !important;
   }
@@ -46,7 +47,7 @@ body > header {
   position: fixed;
   top: 0;
   left: 0;
-  width: 280px;
+  width: 220px;
   height: 100vh;
   padding: 28px 18px 20px 22px;
   background: #f6f8fa;
@@ -200,7 +201,7 @@ body > header {
     </a>
     <a class="poco-btn poco-btn-live" href="https://poco.example.com" target="_blank" rel="noopener">
       <span class="icon">🐾</span>
-      <span>Poco 바로가기</span>
+      <span>서비스 바로가기</span>
     </a>
     <a class="poco-btn poco-btn-aws" href="#7-팀-소개">
       <span class="icon"><img src="./assets/aws_logo.png" alt="" /></span>
@@ -548,12 +549,12 @@ Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자
 
 | 번호 | 한글명 | 영문명 | 설명 |
 |:---:|---|---|---|
-| 1 | 아이디어 구체화 | Ideation | 막연한 아이디어를 "왜 만들 가치가 있는가"로 다듬는다. |
-| 2 | 프로젝트 계획 | Planning | 기간·인원·역할을 정하고, 어떻게 일할지 설계한다. |
-| 3 | 요구사항 정의 | Requirement | 시스템이 "무엇을" 해야 하는지 구체적으로 정의한다. |
-| 4 | 설계 | Design | 요구사항을 구조·데이터·인터페이스로 그려낸다. |
-| 5 | 개발 | Development | 설계를 실제 동작하는 코드로 구현한다. |
-| 6 | 테스트 및 검증 | Test | 만든 것이 처음 정의한 요구사항을 충족하는지 확인한다. |
+| 1 | 아이디어 구체화 | *Ideation* | 막연한 아이디어를 "왜 만들 가치가 있는가"로 다듬는다. |
+| 2 | 프로젝트 계획 | *Planning* | 기간·인원·역할을 정하고, 어떻게 일할지 설계한다. |
+| 3 | 요구사항 정의 | *Requirement* | 시스템이 "무엇을" 해야 하는지 구체적으로 정의한다. |
+| 4 | 설계 | *Design* | 요구사항을 구조·데이터·인터페이스로 그려낸다. |
+| 5 | 개발 | *Development* | 설계를 실제 동작하는 코드로 구현한다. |
+| 6 | 테스트 및 검증 | *Test* | 만든 것이 처음 정의한 요구사항을 충족하는지 확인한다. |
 
 &nbsp;
 
