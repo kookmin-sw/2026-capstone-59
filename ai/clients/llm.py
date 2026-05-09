@@ -52,18 +52,24 @@ class LLMClient:
         prompt: str,
         expected_schema: type[T],
         max_retries: int = 2,
+        max_tokens: Optional[int] = None,
     ) -> T:
         """Claude를 호출하여 expected_schema로 검증된 인스턴스를 반환.
 
         - JSON 파싱 실패 / 스키마 불일치 → max_retries 까지 재시도
         - Bedrock API 에러(ClientError, BotoCoreError) → 즉시 BedrockAPIError
         - 재시도 초과 → AIGenerationFailedError (불일치 필드 details 포함)
+
+        max_tokens 우선순위:
+            invoke(max_tokens=X) 명시값 > self.max_tokens (생성자 값) > 생성자 기본값(4096).
+        재시도 루프 안에서는 동일 request_body(= 동일 effective_max_tokens)를 재사용한다.
         """
         correlation_id = str(uuid.uuid4())
+        effective_max_tokens = max_tokens if max_tokens is not None else self.max_tokens
         request_body = json.dumps(
             {
                 "anthropic_version": _ANTHROPIC_VERSION,
-                "max_tokens": self.max_tokens,
+                "max_tokens": effective_max_tokens,
                 "temperature": self.temperature,
                 "messages": [{"role": "user", "content": prompt}],
             }
@@ -75,6 +81,7 @@ class LLMClient:
             correlation_id=correlation_id,
             model_id=self.model_id,
             max_retries=max_retries,
+            max_tokens=effective_max_tokens,
             prompt_len=len(prompt),
             schema=expected_schema.__name__,
         )
