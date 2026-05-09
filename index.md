@@ -4,7 +4,7 @@ title: Poco
 ---
 
 <style>
-/* ===== Poco 소개 페이지 — NURINOON 레퍼런스 레이아웃 ===== */
+/* ===== Poco 소개 페이지 — NURINOON 레퍼런스 레이아웃 단순 이식 ===== */
 
 /* ----- 스무스 스크롤 ----- */
 html { scroll-behavior: smooth; }
@@ -16,35 +16,33 @@ section.page-header,
 .site-header,
 body > header {
   display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  margin: 0 !important;
 }
 
-/* ----- 본문을 사이드바 오른쪽으로 밀고, 가운데 정렬된 좁은 칼럼으로 제한 ----- */
-@media (min-width: 900px) {
-  html,
-  body {
-    margin-left: 200px !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    box-sizing: border-box !important;
-  }
-  /* Cayman 테마의 기본 wrapper(max-width: 64rem; padding: 2rem 6rem) 를 레퍼런스 스타일로 덮어씀 */
-  .main-content,
-  .page-content .wrapper,
-  main.page-content .wrapper,
-  body .wrapper {
-    max-width: 900px !important;
-    width: auto !important;
-    margin: 2rem auto !important;
-    padding: 0 1.5rem !important;
-    box-sizing: border-box !important;
-    line-height: 1.75;
-    color: #333;
-  }
+/* ----- body: 레퍼런스 구조 + margin 결함 보완 ----- */
+/* 레퍼런스는 margin-left: 200px 방식이지만, margin 영역은 body 바깥이라
+   html 배경이 드러나는 구조적 결함이 있음. 그래서 padding-left 로 전환해
+   body 내부에 사이드바 자리를 확보한다. 결과 레이아웃은 레퍼런스와 동일. */
+body {
+  margin: 0 !important;
+  padding: 0 0 0 210px !important;
+  box-sizing: border-box;
+}
+
+/* ----- 본문 wrapper: 900px 중앙 정렬 ----- */
+/* Cayman 기본 wrapper(max-width: 64rem; padding: 2rem 6rem)를 덮어씀.
+   body 안에서 가운데 정렬된 좁은 칼럼으로 표현.
+   배경은 Cayman 기본값(흰색)을 그대로 유지한다. */
+.main-content,
+.page-content .wrapper,
+main.page-content .wrapper,
+body .wrapper {
+  max-width: 900px !important;
+  width: auto !important;
+  margin: 2rem auto !important;
+  padding: 0 1.5rem !important;
+  box-sizing: border-box;
+  line-height: 1.75;
+  color: #333;
 }
 
 /* ----- 좌측 고정 사이드바 (레퍼런스 스타일 + 목차는 Poco 스타일) ----- */
@@ -151,18 +149,19 @@ body > header {
   object-fit: contain;
 }
 
-/* ----- 모바일: 사이드바 숨기고 전체폭 사용 ----- */
-@media (max-width: 899px) {
+/* ----- 모바일: 사이드바 숨기고 전체폭 사용 (레퍼런스와 동일 breakpoint) ----- */
+@media (max-width: 768px) {
   #poco-side-toc { display: none; }
-  html, body {
-    margin-left: 0 !important;
-    padding-left: 0 !important;
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .main-content,
   .page-content .wrapper,
   main.page-content .wrapper,
   body .wrapper {
     padding: 1rem !important;
+    margin: 1rem auto !important;
   }
 }
 </style>
@@ -340,7 +339,6 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 ![Python](https://img.shields.io/badge/Python_3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic_v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
-![Pytest](https://img.shields.io/badge/Pytest_+_Hypothesis-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 
 **AI & RAG**
@@ -349,6 +347,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 ![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-01A88D?style=for-the-badge&logo=amazonaws&logoColor=white)
 ![Bedrock KB](https://img.shields.io/badge/Bedrock_Knowledge_Base-222F3E?style=for-the-badge&logo=amazonaws&logoColor=white)
 ![S3 Vectors](https://img.shields.io/badge/S3_Vectors-569A31?style=for-the-badge&logo=amazons3&logoColor=white)
+![Pytest](https://img.shields.io/badge/Pytest_+_Hypothesis-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 
 **Infra (서버리스 중심)**
 
