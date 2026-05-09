@@ -1,1 +1,13 @@
-theme: jekyll-theme-slate
+theme: jekyll-theme-cayman
+title: Poco
+description: "AI가 다 만들어주는 시대, 무엇을·왜 만들지 정의하는 사고의 캔버스"
+show_downloads: false
+
+# GitHub Pages 메타
+repository: kookmin-sw/2026-capstone-59
+
+# Markdown 설정
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
