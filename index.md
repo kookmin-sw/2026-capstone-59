@@ -24,7 +24,7 @@ body > header {
 @media (min-width: 900px) {
   html,
   body {
-    padding-left: 230px !important;
+    padding-left: 210px !important;
     margin-left: 0 !important;
     box-sizing: border-box !important;
   }
@@ -200,7 +200,7 @@ body > header {
     </a>
     <a class="poco-btn poco-btn-live" href="https://poco.example.com" target="_blank" rel="noopener">
       <span class="icon">🐾</span>
-      <span>서비스 바로가기</span>
+      <span>Poco 바로가기</span>
     </a>
     <a class="poco-btn poco-btn-aws" href="#7-팀-소개">
       <span class="icon"><img src="./assets/aws_logo.png" alt="" /></span>
