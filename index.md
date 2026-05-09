@@ -4,7 +4,10 @@ title: Poco
 ---
 
 <style>
-/* ===== Poco 소개 페이지 전용 스타일 ===== */
+/* ===== Poco 소개 페이지 — NURINOON 레퍼런스 레이아웃 ===== */
+
+/* ----- 스무스 스크롤 ----- */
+html { scroll-behavior: smooth; }
 
 /* ----- Cayman 테마의 초록 헤더 완전 제거 ----- */
 .page-header,
@@ -20,44 +23,51 @@ body > header {
   margin: 0 !important;
 }
 
-/* ----- 본문을 사이드바 오른쪽으로 강제 밀기 ----- */
+/* ----- 본문을 사이드바 오른쪽으로 밀고, 가운데 정렬된 좁은 칼럼으로 제한 ----- */
 @media (min-width: 900px) {
   html,
   body {
-    padding-left: 165px !important;
-    padding-right: 45px !important;
-    margin-left: 0 !important;
+    margin-left: 200px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
     box-sizing: border-box !important;
   }
-  /* Cayman 테마의 padding: 2rem 6rem; max-width: 64rem; margin: 0 auto 를 전부 덮어쓴다 */
+  /* Cayman 테마의 기본 wrapper(max-width: 64rem; padding: 2rem 6rem) 를 레퍼런스 스타일로 덮어씀 */
   .main-content,
   .page-content .wrapper,
   main.page-content .wrapper,
   body .wrapper {
-    max-width: none !important;
+    max-width: 900px !important;
     width: auto !important;
-    margin: 0 !important;
-    padding: 2.5rem 2.5rem 2rem 1rem !important;
+    margin: 2rem auto !important;
+    padding: 0 1.5rem !important;
     box-sizing: border-box !important;
+    line-height: 1.75;
+    color: #333;
   }
 }
 
-/* ----- 좌측 고정 사이드바 ----- */
+/* ----- 좌측 고정 사이드바 (레퍼런스 스타일 + 목차는 Poco 스타일) ----- */
 #poco-side-toc {
   position: fixed;
   top: 0;
   left: 0;
-  width: 220px;
+  width: 210px;
   height: 100vh;
-  padding: 28px 18px 20px 22px;
-  background: #f6f8fa;
-  border-right: 1px solid #d0d7de;
-  overflow-y: auto;
-  z-index: 9999;
-  box-sizing: border-box;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  background-color: #f1f5f9;
+  border-right: 1px solid #d1d5db;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.05);
+  z-index: 999;
+  box-sizing: border-box;
+}
+
+#poco-side-toc .nav-links {
+  overflow-y: auto;
+  padding: 28px 14px 16px 18px;
+  flex: 1;
 }
 
 #poco-side-toc h3 {
@@ -73,7 +83,6 @@ body > header {
   padding: 0;
   margin: 0;
   counter-reset: poco-toc;
-  flex: 1 1 auto;
 }
 
 #poco-side-toc li {
@@ -88,13 +97,13 @@ body > header {
   text-decoration: none;
   padding: 8px 10px;
   border-radius: 5px;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 500;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
 #poco-side-toc li a:hover {
-  background: #eaeef2;
+  background: #e2e8f0;
   color: #0969da;
 }
 
@@ -104,12 +113,10 @@ body > header {
   margin-right: 2px;
 }
 
-/* ----- 사이드바 하단 버튼 3종 (이쁜 gradient) ----- */
-.poco-side-buttons {
-  flex-shrink: 0;
-  padding-top: 18px;
-  margin-top: 16px;
-  border-top: 1px solid #d0d7de;
+/* ----- 사이드바 하단 버튼 영역 ----- */
+.nav-bottom {
+  padding: 1rem;
+  border-top: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -120,92 +127,68 @@ body > header {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 11px 14px;
-  border-radius: 10px;
-  font-size: 12.5px;
+  padding: 0.75rem;
+  background-color: #ffffff;
+  color: #1f2937 !important;
+  text-align: center;
+  border-radius: 8px;
   font-weight: 600;
+  font-size: 0.95rem;
   text-decoration: none !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border: 1px solid rgb(203, 203, 203);
+  transition: background-color 0.2s ease;
 }
 
 .poco-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
-  filter: brightness(1.05);
+  background-color: #f0f1f4;
 }
 
-.poco-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-
-.poco-btn .icon {
-  font-size: 15px;
-  display: inline-flex;
-  align-items: center;
-  line-height: 0;
-}
-
-.poco-btn .icon img {
+.poco-btn img {
   width: 18px;
   height: 18px;
-  display: block;
+  display: inline-block;
+  vertical-align: middle;
   object-fit: contain;
-}
-
-.poco-btn-github {
-  background: linear-gradient(135deg, #2b3137 0%, #24292f 100%);
-}
-
-.poco-btn-live {
-  background: linear-gradient(135deg, #7A67F2 0%, #5C45E8 100%);
-}
-
-.poco-btn-aws {
-  background: linear-gradient(135deg, #FFB547 0%, #FF9900 100%);
-  color: #1a1a1a !important;
 }
 
 /* ----- 모바일: 사이드바 숨기고 전체폭 사용 ----- */
 @media (max-width: 899px) {
   #poco-side-toc { display: none; }
   html, body {
+    margin-left: 0 !important;
     padding-left: 0 !important;
+  }
+  .main-content,
+  .page-content .wrapper,
+  main.page-content .wrapper,
+  body .wrapper {
+    padding: 1rem !important;
   }
 }
 </style>
 
 <nav id="poco-side-toc" aria-label="목차">
-  <h3>목차</h3>
-  <ol>
-    <li><a href="#1-프로젝트-소개">프로젝트 소개</a></li>
-    <li><a href="#2-문제-정의">문제 정의</a></li>
-    <li><a href="#3-해결-방법--top-3-핵심-기능">해결 방법 Top 3</a></li>
-    <li><a href="#4-기술-설계">기술 설계</a></li>
-    <li><a href="#5-데이터와-확장-가능성">데이터와 확장 가능성</a></li>
-    <li><a href="#6-소프트웨어-방법론-근거">방법론 근거</a></li>
-    <li><a href="#7-팀-소개">팀 소개</a></li>
-    <li><a href="#8-레포지토리-탐색-가이드">레포지토리 탐색 가이드</a></li>
-    <li><a href="#9-사용법">사용법</a></li>
-  </ol>
-  <div class="poco-side-buttons">
-    <a class="poco-btn poco-btn-github" href="https://github.com/kookmin-sw/2026-capstone-59" target="_blank" rel="noopener">
-      <span class="icon"><img src="./assets/github_logo.png" alt="" /></span>
+  <div class="nav-links">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#1-프로젝트-소개">프로젝트 소개</a></li>
+      <li><a href="#2-문제-정의">문제 정의</a></li>
+      <li><a href="#3-해결-방법--top-3-핵심-기능">해결 방법 Top 3</a></li>
+      <li><a href="#4-기술-설계">기술 설계</a></li>
+      <li><a href="#5-데이터와-확장-가능성">데이터와 확장 가능성</a></li>
+      <li><a href="#6-소프트웨어-방법론-근거">방법론 근거</a></li>
+      <li><a href="#7-팀-소개">팀 소개</a></li>
+      <li><a href="#8-레포지토리-탐색-가이드">레포지토리 탐색 가이드</a></li>
+      <li><a href="#9-사용법">사용법</a></li>
+    </ol>
+  </div>
+  <div class="nav-bottom">
+    <a class="poco-btn" href="https://github.com/kookmin-sw/2026-capstone-59" target="_blank" rel="noopener">
+      <img src="./assets/github_logo.png" alt="" />
       <span>GitHub 리포지토리</span>
     </a>
-    <a class="poco-btn poco-btn-live" href="https://poco.example.com" target="_blank" rel="noopener">
-      <span class="icon">🐾</span>
+    <a class="poco-btn" href="https://poco.example.com" target="_blank" rel="noopener">
       <span>서비스 바로가기</span>
-    </a>
-    <a class="poco-btn poco-btn-aws" href="#7-팀-소개">
-      <span class="icon"><img src="./assets/aws_logo.png" alt="" /></span>
-      <span>AWS 캡스톤디자인 59팀</span>
     </a>
   </div>
 </nav>
