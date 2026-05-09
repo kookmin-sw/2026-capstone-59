@@ -252,8 +252,13 @@ class LLMClient:
                 details=error_details,
             ) from exc
 
+        _SENTINEL = object()
         try:
-            for event in response["body"]:
+            event_iter = iter(response["body"])
+            while True:
+                event = await asyncio.to_thread(next, event_iter, _SENTINEL)
+                if event is _SENTINEL:
+                    break
                 chunk_bytes = event.get("chunk", {}).get("bytes") if isinstance(event, dict) else None
                 if not chunk_bytes:
                     # MagicMock 기반 이벤트는 dict가 아닐 수 있어 getattr fallback.
