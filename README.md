@@ -65,30 +65,29 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Amazon S3](https://img.shields.io/badge/Amazon_S3_%28Static_Website_Hosting%29-569A31?style=flat-square&logo=amazons3&logoColor=white)
 
 **Backend**
 
 ![Python](https://img.shields.io/badge/Python_3.13-3776AB?style=flat-square&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic_v2-E92063?style=flat-square&logo=pydantic&logoColor=white)
+![Amazon API Gateway](https://img.shields.io/badge/Amazon_API_Gateway-FF4F8B?style=flat-square&logo=amazonapigateway&logoColor=white)
+![AWS Lambda](https://img.shields.io/badge/AWS_Lambda_%28Business_API%29-FF9900?style=flat-square&logo=awslambda&logoColor=white)
+![Amazon RDS](https://img.shields.io/badge/Amazon_RDS-527FFF?style=flat-square&logo=amazonrds&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
 
 **AI & RAG**
 
+![Python](https://img.shields.io/badge/Python_3.13-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Claude](https://img.shields.io/badge/Claude_Haiku_4.5-D97757?style=flat-square&logo=anthropic&logoColor=white)
 ![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-01A88D?style=flat-square&logo=amazonaws&logoColor=white)
-![Bedrock KB](https://img.shields.io/badge/Bedrock_Knowledge_Base-222F3E?style=flat-square&logo=amazonaws&logoColor=white)
-![S3 Vectors](https://img.shields.io/badge/S3_Vectors-569A31?style=flat-square&logo=amazons3&logoColor=white)
+![Amazon Bedrock Knowledge Bases](https://img.shields.io/badge/Amazon_Bedrock_Knowledge_Bases-222F3E?style=flat-square&logo=amazonaws&logoColor=white)
+![Amazon S3 Vectors](https://img.shields.io/badge/Amazon_S3_Vectors-569A31?style=flat-square&logo=amazons3&logoColor=white)
+![AWS Lambda](https://img.shields.io/badge/AWS_Lambda_%28AI_Orchestrator%29-FF9900?style=flat-square&logo=awslambda&logoColor=white)
 ![Pytest](https://img.shields.io/badge/Pytest_+_Hypothesis-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 
-**Infra (서버리스 중심)**
-
-![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-FF9900?style=flat-square&logo=awslambda&logoColor=white)
-![Amazon API Gateway](https://img.shields.io/badge/API_Gateway-FF4F8B?style=flat-square&logo=amazonapigateway&logoColor=white)
-![Amazon RDS](https://img.shields.io/badge/Amazon_RDS-527FFF?style=flat-square&logo=amazonrds&logoColor=white)
-![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?style=flat-square&logo=amazons3&logoColor=white)
-
-**DevOps**
+**DevOps (Local)**
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
