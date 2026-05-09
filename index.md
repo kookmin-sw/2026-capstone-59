@@ -3,17 +3,117 @@ layout: default
 title: Poco
 ---
 
+<style>
+/* ===== Poco 소개 페이지 전용 스타일 ===== */
+
+/* 페이지 본문 컨테이너를 좌측 사이드바만큼 밀어둔다 */
+@media (min-width: 900px) {
+  .page-content .wrapper,
+  main.page-content .wrapper,
+  body .wrapper {
+    padding-left: 240px !important;
+    transition: padding-left 0.2s ease;
+  }
+}
+
+/* 좌측 고정 사이드바 */
+#poco-side-toc {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;
+  height: 100vh;
+  padding: 24px 16px 24px 20px;
+  background: #f6f8fa;
+  border-right: 1px solid #d0d7de;
+  overflow-y: auto;
+  z-index: 10;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+#poco-side-toc h3 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 14px 0;
+  color: #57606a;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+#poco-side-toc ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: poco-toc;
+}
+
+#poco-side-toc li {
+  margin: 0 0 8px 0;
+  counter-increment: poco-toc;
+  line-height: 1.4;
+}
+
+#poco-side-toc li a {
+  display: block;
+  color: #24292f;
+  text-decoration: none;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+#poco-side-toc li a:hover {
+  background: #eaeef2;
+  color: #0969da;
+}
+
+#poco-side-toc li a::before {
+  content: counter(poco-toc) ". ";
+  color: #8c959f;
+  margin-right: 2px;
+}
+
+/* 모바일: 사이드바 숨기고 본문 전체폭 사용 */
+@media (max-width: 899px) {
+  #poco-side-toc { display: none; }
+}
+</style>
+
+<nav id="poco-side-toc" aria-label="목차">
+  <h3>목차</h3>
+  <ol>
+    <li><a href="#1-프로젝트-소개">프로젝트 소개</a></li>
+    <li><a href="#2-문제-정의">문제 정의</a></li>
+    <li><a href="#3-해결-방법--top-3-핵심-기능">해결 방법 Top 3</a></li>
+    <li><a href="#4-기술-설계">기술 설계</a></li>
+    <li><a href="#5-데이터와-확장-가능성">데이터와 확장 가능성</a></li>
+    <li><a href="#6-소프트웨어-방법론-근거">방법론 근거</a></li>
+    <li><a href="#7-팀-소개">팀 소개</a></li>
+    <li><a href="#8-레포지토리-탐색-가이드">레포지토리 탐색 가이드</a></li>
+    <li><a href="#9-사용법">사용법</a></li>
+  </ol>
+</nav>
+
 <p align="center">
-  <img src="./assets/logo.png" alt="Poco 로고" width="420" />
+  <a href="https://github.com/kookmin-sw/2026-capstone-59">
+    <img src="./assets/logo.png" alt="Poco 로고" width="420" />
+  </a>
 </p>
 
-### *조금씩, 한 걸음씩 — 아이디어를 설계까지 쌓아가는 사고의 캔버스*
+<h3 align="center">조금씩, 한 걸음씩 — 아이디어를 설계까지 쌓아가는 사고의 캔버스</h3>
 
-> **AI가 다 만들어주는 시대,**
-> **무엇을, 왜 만들지 정의하고 계신가요?**
+<p align="center">
+  <b>AI가 다 만들어주는 시대, 무엇을 · 왜 만들지 정의하고 계신가요?</b>
+</p>
 
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github)](https://github.com/kookmin-sw/2026-capstone-59)
-[![AWS Track](https://img.shields.io/badge/Capstone_2026-AWS_Track_59팀-FF9900?logo=amazon-aws)](#team)
+<p align="center">
+  <a href="https://github.com/kookmin-sw/2026-capstone-59"><img src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github" alt="GitHub" /></a>
+  <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
+  <a href="#7-팀-소개"><img src="https://img.shields.io/badge/Capstone_2026-AWS_Track_59팀-FF9900?logo=amazon-aws" alt="AWS Track" /></a>
+</p>
+
+&nbsp;
 
 <!-- TODO: 완성 후 포스터 이미지 및 소개 영상 embed 자리 -->
 <!--
@@ -21,21 +121,6 @@ title: Poco
 [소개 영상](https://...)
 -->
 
----
-
-## 📑 목차
-
-1. [프로젝트 소개](#1-프로젝트-소개)
-2. [문제 정의](#2-문제-정의)
-3. [해결 방법 — Top 3 핵심 기능](#3-해결-방법--top-3-핵심-기능)
-4. [기술 설계](#4-기술-설계)
-5. [데이터와 확장 가능성](#5-데이터와-확장-가능성)
-6. [소프트웨어 방법론 근거](#6-소프트웨어-방법론-근거)
-7. [팀 소개](#7-팀-소개)
-8. [레포지토리 탐색 가이드](#8-레포지토리-탐색-가이드)
-9. [사용법](#9-사용법)
-
----
 
 ## 1. 프로젝트 소개
 
@@ -64,12 +149,9 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 <!-- TODO: 완성 후 소개 영상 임베드 -->
 > *영상 준비 중입니다.*
 
----
+&nbsp;
 
 ## 2. 문제 정의
-
-> 💡 **평가 기준 대응:** 문제 정의의 타당성 (15점) — Pain Point의 구체성, 기존 방식의 한계, 해결 필요성  
-> 💡 **체크포인트 대응:** (1) 프로젝트 목적 · (2) 타겟 사용자 · (3) AI 챗봇으로 대체 가능한가
 
 ### 2-1. 타겟 사용자
 
@@ -91,13 +173,11 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 | 구분 | 한계 |
 |---|---|
 | **Jira / Notion** | 할 일을 *관리*해주지만, **"뭘 해야 하는지" 자체를 알려주지는 않는다.** |
-| **방법론 문서 (SWEBOK, PMBOK)** | 내용은 체계적이지만 **딱딱해서 초심자가 읽기 어렵다.** |
+| **방법론 문서 (SWEBOK, PMBOK)** | 수십 년간 검증된 체계적 지식이지만, 수백 페이지 분량의 공식 PDF 형태로만 존재한다. **방법론의 가치를 아는 전문가조차, 막 시작하는 학생·초보자가 이걸 직접 펴서 자신의 프로젝트에 적용할 것이라고는 기대하기 어렵다.** |
 | **일반 AI 챗봇** | 질문을 잘 던져야 좋은 답을 주는데, **"어떤 질문을 해야 할지 모르는 사람"** 에게는 진입 장벽이 크다. |
 | **팀 협업 시** | *"뭘 만들기로 했는지, 왜 이 결정을 했는지"* 가 정리되지 않아 방향이 흐트러지고, 과정이 텍스트로만 남아 **전체 흐름을 한눈에 보기 어렵다.** |
 
 ### 2-4. AI 챗봇으로 대체 가능한가?
-
-> 💡 **체크포인트 3 정면 대응**
 
 **대체 불가능하다.** 이유는 세 가지.
 
@@ -110,7 +190,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 3. **"검증된 방법론 기반의 안내"**
    챗봇은 매번 답이 흔들릴 수 있다. Poco는 **DOJ SDLC + SWEBOK + 자체 제작 가이드**를 RAG 파이프라인으로 엮어, 모든 단계의 안내가 **일관된 방법론의 근거 위에서** 제공된다. *"이 단계에서 이걸 왜 하는지"* 에 대해 항상 같은 학술적 근거를 가진다.
 
----
+&nbsp;
 
 ## 3. 해결 방법 — Top 3 핵심 기능
 
@@ -132,12 +212,9 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 > *— 되돌아갈 수 있는 선택, 자산으로 남는 사고 과정.*
 
----
+&nbsp;
 
 ## 4. 기술 설계
-
-> 💡 **평가 기준 대응:** 기술 설계 및 활용 (25점) — 기술 선택·조합의 적합성, 아키텍처 설계의 근거  
-> 💡 **체크포인트 대응:** (4) 백엔드의 AI 의존도와 프론트엔드 등의 차별화된 기여
 
 ### 4-1. AWS 서버리스 중심 아키텍처
 
@@ -201,22 +278,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-### 4-4. 레이어별 아키텍처 요약
-
-| 레이어 | 기술 |
-|---|---|
-| **Frontend** | React SPA, S3 Static Website Hosting |
-| **API Gateway** | Amazon API Gateway (HTTP API) |
-| **Backend** | FastAPI (Python 3.13) on AWS Lambda (Mangum) |
-| **AI Orchestrator** | 별도 Lambda, Amazon Bedrock Claude (Haiku 4.5) |
-| **RAG** | Amazon Bedrock Knowledge Base + S3 Vectors |
-| **DB** | Amazon RDS PostgreSQL (단일 인스턴스) |
-| **External** | Notion API (템플릿 페이지 생성, Write only) |
-| **Monitoring** | Amazon CloudWatch |
-
-### 4-5. 백엔드의 AI 의존도와 기여점 (체크포인트 4 대응)
-
-> **질문:** "백엔드에서 AI에 의존하는가? 그렇다면 프론트엔드 등 다른 부분에서 더 좋아진 것은?"
+### 4-4. 백엔드의 AI 의존도와 기여점
 
 **AI 의존 범위 (정확히 명시)**
 
@@ -237,12 +299,9 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 3. **사이드패널 탭 구조** — Mentoring / Dictionary / Template 세 탭을 하나의 사이드패널로 통합하여, **클릭 한 번의 확장감**을 UX적으로 구현.
 4. **Footprint 시각화** — 롤백·재탐색이 캔버스 위에서 직관적으로 이루어지도록, 선택의 궤적을 **시간이 아닌 공간(트리)** 에 남기는 방식을 채택.
 
----
+&nbsp;
 
 ## 5. 데이터와 확장 가능성
-
-> 💡 **평가 기준 대응:** 실용성·확장 가능성 (15점)  
-> 💡 **체크포인트 대응:** (5) 수집 정보의 가치 · (6) 프로젝트 규모의 적절성
 
 ### 5-1. 서비스가 축적하는 데이터와 가치
 
@@ -262,13 +321,29 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 ### 5-2. 확장 가능성
 
-- **도메인 확장**: 현재는 소프트웨어 프로젝트 대상이지만, **검증된 방법론 + Stage/Step 정의서 + 템플릿** 세트만 교체하면 *제품 기획, 연구 프로젝트, 논문 작성* 등 다른 지식 구조적 영역으로 확장 가능한 구조다.
-- **지식 베이스 확장**: Bedrock Knowledge Base의 Data Source만 추가하면, 새로운 방법론·도메인 지식을 바로 RAG에 태울 수 있다.
-- **기관·교육 기관 도입**: 수집된 학습 행동 데이터는 **대학·부트캠프의 교육 개선 데이터**로 확장될 가능성이 있다.
+**다른 방법론·도메인으로의 확장**
 
-### 5-3. 프로젝트 규모의 적절성 (체크포인트 6 대응)
+Poco의 지식 레이어는 *방법론 독립적으로 설계*되어 있다. 현재는 DOJ SDLC의 6단계 워터폴을 기준으로 Stage·필수 Step을 구성했지만, **Stage 정의서 + 필수 Step 충족 기준 측면 + 템플릿 3종 세트**만 교체하면 다음과 같은 확장이 가능하다.
 
-> **질문:** "AI의 활용으로 1인 프로젝트 규모도 상당히 커진 것을 감안할 때, 4명 팀에 적절한 규모인가?"
+- **다른 SDLC 모델** — Agile·Scrum·XP·V-Model 등 기존 방법론의 Stage 구성으로 치환
+- **다른 지식 도메인** — 제품 기획(PMBOK), 연구 프로젝트(IMRaD), 논문 작성(학술 구조), UX 리서치(Double Diamond) 등
+
+**S3 Vectors를 RAG 저장소로 선택한 이유**
+
+| 선택지 | S3 Vectors를 선택한 근거 |
+|---|---|
+| **비용 효율** | 전용 벡터 DB(OpenSearch·Pinecone)의 **최대 1/10 수준 비용**. 캡스톤·교육·스타트업 규모에서 운영 부담이 크게 낮다. |
+| **Bedrock 네이티브 통합** | Bedrock Knowledge Base가 **S3 Vectors를 데이터소스로 직접 지원**. 별도 ETL·동기화 파이프라인 없이 콘솔에서 바로 인덱싱. |
+| **스케일 특성** | 장기 지식은 **읽기 비중이 압도적**이고 쓰기는 드물다. S3의 **객체 스토리지 + 벡터 인덱스 결합 구조**가 이 패턴에 최적. |
+| **메타데이터 필터링** | Stage/Step/문서 유형(DOJ vs Custom)별 메타데이터 필터링을 네이티브 지원 → 같은 인덱스 안에서도 정밀 검색 가능. |
+
+결과적으로 **새 방법론을 추가할 때마다 인덱스를 복제하거나 별도 DB를 띄울 필요 없이**, 동일 저장소에 메타데이터만 붙여 추가할 수 있다. 운영 비용을 올리지 않고도 지식 레이어가 선형 확장되는 구조다.
+
+**기관·교육 기관 도입 가능성**
+
+수집된 학습 행동 데이터(이탈 지점·롤백 패턴·완주율)는 **대학·부트캠프의 교육 개선 데이터**로 확장될 수 있다. Stage 정의서와 필수 Step 기준을 커리큘럼에 맞게 재정의하면, 특정 학과·프로그램 전용 Poco 인스턴스를 운영하는 것도 가능하다.
+
+### 5-3. 프로젝트 규모의 적절성
 
 **결론: 적절하다.** 근거는 세 가지.
 
@@ -281,22 +356,76 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 **AI 활용으로 팀이 더 집중한 영역** — 단순 코드 작성에 들어가던 공수를 **도메인 설계 · 방법론 문서 작성 · UX 실험 · RAG 품질 튜닝** 등 AI가 대체할 수 없는 영역에 재배치했다.
 
----
+&nbsp;
 
 ## 6. 소프트웨어 방법론 근거
 
-Poco가 참조하는 학술적 근거와, 각 출처가 실제 서비스 어디에서 사용되는지를 투명하게 공개한다.
+Poco가 참조하는 학술적 근거와, 각 출처가 실제 서비스 어디에서 어떻게 사용되는지를 투명하게 공개한다.
 
-### 6-1. 참조 문서와 역할
+### 6-1. 참조 문서와 자체 제작 가이드 — 왜 이 구조인가
 
-| 문서 | 분류 | 활용 범위 |
+**SWEBOK V4.0a** (2024, IEEE Computer Society)는 20년간 전 세계 소프트웨어 공학계가 축적·검증해온 지식체계의 최신판이고, **DOJ SDLC Guidance Document**는 미국 법무부가 공공 소프트웨어 개발 프로세스의 표준으로 삼아 공식 배포한 문서다. 두 자료 모두 학계·산업계의 검증을 거친 *가장 신뢰도 높은 출처*다.
+
+**그러나 Poco의 타겟 사용자인 학생·초보자·소규모 팀은 이 방법론 문서를 직접 펴들지 않는다.** SWEBOK는 411페이지의 영문 공식 PDF이고, 실무 경험이 많지 않은 사람이 18개 Knowledge Area를 읽어가며 *"내 캡스톤 프로젝트에 어떻게 적용할지"* 를 스스로 번역하기는 현실적으로 어렵다. 방법론의 가치를 가장 잘 아는 전문가들조차, 이 문서를 초보자에게 그대로 건네는 것이 통하지 않는다는 사실도 알고 있다.
+
+**그래서 Poco는 검증된 방법론과 초보자 사이에 "다리"를 놓는 역할에 집중했다.** 이를 위한 구조적 선택이 세 가지.
+
+**선택 1 — 원문 탑재 대신 구조 참조**
+SWEBOK는 저작권 보호 대상이라 원문을 RAG 인덱스에 그대로 탑재·재배포할 수 없다. 대신 팀이 SWEBOK의 **지식 지도(Knowledge Area → Topic) 구조만 참조**하여, 초보자 관점으로 재작성한 자체 가이드를 만든다. 권위 있는 구조를 유지하면서도 저작권·접근성 문제를 함께 해소한다.
+
+**선택 2 — 전 영역이 아닌 진입 장벽 구간에 집중**
+SWEBOK의 18개 Knowledge Area를 모두 초보자 친화적으로 변환하는 것은 캡스톤 스코프를 넘어선다. 따라서 **초보자가 실제로 막히는 지점 — 즉 Claude 같은 파운데이션 모델이 혼자서는 잘 답하지 못하는 4개 약점 영역에만 자체 가이드를 집중 투입**한다. 이 지점들이 바로 "방법론이 있어도 초보자가 못 써먹는" 구간이다.
+
+**선택 3 — 파운데이션 모델의 강점은 그대로 활용**
+Claude는 이미 일반적인 소프트웨어 공학 지식을 폭넓게 학습한 상태다. *"자체 문서를 많이 만들수록 답변이 좋아진다"* 는 전제는 사실이 아니다. **Claude가 이미 잘 답하는 영역은 그대로 두고, 약한 영역만 자체 문서로 보강**하는 것이 데모 품질 대비 ROI가 가장 높다.
+
+| 구간 | Poco의 대응 |
+|---|---|
+| **Claude 강점 영역** (일반 SE 용어 정의, 기술 스택 개요, 범용 절차 설명 등) | 자체 문서 **투입하지 않음**. LLM 폴백만으로 충분한 품질 확보. |
+| **Claude 약점 영역** (아래 4개 영역) | SWEBOK 구조를 근거로 한 **자체 가이드 집중 투입**. |
+
+### 6-2. Claude 약점 영역 4종 — 자체 가이드 집중 투입
+
+**영역 A — 소규모 팀·제한된 기간으로의 캘리브레이션**
+
+Claude는 디폴트로 *중대형 기업팀 기준*으로 답한다. Poco의 타겟(1~6명, 1~12개월)에서는 과도한 추천이 발생한다. 이 영역은 LLM 폴백이 가장 부적절해지는 지점이다.
+- 팀 규모별 역할 분담 패턴 (1인 / 2~3인 / 4~6인)
+- 기간별 MVP 범위 (1·3·6개월 각각의 기능 수준)
+- 대학생 팀 특수 리스크 (시험기간 공백, 팀원 이탈, 의사결정 미루기)
+
+**영역 B — "그만하세요" 안티패턴**
+
+Claude는 *"best practice 추천"* 에 강하지만, *"여기까지만 하면 됩니다·이건 하지 마세요"* 는 약하다. 초심자의 **과잉 기획**을 막는 안내는 이 영역 없이는 제공되지 않는다.
+- 문제 정의 단계에서 해결책 설계로 넘어가지 않기
+- 소규모 MVP에 마이크로서비스·Kubernetes 넣지 않기
+- 요구사항을 너무 상세히 적지 않기 (*"이 정도면 충분"* 기준)
+- 첫 프로젝트에서 Event Sourcing 등 과잉 아키텍처 피하기
+
+**영역 C — 현실적으로 실행 가능한 수치 기준**
+
+Claude는 *"사용자 인터뷰를 하세요"* 까지는 잘 말하지만, *"몇 명한테, 몇 분, 무엇을 물어야 하는지"* 는 모호하게 답한다. 초심자에게 필요한 것은 **당장 오늘 시작할 수 있는 수치**다.
+- 게릴라 사용자 인터뷰 방법 (5~8명 · 15분 · 질문 예시)
+- 프로토타입 제작 예산표 (Figma 2~3일, 코드 1주 등)
+- 소규모 팀의 현실적 스프린트 주기 (1주/2주 중 선택 기준)
+- MVP 테스트 커버리지 목표 (100% 아님, 우선순위 영역)
+
+**영역 D — 한국어 맥락의 전문용어 해설**
+
+용어의 사전적 정의는 Claude가 잘 처리하지만, **"실무에서 한국어로 이렇게 쓰입니다"** 수준의 뉘앙스는 약하다.
+- 요구사항 추적 매트릭스의 한국어 실무 예시
+- 유스케이스 vs 유저스토리 — 초심자가 먼저 써야 할 것
+- 비기능 요구사항을 초심자가 실제 작성하게 만드는 포인트
+
+### 6-3. 참조 문서와 활용 매트릭스
+
+| 문서 | 분류 | Poco에서의 활용 범위 |
 |---|---|---|
-| **DOJ SDLC Guidance Document** (미국 법무부, Jan 2003) | 소프트웨어 개발 방법론 | **Stage 6개 구성 + 24개 필수 Step 정의**의 가장 큰 틀. 동적 생성 일반 Step의 RAG 참고 지식으로도 사용. |
-| **SWEBOK V4.0a** (2024, IEEE Computer Society) | 소프트웨어 공학 지식체계 | 동적 생성 일반 Step의 **자체 제작 가이드 문서**의 뼈대 참조. |
+| **DOJ SDLC Guidance Document** (미국 법무부, Jan 2003) | 소프트웨어 개발 방법론 (공공 문서) | **Stage 6개 구성 + 24개 필수 Step 정의**의 가장 큰 틀. 일반 Step 동적 생성의 RAG 참고 지식으로도 사용. 원문을 KB-A에 임베딩. |
+| **SWEBOK V4.0a** (2024, IEEE Computer Society) | 소프트웨어 공학 지식체계 (저작권 보호 대상) | **토픽 구조(Knowledge Area → Topic)만 참조.** 원문 미탑재. 팀이 약점 4개 영역에 대한 자체 가이드 작성 시 **출처·구조의 학술적 근거**로 활용. |
 
-### 6-2. 자체 제작 자산
+### 6-4. 자체 제작 자산
 
-Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자산들을 자체 제작하여, 참조 문서를 **초심자 친화적인 형태로 변환**했다.
+Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자산들을 자체 제작하여, 참조 문서를 초심자 친화적인 형태로 변환했다.
 
 | 자체 제작 자산 | 근거 | 설명 |
 |---|---|---|
@@ -304,11 +433,11 @@ Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자
 | **24개 필수 Step** (Stage별 4개씩) | DOJ SDLC 기반, 팀 자체 정의 | 각 필수 Step의 **목표·진입 기준·충족 기준 측면**을 팀이 모두 자체 정의. |
 | **필수 Step 사이드패널 콘텐츠** | 팀 자체 제작 | Description·Perspectives·Goals·Common Mistakes·One-line Tip 등 모든 항목 자체 작성. |
 | **필수 Step 노션 템플릿 (24개)** | 팀 자체 제작 | 각 필수 Step의 산출물 작성을 돕는 템플릿 페이지. |
-| **일반 Step RAG 참고 가이드 문서** | SWEBOK 토픽 참조, 팀 자체 제작 | 자체 작성한 Glossary(용어 사전) + Technique(기법 가이드) 문서를 S3 Vectors에 인덱싱. |
+| **일반 Step RAG 참고 가이드 문서** | SWEBOK 토픽 구조 참조, 팀 자체 제작 | 위 **Claude 약점 4개 영역**을 집중 공략한 Glossary(용어 사전) + Technique(기법 가이드) 문서를 S3 Vectors에 인덱싱. |
 
 > 이 구조의 의미는, Poco의 **안내 품질이 AI의 즉흥성이 아닌, 팀이 설계한 학술적 근거 위에서 나온다**는 것이다. AI는 팀이 만든 구조 안에서 **동적 맥락 생성**만 담당한다.
 
-### 6-3. 6 Stage 진행 플로우
+### 6-5. 6 Stage 진행 플로우
 
 | 번호 | 한글명 | 영문명 | 설명 |
 |:---:|---|---|---|
@@ -319,24 +448,54 @@ Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자
 | 5 | 개발 | *Development* | 설계를 실제 동작하는 코드로 구현한다. |
 | 6 | 테스트 및 검증 | *Test* | 만든 것이 처음 정의한 요구사항을 충족하는지 확인한다. |
 
----
+&nbsp;
 
-## 7. 팀 소개 {#team}
+## 7. 팀 소개
 
 **국민대학교 소프트웨어학부 | 2026 캡스톤 디자인 | AWS 트랙 1분반 59팀**
 
-| 이름 | 역할 | GitHub |
-|---|---|---|
-| **정연승** *(팀장)* | 기획 · AI · Infra | [@jys705](https://github.com/jys705) |
-| **장우리** | Frontend · UI/UX | [@woori02](https://github.com/woori02) |
-| **김한림** | Backend · DB · CI/CD | [@gksfla8947](https://github.com/gksfla8947) |
-| **박수연** | Backend · DB | [@syeon111](https://github.com/syeon111) |
+<table>
+  <tr>
+    <td align="center" width="160">
+      <a href="https://github.com/jys705">
+        <img src="https://github.com/jys705.png" width="130" alt="정연승" style="border-radius:6px;" />
+      </a>
+      <br />
+      <a href="https://github.com/jys705"><strong>정연승</strong></a> (팀장)
+    </td>
+    <td align="center" width="160">
+      <a href="https://github.com/woori02">
+        <img src="https://github.com/woori02.png" width="130" alt="장우리" style="border-radius:6px;" />
+      </a>
+      <br />
+      <a href="https://github.com/woori02"><strong>장우리</strong></a>
+    </td>
+    <td align="center" width="160">
+      <a href="https://github.com/gksfla8947">
+        <img src="https://github.com/gksfla8947.png" width="130" alt="김한림" style="border-radius:6px;" />
+      </a>
+      <br />
+      <a href="https://github.com/gksfla8947"><strong>김한림</strong></a>
+    </td>
+    <td align="center" width="160">
+      <a href="https://github.com/syeon111">
+        <img src="https://github.com/syeon111.png" width="130" alt="박수연" style="border-radius:6px;" />
+      </a>
+      <br />
+      <a href="https://github.com/syeon111"><strong>박수연</strong></a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">기획, AI, Infra</td>
+    <td align="center">Frontend, UI/UX</td>
+    <td align="center">Backend, DB, CI/CD</td>
+    <td align="center">Backend, DB</td>
+  </tr>
+</table>
 
----
+&nbsp;
 
 ## 8. 레포지토리 탐색 가이드
-
-> 평가자가 실제 코드를 열어볼 때 참고할 수 있는 폴더 맵입니다.
 
 ```
 2026-capstone-59/
@@ -381,7 +540,7 @@ Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자
 - `ai/data/README.md` — RAG 인덱싱 원본 가이드
 - `frontend/README.md` — 프론트엔드 실행 방법
 
----
+&nbsp;
 
 ## 9. 사용법
 
