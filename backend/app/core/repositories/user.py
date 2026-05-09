@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 from app.core.models.app_user import AppUser
 from app.core.models.oauth_account import OAuthAccount
 
-
 # ── AppUser ────────────────────────────────────────────────────────────
 
 
