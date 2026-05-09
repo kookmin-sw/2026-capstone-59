@@ -71,7 +71,6 @@ AI가 다음 할 일의 선택지를 제시하고 의사결정의 궤적을 **�
 ![Python](https://img.shields.io/badge/Python_3.13-3776AB?style=flat-square&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic_v2-E92063?style=flat-square&logo=pydantic&logoColor=white)
-![Pytest](https://img.shields.io/badge/Pytest_+_Hypothesis-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
 
 **AI & RAG**
@@ -80,6 +79,7 @@ AI가 다음 할 일의 선택지를 제시하고 의사결정의 궤적을 **�
 ![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-01A88D?style=flat-square&logo=amazonaws&logoColor=white)
 ![Bedrock KB](https://img.shields.io/badge/Bedrock_Knowledge_Base-222F3E?style=flat-square&logo=amazonaws&logoColor=white)
 ![S3 Vectors](https://img.shields.io/badge/S3_Vectors-569A31?style=flat-square&logo=amazons3&logoColor=white)
+![Pytest](https://img.shields.io/badge/Pytest_+_Hypothesis-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 
 **Infra (서버리스 중심)**
 
