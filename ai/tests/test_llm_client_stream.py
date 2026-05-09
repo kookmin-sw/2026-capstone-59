@@ -129,3 +129,48 @@ class TestInvokeStream:
         chunks = await _collect(client.invoke_stream("prompt"))
 
         assert chunks == ["A", "B"]
+
+    @pytest.mark.asyncio
+    async def test_invoke_stream_does_not_block_event_loop(self) -> None:
+        """두 stream을 gather로 돌렸을 때 직렬화되지 않는다."""
+        import asyncio
+        import time as _time
+
+        class _SlowIterable:
+            def __init__(self, events, delay=0.05):
+                self._events = events
+                self._delay = delay
+                self._i = 0
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                if self._i >= len(self._events):
+                    raise StopIteration
+                _time.sleep(self._delay)
+                e = self._events[self._i]
+                self._i += 1
+                return e
+
+        events = [_delta_event(f"c{i}") for i in range(5)]
+
+        bedrock = MagicMock()
+        bedrock.invoke_model_with_response_stream.side_effect = [
+            {"body": _SlowIterable(events)},
+            {"body": _SlowIterable(events)},
+        ]
+        client = LLMClient(bedrock_client=bedrock, model_id=MODEL_ID, max_tokens=256)
+
+        async def _first_chunk_time(agen):
+            start = asyncio.get_event_loop().time()
+            async for _ in agen:
+                return asyncio.get_event_loop().time() - start
+            return float("inf")
+
+        gen1 = client.invoke_stream("p1")
+        gen2 = client.invoke_stream("p2")
+        t1, t2 = await asyncio.gather(_first_chunk_time(gen1), _first_chunk_time(gen2))
+
+        # 직렬화되면 t2 >= 5 * 0.05 = 0.25s. async면 t2 < 0.2s.
+        assert t2 < 0.2, f"두 번째 stream이 직렬화됨: t1={t1:.3f}s, t2={t2:.3f}s"
