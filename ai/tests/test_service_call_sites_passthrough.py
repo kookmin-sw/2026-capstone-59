@@ -1,13 +1,14 @@
-"""서비스 호출부가 Task 2 완료 시점에서 `llm.invoke(prompt, Schema)` 3-인자
-positional 호출만 수행한다는 것을 증명한다 (하위 호환성).
+"""Task 5: 시나리오별 max_tokens 차등 적용 검증.
 
-Task 5에서 이 테스트는 `max_tokens=1024/2048/256` 검증으로 업데이트된다.
-현재 목적: Task 2가 기존 호출부를 한 줄도 고치지 않았음을 회귀적으로 증명.
+각 서비스가 llm.invoke에 올바른 max_tokens 값을 전달하는지 단정한다.
+- StepGenerator: max_tokens=1024
+- SidePanelGenerator: max_tokens=2048
+- RequiredStepJudge: max_tokens=256
 """
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -76,16 +77,12 @@ def _make_rag_mock() -> MagicMock:
     return rag
 
 
-def _assert_positional_only_invoke(
+def _assert_invoke_with_max_tokens(
     llm: MagicMock,
     expected_schema: type,
-    extra_allowed_kwargs: Optional[set] = None,
+    expected_max_tokens: int,
 ) -> None:
-    """llm.invoke가 3-인자 positional 호출만 사용했는지 검증.
-
-    허용: llm.invoke(prompt, Schema) 또는 llm.invoke(prompt, Schema, max_retries=N).
-    금지: max_tokens keyword 전달 (Task 5에서 비로소 추가될 예정).
-    """
+    """llm.invoke가 올바른 schema와 max_tokens로 호출되었는지 검증."""
     llm.invoke.assert_awaited_once()
     call = llm.invoke.await_args
     args = call.args
@@ -96,9 +93,8 @@ def _assert_positional_only_invoke(
     assert args[1] is expected_schema, (
         f"두 번째 인자는 {expected_schema.__name__} 스키마여야 한다"
     )
-    # Task 2 시점: max_tokens keyword는 전달되면 안 된다
-    assert "max_tokens" not in kwargs, (
-        "Task 2 단계에서는 서비스 호출부에 max_tokens keyword가 전달되지 않아야 한다"
+    assert kwargs.get("max_tokens") == expected_max_tokens, (
+        f"max_tokens={expected_max_tokens}이 전달되어야 한다, 실제: {kwargs.get('max_tokens')}"
     )
 
 
@@ -109,7 +105,7 @@ def _assert_positional_only_invoke(
 
 class TestServiceCallSitesPassthrough:
     @pytest.mark.asyncio
-    async def test_step_generator_does_not_pass_max_tokens(self) -> None:
+    async def test_step_generator_passes_max_tokens_1024(self) -> None:
         valid = GenerateOutput(
             generated_steps=[
                 GeneratedStep(name="a", description="1"),
@@ -133,10 +129,10 @@ class TestServiceCallSitesPassthrough:
 
         await service.generate_steps(input_data)
 
-        _assert_positional_only_invoke(llm, GenerateOutput)
+        _assert_invoke_with_max_tokens(llm, GenerateOutput, 1024)
 
     @pytest.mark.asyncio
-    async def test_side_panel_generator_does_not_pass_max_tokens(self) -> None:
+    async def test_side_panel_generator_passes_max_tokens_2048(self) -> None:
         valid = SidePanelOutput(
             mentoring=MentoringContent(
                 description="d",
@@ -168,10 +164,10 @@ class TestServiceCallSitesPassthrough:
 
         await service.generate_side_panel(input_data)
 
-        _assert_positional_only_invoke(llm, SidePanelOutput)
+        _assert_invoke_with_max_tokens(llm, SidePanelOutput, 2048)
 
     @pytest.mark.asyncio
-    async def test_required_step_judge_does_not_pass_max_tokens(self) -> None:
+    async def test_required_step_judge_passes_max_tokens_256(self) -> None:
         valid = AcceptOutput(is_current_required_step_completed=True)
         llm = _make_llm_mock(valid)
         service = RequiredStepJudge(llm=llm)
@@ -192,4 +188,4 @@ class TestServiceCallSitesPassthrough:
 
         await service.judge_required_step(accept_input)
 
-        _assert_positional_only_invoke(llm, AcceptOutput)
+        _assert_invoke_with_max_tokens(llm, AcceptOutput, 256)

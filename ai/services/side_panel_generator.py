@@ -127,4 +127,4 @@ class SidePanelGenerator:
             )
         )
 
-        return await self.llm.invoke(prompt, SidePanelOutput)
+        return await self.llm.invoke(prompt, SidePanelOutput, max_tokens=2048)

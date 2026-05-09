@@ -103,4 +103,4 @@ class StepGenerator:
             )
         )
 
-        return await self.llm.invoke(prompt, GenerateOutput)
+        return await self.llm.invoke(prompt, GenerateOutput, max_tokens=1024)
