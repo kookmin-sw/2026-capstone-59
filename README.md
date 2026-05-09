@@ -87,7 +87,7 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 ![AWS Lambda](https://img.shields.io/badge/AWS_Lambda_%28AI_Orchestrator%29-FF9900?style=flat-square&logo=awslambda&logoColor=white)
 ![Pytest](https://img.shields.io/badge/Pytest_+_Hypothesis-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 
-**DevOps**
+**DevOps (Local)**
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
