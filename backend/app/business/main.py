@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
-from app.business.routers import auth, projects, stages, steps
+from app.business.routers import auth, projects, shared, stages, steps
 from app.core import exception_handlers
 from app.core.auth.csrf import verify_csrf
 from app.core.auth.dependencies import get_current_user
@@ -22,6 +22,7 @@ app.add_middleware(
 exception_handlers.register(app)
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(shared.router, prefix="/shared", tags=["shared"])
 
 _protected = [Depends(get_current_user), Depends(verify_csrf)]
 app.include_router(

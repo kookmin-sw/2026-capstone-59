@@ -40,7 +40,9 @@ def list_projects(
     db: Session = Depends(get_db),
     current_user: AppUserModel = Depends(get_current_user),
 ) -> ProjectListResponse:
-    return project_service.list_projects(db, page, size, sort_by, sort_order, keyword, current_user.id)
+    return project_service.list_projects(
+        db, page, size, sort_by, sort_order, keyword, current_user.id
+    )
 
 
 @router.patch("/{project_id}", status_code=http_status.HTTP_200_OK)
@@ -58,4 +60,23 @@ def delete_project(
     project: ProjectModel = Depends(get_owned_project),
 ) -> None:
     project_service.delete_project(db, project.id)
+    return None
+
+
+@router.post("/{project_id}/share", status_code=http_status.HTTP_200_OK)
+def create_share_link(
+    db: Session = Depends(get_db),
+    project: ProjectModel = Depends(get_owned_project),
+) -> dict:
+    """프로젝트 공유 링크 생성."""
+    return project_service.create_share_token(db, project.id)
+
+
+@router.delete("/{project_id}/share", status_code=http_status.HTTP_200_OK)
+def delete_share_link(
+    db: Session = Depends(get_db),
+    project: ProjectModel = Depends(get_owned_project),
+) -> None:
+    """프로젝트 공유 해제."""
+    project_service.delete_share_token(db, project.id)
     return None
