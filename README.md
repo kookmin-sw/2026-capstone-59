@@ -1,14 +1,10 @@
-# 🐾 Poco
-
 <p align="center">
   <img src="./assets/logo.png" alt="Poco 로고" width="360" />
 </p>
 
-### *조금씩, 한 걸음씩 — 아이디어를 설계까지 쌓아가는 사고의 캔버스*
+### 조금씩, 한 걸음씩 — 아이디어를 설계까지 쌓아가는 사고의 캔버스
 
 > **AI가 다 만들어주는 시대, 무엇을·왜 만들지 정의하고 계신가요?**
-
-**국민대학교 소프트웨어학부 | 2026 캡스톤 디자인 | AWS 트랙 1분반 59팀**
 
 🌐 **[팀 소개페이지 바로가기](https://kookmin-sw.github.io/2026-capstone-59/)**
 
@@ -83,8 +79,6 @@ docker-compose up -d
 | **박수연** | Backend · DB | [@syeon111](https://github.com/syeon111) |
 
 ## 📖 문서
-
-- 🌐 **[팀 소개페이지](https://kookmin-sw.github.io/2026-capstone-59/)** — 프로젝트 소개, 문제 정의, 기술 설계, 팀 소개
 <!-- TODO: 포스터·소개 영상·배포 링크 완성 후 추가 -->
 
 ---
