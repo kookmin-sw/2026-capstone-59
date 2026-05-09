@@ -6,39 +6,65 @@ title: Poco
 <style>
 /* ===== Poco 소개 페이지 전용 스타일 ===== */
 
-/* 페이지 본문 컨테이너를 좌측 사이드바만큼 밀어둔다 */
+/* ----- Cayman 테마의 초록 헤더 완전 제거 ----- */
+.page-header,
+header.page-header,
+section.page-header,
+.site-header,
+body > header {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ----- 본문을 사이드바 오른쪽으로 강제 밀기 ----- */
 @media (min-width: 900px) {
+  html,
+  body {
+    padding-left: 210px !important;
+    margin-left: 0 !important;
+    box-sizing: border-box !important;
+  }
+  /* Cayman 테마의 padding: 2rem 6rem; max-width: 64rem; margin: 0 auto 를 전부 덮어쓴다 */
+  .main-content,
   .page-content .wrapper,
   main.page-content .wrapper,
   body .wrapper {
-    padding-left: 240px !important;
-    transition: padding-left 0.2s ease;
+    max-width: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 2.5rem 2.5rem 2rem 1rem !important;
+    box-sizing: border-box !important;
   }
 }
 
-/* 좌측 고정 사이드바 */
+/* ----- 좌측 고정 사이드바 ----- */
 #poco-side-toc {
   position: fixed;
   top: 0;
   left: 0;
-  width: 220px;
+  width: 280px;
   height: 100vh;
-  padding: 24px 16px 24px 20px;
+  padding: 28px 18px 20px 22px;
   background: #f6f8fa;
   border-right: 1px solid #d0d7de;
   overflow-y: auto;
-  z-index: 10;
-  font-size: 14px;
+  z-index: 9999;
   box-sizing: border-box;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
 }
 
 #poco-side-toc h3 {
-  font-size: 13px;
-  font-weight: 700;
-  margin: 0 0 14px 0;
-  color: #57606a;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 18px 0;
+  color: #24292f;
+  letter-spacing: 0.02em;
 }
 
 #poco-side-toc ol {
@@ -46,20 +72,23 @@ title: Poco
   padding: 0;
   margin: 0;
   counter-reset: poco-toc;
+  flex: 1 1 auto;
 }
 
 #poco-side-toc li {
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   counter-increment: poco-toc;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 #poco-side-toc li a {
   display: block;
   color: #24292f;
   text-decoration: none;
-  padding: 6px 8px;
-  border-radius: 4px;
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: 500;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
@@ -74,9 +103,80 @@ title: Poco
   margin-right: 2px;
 }
 
-/* 모바일: 사이드바 숨기고 본문 전체폭 사용 */
+/* ----- 사이드바 하단 버튼 3종 (이쁜 gradient) ----- */
+.poco-side-buttons {
+  flex-shrink: 0;
+  padding-top: 18px;
+  margin-top: 16px;
+  border-top: 1px solid #d0d7de;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.poco-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.poco-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
+  filter: brightness(1.05);
+}
+
+.poco-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.poco-btn .icon {
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.poco-btn .icon img {
+  width: 18px;
+  height: 18px;
+  display: block;
+  object-fit: contain;
+}
+
+.poco-btn-github {
+  background: linear-gradient(135deg, #2b3137 0%, #24292f 100%);
+}
+
+.poco-btn-live {
+  background: linear-gradient(135deg, #7A67F2 0%, #5C45E8 100%);
+}
+
+.poco-btn-aws {
+  background: linear-gradient(135deg, #FFB547 0%, #FF9900 100%);
+  color: #1a1a1a !important;
+}
+
+/* ----- 모바일: 사이드바 숨기고 전체폭 사용 ----- */
 @media (max-width: 899px) {
   #poco-side-toc { display: none; }
+  html, body {
+    padding-left: 0 !important;
+  }
 }
 </style>
 
@@ -93,6 +193,20 @@ title: Poco
     <li><a href="#8-레포지토리-탐색-가이드">레포지토리 탐색 가이드</a></li>
     <li><a href="#9-사용법">사용법</a></li>
   </ol>
+  <div class="poco-side-buttons">
+    <a class="poco-btn poco-btn-github" href="https://github.com/kookmin-sw/2026-capstone-59" target="_blank" rel="noopener">
+      <span class="icon"><img src="./assets/github_logo.png" alt="" /></span>
+      <span>GitHub 리포지토리</span>
+    </a>
+    <a class="poco-btn poco-btn-live" href="https://poco.example.com" target="_blank" rel="noopener">
+      <span class="icon">🐾</span>
+      <span>Poco 바로가기</span>
+    </a>
+    <a class="poco-btn poco-btn-aws" href="#7-팀-소개">
+      <span class="icon"><img src="./assets/aws_logo.png" alt="" /></span>
+      <span>AWS 캡스톤디자인 59팀</span>
+    </a>
+  </div>
 </nav>
 
 <p align="center">
@@ -105,12 +219,6 @@ title: Poco
 
 <p align="center">
   <b>AI가 다 만들어주는 시대, 무엇을 · 왜 만들지 정의하고 계신가요?</b>
-</p>
-
-<p align="center">
-  <a href="https://github.com/kookmin-sw/2026-capstone-59"><img src="https://img.shields.io/badge/GitHub-Repository-181717?logo=github" alt="GitHub" /></a>
-  <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
-  <a href="#7-팀-소개"><img src="https://img.shields.io/badge/Capstone_2026-AWS_Track_59팀-FF9900?logo=amazon-aws" alt="AWS Track" /></a>
 </p>
 
 &nbsp;
@@ -224,7 +332,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
   📐 아키텍처 다이어그램 준비 중입니다.
 </div>
 
-> *RAG 파이프라인과 "단기 기억 · 장기 지식" 분리 설계로, AI가 검증된 방법론을 실시간 참조합니다.*
+> RAG 파이프라인과 "단기 기억 · 장기 지식" 분리 설계로, AI가 검증된 방법론을 실시간 참조합니다.
 
 ### 4-2. 설계 철학 — "단기 기억 · 장기 지식" 분리
 
@@ -243,40 +351,36 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
-**Backend & AI**
+**Backend**
 
 ![Python](https://img.shields.io/badge/Python_3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic_v2-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
 ![Pytest](https://img.shields.io/badge/Pytest_+_Hypothesis-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 
-**AWS (서버리스 중심)**
+**AI & RAG**
+
+![Claude](https://img.shields.io/badge/Claude_Haiku_4.5-D97757?style=for-the-badge&logo=anthropic&logoColor=white)
+![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-01A88D?style=for-the-badge&logo=amazonaws&logoColor=white)
+![Bedrock KB](https://img.shields.io/badge/Bedrock_Knowledge_Base-222F3E?style=for-the-badge&logo=amazonaws&logoColor=white)
+![S3 Vectors](https://img.shields.io/badge/S3_Vectors-569A31?style=for-the-badge&logo=amazons3&logoColor=white)
+
+**Infra (서버리스 중심)**
 
 ![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-FF9900?style=for-the-badge&logo=awslambda&logoColor=white)
 ![Amazon API Gateway](https://img.shields.io/badge/API_Gateway-FF4F8B?style=for-the-badge&logo=amazonapigateway&logoColor=white)
 ![Amazon RDS](https://img.shields.io/badge/Amazon_RDS-527FFF?style=for-the-badge&logo=amazonrds&logoColor=white)
 ![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white)
-![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-222F3E?style=for-the-badge&logo=amazonaws&logoColor=white)
-![AWS CloudWatch](https://img.shields.io/badge/CloudWatch-FF4F8B?style=for-the-badge&logo=amazoncloudwatch&logoColor=white)
 
-**Database & Storage**
+**DevOps**
 
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![S3 Vectors](https://img.shields.io/badge/S3_Vectors-569A31?style=for-the-badge&logo=amazons3&logoColor=white)
-
-**AI · RAG**
-
-![Claude](https://img.shields.io/badge/Claude_Haiku_4.5-D97757?style=for-the-badge&logo=anthropic&logoColor=white)
-![Bedrock KB](https://img.shields.io/badge/Bedrock_Knowledge_Base-222F3E?style=for-the-badge&logo=amazonaws&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 
 **External**
 
 ![Notion API](https://img.shields.io/badge/Notion_API-000000?style=for-the-badge&logo=notion&logoColor=white)
-
-**DevOps**
-
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ### 4-4. 백엔드의 AI 의존도와 기여점
 
@@ -370,14 +474,17 @@ Poco가 참조하는 학술적 근거와, 각 출처가 실제 서비스 어디�
 
 **그래서 Poco는 검증된 방법론과 초보자 사이에 "다리"를 놓는 역할에 집중했다.** 이를 위한 구조적 선택이 세 가지.
 
-**선택 1 — 원문 탑재 대신 구조 참조**
-SWEBOK는 저작권 보호 대상이라 원문을 RAG 인덱스에 그대로 탑재·재배포할 수 없다. 대신 팀이 SWEBOK의 **지식 지도(Knowledge Area → Topic) 구조만 참조**하여, 초보자 관점으로 재작성한 자체 가이드를 만든다. 권위 있는 구조를 유지하면서도 저작권·접근성 문제를 함께 해소한다.
+- **선택 1 — 원문 탑재 대신 구조 참조**:
 
-**선택 2 — 전 영역이 아닌 진입 장벽 구간에 집중**
-SWEBOK의 18개 Knowledge Area를 모두 초보자 친화적으로 변환하는 것은 캡스톤 스코프를 넘어선다. 따라서 **초보자가 실제로 막히는 지점 — 즉 Claude 같은 파운데이션 모델이 혼자서는 잘 답하지 못하는 4개 약점 영역에만 자체 가이드를 집중 투입**한다. 이 지점들이 바로 "방법론이 있어도 초보자가 못 써먹는" 구간이다.
+    SWEBOK는 저작권 보호 대상이라 원문을 RAG 인덱스에 그대로 탑재·재배포할 수 없다. 대신 팀이 SWEBOK의 **지식 지도(Knowledge Area → Topic) 구조만 참조**하여, 초보자 관점으로 재작성한 자체 가이드를 만든다. 권위 있는 구조를 유지하면서도 저작권·접근성 문제를 함께 해소한다.
 
-**선택 3 — 파운데이션 모델의 강점은 그대로 활용**
-Claude는 이미 일반적인 소프트웨어 공학 지식을 폭넓게 학습한 상태다. *"자체 문서를 많이 만들수록 답변이 좋아진다"* 는 전제는 사실이 아니다. **Claude가 이미 잘 답하는 영역은 그대로 두고, 약한 영역만 자체 문서로 보강**하는 것이 데모 품질 대비 ROI가 가장 높다.
+- **선택 2 — 전 영역이 아닌 진입 장벽 구간에 집중**:
+    
+    SWEBOK의 18개 Knowledge Area를 모두 초보자 친화적으로 변환하는 것은 캡스톤 스코프를 넘어선다. 따라서 **초보자가 실제로 막히는 지점 — 즉 Claude 같은 파운데이션 모델이 혼자서는 잘 답하지 못하는 4개 약점 영역에만 자체 가이드를 집중 투입**한다. 이 지점들이 바로 "방법론이 있어도 초보자가 못 써먹는" 구간이다.
+
+- **선택 3 — 파운데이션 모델의 강점은 그대로 활용**:
+
+    Claude는 이미 일반적인 소프트웨어 공학 지식을 폭넓게 학습한 상태다. *"자체 문서를 많이 만들수록 답변이 좋아진다"* 는 전제는 사실이 아니다. **Claude가 이미 잘 답하는 영역은 그대로 두고, 약한 영역만 자체 문서로 보강**하는 것이 데모 품질 대비 ROI가 가장 높다.
 
 | 구간 | Poco의 대응 |
 |---|---|
@@ -441,19 +548,16 @@ Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자
 
 | 번호 | 한글명 | 영문명 | 설명 |
 |:---:|---|---|---|
-| 1 | 아이디어 구체화 | *Ideation* | 막연한 아이디어를 "왜 만들 가치가 있는가"로 다듬는다. |
-| 2 | 프로젝트 계획 | *Planning* | 기간·인원·역할을 정하고, 어떻게 일할지 설계한다. |
-| 3 | 요구사항 정의 | *Requirement* | 시스템이 "무엇을" 해야 하는지 구체적으로 정의한다. |
-| 4 | 설계 | *Design* | 요구사항을 구조·데이터·인터페이스로 그려낸다. |
-| 5 | 개발 | *Development* | 설계를 실제 동작하는 코드로 구현한다. |
-| 6 | 테스트 및 검증 | *Test* | 만든 것이 처음 정의한 요구사항을 충족하는지 확인한다. |
+| 1 | 아이디어 구체화 | Ideation | 막연한 아이디어를 "왜 만들 가치가 있는가"로 다듬는다. |
+| 2 | 프로젝트 계획 | Planning | 기간·인원·역할을 정하고, 어떻게 일할지 설계한다. |
+| 3 | 요구사항 정의 | Requirement | 시스템이 "무엇을" 해야 하는지 구체적으로 정의한다. |
+| 4 | 설계 | Design | 요구사항을 구조·데이터·인터페이스로 그려낸다. |
+| 5 | 개발 | Development | 설계를 실제 동작하는 코드로 구현한다. |
+| 6 | 테스트 및 검증 | Test | 만든 것이 처음 정의한 요구사항을 충족하는지 확인한다. |
 
 &nbsp;
 
 ## 7. 팀 소개
-
-**국민대학교 소프트웨어학부 | 2026 캡스톤 디자인 | AWS 트랙 1분반 59팀**
-
 <table>
   <tr>
     <td align="center" width="160">
@@ -461,7 +565,7 @@ Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자
         <img src="https://github.com/jys705.png" width="130" alt="정연승" style="border-radius:6px;" />
       </a>
       <br />
-      <a href="https://github.com/jys705"><strong>정연승</strong></a> (팀장)
+      <a href="https://github.com/jys705"><strong>정연승 (팀장)</strong></a>
     </td>
     <td align="center" width="160">
       <a href="https://github.com/woori02">
