@@ -355,7 +355,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 ![AWS Lambda](https://img.shields.io/badge/AWS_Lambda_%28AI_Orchestrator%29-FF9900?style=for-the-badge&logo=awslambda&logoColor=white)
 ![Pytest](https://img.shields.io/badge/Pytest_+_Hypothesis-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 
-**DevOps**
+**DevOps (Local)**
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
