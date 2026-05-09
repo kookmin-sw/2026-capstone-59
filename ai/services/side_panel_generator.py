@@ -75,8 +75,8 @@ class SidePanelGenerator:
         custom_query = target.name
 
         doj_chunks, custom_chunks = await asyncio.gather(
-            self.rag.search_doj(doj_query),
-            self.rag.search_custom(custom_query),
+            self.rag.search_doj(doj_query, num_results=3),
+            self.rag.search_custom(custom_query, num_results=2),
         )
 
         decision_history_json = json.dumps(
@@ -127,4 +127,4 @@ class SidePanelGenerator:
             )
         )
 
-        return await self.llm.invoke(prompt, SidePanelOutput)
+        return await self.llm.invoke(prompt, SidePanelOutput, max_tokens=2048)

@@ -55,7 +55,7 @@ class StepGenerator:
         project = input_data.project_info
 
         rag_query = f"Stage {stage.stage_sequence} {stage.name} activities"
-        chunks = await self.rag.search_doj(rag_query)
+        chunks = await self.rag.search_doj(rag_query, num_results=3)
 
         decision_history_json = json.dumps(
             [item.model_dump(mode='json') for item in input_data.decision_history],
@@ -103,4 +103,4 @@ class StepGenerator:
             )
         )
 
-        return await self.llm.invoke(prompt, GenerateOutput)
+        return await self.llm.invoke(prompt, GenerateOutput, max_tokens=1024)

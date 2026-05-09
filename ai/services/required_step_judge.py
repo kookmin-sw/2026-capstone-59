@@ -84,4 +84,4 @@ class RequiredStepJudge:
             )
         )
 
-        return await self.llm.invoke(prompt, AcceptOutput)
+        return await self.llm.invoke(prompt, AcceptOutput, max_tokens=256)
