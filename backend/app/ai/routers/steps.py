@@ -16,9 +16,10 @@ from app.core.schemas.step import (
 router = EnvelopeRouter()
 
 
-
 @router.post("/steps/{step_id}/accept", status_code=http_status.HTTP_200_OK)
-async def accept_step(step_id: UUID, db: Session = Depends(get_db)) -> StepAcceptResponse:
+async def accept_step(
+    step_id: UUID, db: Session = Depends(get_db)
+) -> StepAcceptResponse:
     return await step_service.accept_step(db, step_id)
 
 

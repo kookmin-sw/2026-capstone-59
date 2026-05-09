@@ -223,21 +223,27 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     belonging_rs_id = step.belonging_required_step_id or step.required_step_id
     steps: list[StepModel] = []
     _attach_or_create_required_step_node(db, step, steps)
-    _create_generated_step_nodes(db, step, generate_result.generated_steps, belonging_rs_id, steps)
+    _create_generated_step_nodes(
+        db, step, generate_result.generated_steps, belonging_rs_id, steps
+    )
     db.flush()
 
     # ⑦ 일반 Step 사이드패널 병렬 생성
     regular_steps = [s for s in steps if s.required_step_id is None]
     side_panel_requests = [_build_side_panel_request(db, s) for s in regular_steps]
-    side_panel_results = await asyncio.gather(*[
-        orchestrator.call_side_panel(req) for req in side_panel_requests
-    ])
+    side_panel_results = await asyncio.gather(
+        *[orchestrator.call_side_panel(req) for req in side_panel_requests]
+    )
 
     # ⑧ 사이드패널 DB 저장
     for s, result in zip(regular_steps, side_panel_results):
         content = StepContentModel(step_id=s.id)
-        content.mentoring = json.dumps(result.mentoring.model_dump(), ensure_ascii=False)
-        content.dictionary = json.dumps([d.model_dump() for d in result.dictionary], ensure_ascii=False)
+        content.mentoring = json.dumps(
+            result.mentoring.model_dump(), ensure_ascii=False
+        )
+        content.dictionary = json.dumps(
+            [d.model_dump() for d in result.dictionary], ensure_ascii=False
+        )
         db.add(content)
 
     db.commit()
@@ -320,7 +326,6 @@ def _upsert_required_step_status(
         db.add(record)
     record.is_fulfilled = True
     record.fulfilled_at = datetime.now(timezone.utc)
-
 
 
 def _attach_or_create_required_step_node(
@@ -492,8 +497,12 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
         is_required=False,
         step_id=step.id,
         name=step.name,
-        mentoring=json.loads(content.mentoring) if content and content.mentoring else None,
-        dictionary=json.loads(content.dictionary) if content and content.dictionary else None,
+        mentoring=(
+            json.loads(content.mentoring) if content and content.mentoring else None
+        ),
+        dictionary=(
+            json.loads(content.dictionary) if content and content.dictionary else None
+        ),
     )
 
 

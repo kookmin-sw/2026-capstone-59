@@ -13,7 +13,6 @@ from app.core.models.project import Project, ProjectStage
 from app.core.models.project_required_step_status import ProjectRequiredStepStatus
 from app.core.models.stage import Stage
 
-
 # ── Project ────────────────────────────────────────────────────────────
 
 
