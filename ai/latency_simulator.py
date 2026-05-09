@@ -50,6 +50,7 @@ from ai.services.step_generator import StepGenerator
 
 
 SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION_STREAMING = "1.1"
 SCENARIO_TAG = "stage1_r1_problem_definition"
 DEFAULT_BASELINE_PATH = Path(".kiro/specs/ai-latency-optimization/baseline.json")
 
@@ -242,6 +243,98 @@ async def _run_pipeline(
     }
 
 
+async def _consume_stream(
+    label: str,
+    sp_gen: SidePanelGenerator,
+    input_data: SidePanelInput,
+) -> Dict[str, Any]:
+    """SidePanelGenerator.generate_stream을 소비하며 TTFT/TTLT 측정."""
+    start = time.perf_counter()
+    first_chunk_at: Optional[float] = None
+    chunks: List[str] = []
+    try:
+        async for chunk in sp_gen.generate_stream(input_data):
+            if first_chunk_at is None:
+                first_chunk_at = time.perf_counter()
+            chunks.append(chunk)
+    except BaseException as exc:  # noqa: BLE001
+        elapsed = time.perf_counter() - start
+        raise _StageError(label, elapsed, exc) from exc
+    end = time.perf_counter()
+    ttft = (first_chunk_at - start) if first_chunk_at is not None else 0.0
+    ttlt = end - start
+    return {
+        "label": label,
+        "ttft_s": ttft,
+        "ttlt_s": ttlt,
+        "aggregated_text": "".join(chunks),
+    }
+
+
+async def _run_pipeline_streaming(
+    step_gen: StepGenerator,
+    judge: RequiredStepJudge,
+    sp_gen: SidePanelGenerator,
+) -> Dict[str, Any]:
+    """Stage A는 non-stream 그대로, Stage B만 3개 병렬 스트림."""
+    # --- Stage A (기존 동일) ---
+    t0 = time.perf_counter()
+    judge_coro = _measure_call("judge", judge.judge_required_step(_build_accept_input()))
+    gen_coro = _measure_call("generate", step_gen.generate_steps(_build_generate_input()))
+    judge_m, gen_m = await asyncio.gather(judge_coro, gen_coro)
+    stage_a_s = time.perf_counter() - t0
+
+    gen_output: GenerateOutput = gen_m["result"]
+    judge_output: AcceptOutput = judge_m["result"]
+
+    # --- Stage B (streaming × 3) ---
+    t1 = time.perf_counter()
+    sp_tasks = [
+        _consume_stream(
+            f"side_panel_{i}",
+            sp_gen,
+            _build_side_panel_input(step),
+        )
+        for i, step in enumerate(gen_output.generated_steps)
+    ]
+    sp_results = await asyncio.gather(*sp_tasks)
+    stage_b_wall_s = time.perf_counter() - t1
+
+    ttfts = [r["ttft_s"] for r in sp_results]
+    ttlts = [r["ttlt_s"] for r in sp_results]
+    stage_b_ttft_s = min(ttfts) if ttfts else 0.0
+    stage_b_ttlt_s = max(ttlts) if ttlts else 0.0
+    pipeline_ttft_s = stage_a_s + stage_b_ttft_s
+    pipeline_ttlt_s = stage_a_s + stage_b_ttlt_s
+
+    return {
+        "judge_s": judge_m["elapsed_s"],
+        "generate_s": gen_m["elapsed_s"],
+        "side_panel_streams": [
+            {
+                "label": r["label"],
+                "ttft_s": r["ttft_s"],
+                "ttlt_s": r["ttlt_s"],
+            }
+            for r in sp_results
+        ],
+        "stage_a_s": stage_a_s,
+        "stage_b_wall_s": stage_b_wall_s,
+        "stage_b_ttft_s": stage_b_ttft_s,
+        "stage_b_ttlt_s": stage_b_ttlt_s,
+        "pipeline_ttft_s": pipeline_ttft_s,
+        "pipeline_ttlt_s": pipeline_ttlt_s,
+        "outputs": {
+            "judge": judge_output.model_dump(mode="json"),
+            "generate": gen_output.model_dump(mode="json"),
+            "side_panels": [
+                {"label": r["label"], "aggregated_text": r["aggregated_text"]}
+                for r in sp_results
+            ],
+        },
+    }
+
+
 # ---------------------------------------------------------------------------
 # 통계 (외부 의존성 없음)
 # ---------------------------------------------------------------------------
@@ -294,6 +387,39 @@ def _strip_outputs_for_run(run: Dict[str, Any]) -> Dict[str, Any]:
         "stage_a_s": run["stage_a_s"],
         "stage_b_s": run["stage_b_s"],
         "pipeline_s": run["pipeline_s"],
+    }
+
+
+def _strip_outputs_for_stream_run(run: Dict[str, Any]) -> Dict[str, Any]:
+    """streaming per_run 저장 시 응답 본문을 제거하고 타이밍만 남긴다."""
+    return {
+        "judge_s": run["judge_s"],
+        "generate_s": run["generate_s"],
+        "side_panel_streams": run["side_panel_streams"],
+        "stage_a_s": run["stage_a_s"],
+        "stage_b_wall_s": run["stage_b_wall_s"],
+        "stage_b_ttft_s": run["stage_b_ttft_s"],
+        "stage_b_ttlt_s": run["stage_b_ttlt_s"],
+        "pipeline_ttft_s": run["pipeline_ttft_s"],
+        "pipeline_ttlt_s": run["pipeline_ttlt_s"],
+    }
+
+
+def _summarize_streaming(per_run: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """streaming per_run 집계 — ttft/ttlt/pipeline_ttft/pipeline_ttlt × (p50, p100)."""
+
+    def field(pick) -> Dict[str, float]:
+        vals = [pick(r) for r in per_run]
+        return {"p50": _percentile(vals, 0.5), "p100": _percentile(vals, 1.0)}
+
+    return {
+        "judge": field(lambda r: r["judge_s"]),
+        "generate": field(lambda r: r["generate_s"]),
+        "stage_a": field(lambda r: r["stage_a_s"]),
+        "ttft": field(lambda r: r["stage_b_ttft_s"]),
+        "ttlt": field(lambda r: r["stage_b_ttlt_s"]),
+        "pipeline_ttft": field(lambda r: r["pipeline_ttft_s"]),
+        "pipeline_ttlt": field(lambda r: r["pipeline_ttlt_s"]),
     }
 
 
@@ -385,6 +511,46 @@ def _print_summary(summary: Dict[str, Any], runs_count: int) -> None:
         print(f"  {label} p50={p50:.3f}s  p100={p100:.3f}s")
 
 
+def _print_stream_run(index: int, total: int, run: Dict[str, Any]) -> None:
+    _section(f"Run {index + 1}/{total} — Pipeline Latency (streaming)")
+    print("  Stage A (judge ∥ generate)")
+    print(f"    judge        : {run['judge_s']:.3f}s")
+    print(f"    generate     : {run['generate_s']:.3f}s")
+    print(f"    stage_a_s    : {run['stage_a_s']:.3f}s  (= max of the two)")
+    print("  Stage B (side_panel × 3, streaming)")
+    for stream in run["side_panel_streams"]:
+        print(
+            f"    {stream['label']}: "
+            f"ttft={stream['ttft_s']:.3f}s  ttlt={stream['ttlt_s']:.3f}s"
+        )
+    print(
+        f"    stage_b      : ttft={run['stage_b_ttft_s']:.3f}s (min)  "
+        f"ttlt={run['stage_b_ttlt_s']:.3f}s (max)  wall={run['stage_b_wall_s']:.3f}s"
+    )
+    print(
+        f"  Pipeline       : ttft={run['pipeline_ttft_s']:.3f}s  "
+        f"ttlt={run['pipeline_ttlt_s']:.3f}s"
+    )
+
+
+def _print_stream_summary(summary: Dict[str, Any], runs_count: int) -> None:
+    _section(f"Summary — streaming (N={runs_count})")
+    fields = [
+        ("judge", "judge         "),
+        ("generate", "generate      "),
+        ("stage_a", "stage_a       "),
+        ("ttft", "ttft          "),
+        ("ttlt", "ttlt          "),
+        ("pipeline_ttft", "pipeline_ttft "),
+        ("pipeline_ttlt", "pipeline_ttlt "),
+    ]
+    for key, label in fields:
+        entry = summary.get(key, {})
+        p50 = entry.get("p50", 0.0)
+        p100 = entry.get("p100", 0.0)
+        print(f"  {label} p50={p50:.3f}s  p100={p100:.3f}s")
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -414,6 +580,11 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
             "Baseline 기록 모드. target 파일이 이미 존재하면 refuse(exit 2). "
             "--output 미지정 시 기본 경로 .kiro/specs/ai-latency-optimization/baseline.json 사용"
         ),
+    )
+    parser.add_argument(
+        "--streaming",
+        action="store_true",
+        help="Stage B를 스트리밍 모드로 실행하고 TTFT/TTLT를 측정한다 (artifact schema 1.1).",
     )
     return parser.parse_args(argv)
 
@@ -466,7 +637,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         for i in range(args.runs):
             try:
                 # run마다 새 event loop를 사용해 run 간 상태 오염을 방지
-                run_result = asyncio.run(_run_pipeline(step_gen, judge, sp_gen))
+                if args.streaming:
+                    run_result = asyncio.run(_run_pipeline_streaming(step_gen, judge, sp_gen))
+                else:
+                    run_result = asyncio.run(_run_pipeline(step_gen, judge, sp_gen))
             except _StageError as e:
                 print(
                     f"[fail] stage={e.label} "
@@ -482,18 +656,26 @@ def main(argv: Optional[List[str]] = None) -> int:
                 return 1
 
             per_run_full.append(run_result)
-            per_run.append(_strip_outputs_for_run(run_result))
-            _print_run(i, args.runs, run_result)
+            if args.streaming:
+                per_run.append(_strip_outputs_for_stream_run(run_result))
+                _print_stream_run(i, args.runs, run_result)
+            else:
+                per_run.append(_strip_outputs_for_run(run_result))
+                _print_run(i, args.runs, run_result)
     except KeyboardInterrupt:
         print()
         print("[interrupt] 사용자 중단", file=sys.stderr)
         return 130
 
-    summary = _summarize(per_run)
-    _print_summary(summary, args.runs)
+    if args.streaming:
+        summary = _summarize_streaming(per_run)
+        _print_stream_summary(summary, args.runs)
+    else:
+        summary = _summarize(per_run)
+        _print_summary(summary, args.runs)
 
     artifact = {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": SCHEMA_VERSION_STREAMING if args.streaming else SCHEMA_VERSION,
         "timestamp": _utc_now_iso(),
         "model_id": ai_settings.MODEL_ID,
         "scenario": SCENARIO_TAG,
@@ -501,6 +683,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         "per_run": per_run,
         "summary": summary,
     }
+    if args.streaming:
+        artifact["mode"] = "streaming"
 
     if args.output or args.baseline:
         out_path = Path(args.output) if args.output else DEFAULT_BASELINE_PATH

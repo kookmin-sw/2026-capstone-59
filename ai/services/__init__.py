@@ -12,7 +12,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, AsyncIterator
 
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
@@ -63,8 +63,26 @@ async def generate_side_panel(
     return await service.generate_side_panel(input_data)
 
 
+async def generate_side_panel_stream(
+    input_data: SidePanelInput,
+    llm_client: LLMClient,
+    rag_client: RAGClient,
+) -> AsyncIterator[str]:
+    """side_panel 시나리오 — 스트리밍 경로.
+
+    기존 generate_side_panel과 달리, 백엔드가 LLMClient/RAGClient를 미리
+    만들어 주입하는 형태. SSE 엔드포인트 당 연결을 유지하며 청크를 즉시
+    yield한다. Pydantic 검증은 수행하지 않으며, 순수 텍스트 청크를 그대로
+    전달한다.
+    """
+    service = SidePanelGenerator(llm=llm_client, rag=rag_client)
+    async for chunk in service.generate_stream(input_data):
+        yield chunk
+
+
 __all__ = [
     "generate_steps",
     "judge_required_step",
     "generate_side_panel",
+    "generate_side_panel_stream",
 ]

@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any
+from typing import Any, AsyncIterator
 
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
@@ -59,6 +59,47 @@ class SidePanelGenerator:
         self.llm = llm
         self.rag = rag
 
+    def _build_prompt(
+        self,
+        input_data: SidePanelInput,
+        doj_chunks: list[RetrievedChunk],
+        custom_chunks: list[RetrievedChunk],
+    ) -> str:
+        stage = input_data.current_stage
+        project = input_data.project_info
+        target = input_data.target_step
+
+        decision_history_json = json.dumps(
+            [item.model_dump(mode='json') for item in input_data.decision_history],
+            ensure_ascii=False,
+        )
+
+        if input_data.current_required_step is not None:
+            required_step_info = json.dumps(
+                input_data.current_required_step.model_dump(mode='json'),
+                ensure_ascii=False,
+            )
+        else:
+            required_step_info = _NONE_LABEL
+
+        rag_context_text = _format_rag_context(doj_chunks, custom_chunks)
+
+        return PromptTemplate.load_and_render(
+            _SCENARIO,
+            project_name=_coerce(project.name),
+            duration_months=str(project.duration_months),
+            member_count=str(project.member_count),
+            description=_coerce(project.description),
+            constraints=_coerce(project.constraints),
+            initial_prompt=project.initial_prompt,
+            stage_sequence=str(stage.stage_sequence),
+            stage_name=stage.name,
+            target_step_name=target.name,
+            decision_history=decision_history_json,
+            current_required_step_info=required_step_info,
+            rag_context=rag_context_text,
+        )
+
     async def generate_side_panel(self, input_data: SidePanelInput) -> SidePanelOutput:
         """입력을 받아 Claude로 사이드패널 콘텐츠를 생성한다.
 
@@ -79,36 +120,7 @@ class SidePanelGenerator:
             self.rag.search_custom(custom_query, num_results=2),
         )
 
-        decision_history_json = json.dumps(
-            [item.model_dump(mode='json') for item in input_data.decision_history],
-            ensure_ascii=False,
-        )
-
-        if input_data.current_required_step is not None:
-            required_step_info = json.dumps(
-                input_data.current_required_step.model_dump(mode='json'),
-                ensure_ascii=False,
-            )
-        else:
-            required_step_info = _NONE_LABEL
-
-        rag_context_text = _format_rag_context(doj_chunks, custom_chunks)
-
-        prompt = PromptTemplate.load_and_render(
-            _SCENARIO,
-            project_name=_coerce(project.name),
-            duration_months=str(project.duration_months),
-            member_count=str(project.member_count),
-            description=_coerce(project.description),
-            constraints=_coerce(project.constraints),
-            initial_prompt=project.initial_prompt,
-            stage_sequence=str(stage.stage_sequence),
-            stage_name=stage.name,
-            target_step_name=target.name,
-            decision_history=decision_history_json,
-            current_required_step_info=required_step_info,
-            rag_context=rag_context_text,
-        )
+        prompt = self._build_prompt(input_data, doj_chunks, custom_chunks)
 
         logger.info(
             json.dumps(
@@ -128,3 +140,45 @@ class SidePanelGenerator:
         )
 
         return await self.llm.invoke(prompt, SidePanelOutput, max_tokens=2048)
+
+    async def generate_stream(
+        self, input_data: SidePanelInput
+    ) -> AsyncIterator[str]:
+        """사이드패널 콘텐츠를 Bedrock 스트리밍으로 yield.
+
+        프롬프트 조립은 sync 경로(_build_prompt)와 공유하여 byte-identical.
+        LLM 호출은 invoke_stream으로 대체하며 청크는 변형 없이 그대로 yield.
+        """
+        stage = input_data.current_stage
+        project = input_data.project_info
+        target = input_data.target_step
+
+        doj_query = f"Stage {stage.stage_sequence} {stage.name} {target.name}"
+        custom_query = target.name
+
+        doj_chunks, custom_chunks = await asyncio.gather(
+            self.rag.search_doj(doj_query, num_results=3),
+            self.rag.search_custom(custom_query, num_results=2),
+        )
+
+        prompt = self._build_prompt(input_data, doj_chunks, custom_chunks)
+
+        logger.info(
+            json.dumps(
+                {
+                    "event": "side_panel_stream_start",
+                    "project_id": str(project.project_id),
+                    "stage_sequence": stage.stage_sequence,
+                    "target_step_name": target.name,
+                    "doj_chunks": len(doj_chunks),
+                    "custom_chunks": len(custom_chunks),
+                    "has_required_step": input_data.current_required_step is not None,
+                    "prompt_len": len(prompt),
+                },
+                ensure_ascii=False,
+                default=str,
+            )
+        )
+
+        async for chunk in self.llm.invoke_stream(prompt, max_tokens=2048):
+            yield chunk
