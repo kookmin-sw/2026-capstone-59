@@ -10,9 +10,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 import uuid
 from json import JSONDecodeError
-from typing import Any, Optional, TypeVar
+from typing import Any, AsyncIterator, Optional, TypeVar
 
 from botocore.exceptions import BotoCoreError, ClientError
 from pydantic import BaseModel, ValidationError
@@ -192,4 +193,111 @@ class LLMClient:
         raise AIGenerationFailedError(
             message="AI 생성에 실패했습니다 (재시도 초과).",
             details=details,
+        )
+
+    async def invoke_stream(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+    ) -> AsyncIterator[str]:
+        """Bedrock Claude 스트리밍 호출. content_block_delta의 text만 yield.
+
+        - Pydantic 검증 없음. 재시도 없음.
+        - max_tokens 우선순위: 인자 > self.max_tokens > 생성자 기본값 (invoke와 동일).
+        - ClientError/BotoCoreError → BedrockAPIError로 래핑하여 re-raise.
+        - JSON decode 실패 청크는 log warning 후 skip (스트림 전체는 계속).
+        """
+        correlation_id = str(uuid.uuid4())
+        effective_max_tokens = max_tokens if max_tokens is not None else self.max_tokens
+        request_body = json.dumps(
+            {
+                "anthropic_version": _ANTHROPIC_VERSION,
+                "max_tokens": effective_max_tokens,
+                "temperature": self.temperature,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        )
+
+        _log(
+            logging.INFO,
+            "llm_invoke_stream_start",
+            correlation_id=correlation_id,
+            model_id=self.model_id,
+            max_tokens=effective_max_tokens,
+            prompt_len=len(prompt),
+        )
+
+        start = time.perf_counter()
+        total_chunks = 0
+
+        try:
+            response = await asyncio.to_thread(
+                self.bedrock_client.invoke_model_with_response_stream,
+                modelId=self.model_id,
+                body=request_body,
+                contentType="application/json",
+            )
+        except (ClientError, BotoCoreError) as exc:
+            elapsed = time.perf_counter() - start
+            error_details = {
+                "correlation_id": correlation_id,
+                "model_id": self.model_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "elapsed_s": round(elapsed, 3),
+            }
+            _log(logging.ERROR, "llm_invoke_stream_failed", **error_details)
+            raise BedrockAPIError(
+                message="Bedrock 스트리밍 호출에 실패했습니다.",
+                details=error_details,
+            ) from exc
+
+        try:
+            for event in response["body"]:
+                chunk_bytes = event.get("chunk", {}).get("bytes") if isinstance(event, dict) else None
+                if not chunk_bytes:
+                    # MagicMock 기반 이벤트는 dict가 아닐 수 있어 getattr fallback.
+                    chunk_obj = getattr(event, "get", lambda _k, _d=None: None)("chunk", {})
+                    chunk_bytes = chunk_obj.get("bytes") if isinstance(chunk_obj, dict) else None
+                if not chunk_bytes:
+                    continue
+                try:
+                    payload = json.loads(chunk_bytes.decode("utf-8"))
+                except (JSONDecodeError, UnicodeDecodeError) as exc:
+                    _log(
+                        logging.WARNING,
+                        "llm_invoke_stream_chunk_skipped",
+                        correlation_id=correlation_id,
+                        reason=type(exc).__name__,
+                    )
+                    continue
+                if payload.get("type") != "content_block_delta":
+                    continue
+                text = payload.get("delta", {}).get("text", "")
+                if text:
+                    total_chunks += 1
+                    yield text
+        except (ClientError, BotoCoreError) as exc:
+            elapsed = time.perf_counter() - start
+            error_details = {
+                "correlation_id": correlation_id,
+                "model_id": self.model_id,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "elapsed_s": round(elapsed, 3),
+            }
+            _log(logging.ERROR, "llm_invoke_stream_failed", **error_details)
+            raise BedrockAPIError(
+                message="Bedrock 스트리밍 수신 중 오류가 발생했습니다.",
+                details=error_details,
+            ) from exc
+
+        elapsed = time.perf_counter() - start
+        _log(
+            logging.INFO,
+            "llm_invoke_stream_end",
+            correlation_id=correlation_id,
+            model_id=self.model_id,
+            total_chunks=total_chunks,
+            elapsed_s=round(elapsed, 3),
         )
