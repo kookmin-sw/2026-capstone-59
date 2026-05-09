@@ -1,5 +1,7 @@
 import json
 from uuid import UUID
+import secrets
+
 
 from sqlalchemy.orm import Session
 
@@ -58,7 +60,7 @@ def create_project(
 
     db.commit()
     db.refresh(project)
-    return _to_project_response(db, project)
+    return to_project_response(db, project)
 
 
 def _create_initial_steps_for_each_stage(db: Session, project_id: UUID) -> None:
@@ -154,7 +156,7 @@ def update_project(
 
     db.commit()
     db.refresh(project)
-    return _to_project_response(db, project)
+    return to_project_response(db, project)
 
 
 def delete_project(db: Session, project_id: UUID) -> None:
@@ -175,7 +177,7 @@ def _get_current_stage_sequence(db: Session, project_id: UUID) -> int:
     return seq if seq is not None else 1
 
 
-def _to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
+def to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
     return ProjectResponse(
         project_id=project.id,
         name=project.name,
@@ -197,3 +199,35 @@ def _generate_default_name(db: Session) -> str:
     while f"{base} ({count})" in existing_names:
         count += 1
     return f"{base} ({count})"
+
+
+def create_share_token(db: Session, project_id: UUID) -> dict:
+    """프로젝트 공유 토큰 생성."""
+    project = get_project_or_raise(db, project_id)
+    if project.share_token is None:
+        project.share_token = secrets.token_urlsafe(32)
+    db.commit()
+    db.refresh(project)
+    return {"share_token": project.share_token}
+
+
+def delete_share_token(db: Session, project_id: UUID) -> None:
+    """프로젝트 공유 해제."""
+    project = get_project_or_raise(db, project_id)
+    project.share_token = None
+    db.commit()
+
+
+def get_project_by_share_token(db: Session, share_token: str) -> ProjectModel:
+    """공유 토큰으로 프로젝트 조회 (인증 불필요)."""
+    project = (
+        db.query(ProjectModel)
+        .filter(
+            ProjectModel.share_token == share_token,
+            ProjectModel.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
+    if not project:
+        raise ProjectNotFoundError()
+    return project
