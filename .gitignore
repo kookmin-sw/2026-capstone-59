@@ -5,3 +5,26 @@ __pycache__/
 .claude/
 .vscode/
 .kiro/
+
+# Personal scripts (local only)
+scripts/
+
+# Backend team's working directory (handled separately by backend team)
+content/
+
+# Personal work context (not for public repo)
+CLAUDE.md
+
+# Local-only assets (use assets/ folder for published images)
+AWS 서버리스 중심 아키텍처.png
+
+# Jekyll / GitHub Pages
+_site/
+.jekyll-cache/
+.jekyll-metadata
+.sass-cache/
+Gemfile.lock
+
+# OS
+.DS_Store
+Thumbs.db
