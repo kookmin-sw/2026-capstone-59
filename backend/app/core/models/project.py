@@ -24,6 +24,9 @@ class Project(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     constraint_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    share_token: Mapped[str | None] = mapped_column(
+        String, nullable=True, unique=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

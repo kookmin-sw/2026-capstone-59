@@ -17,12 +17,26 @@ bedrock_agent = boto3.client("bedrock-agent-runtime", region_name="us-east-1")
 
 
 async def call_accept(input_data):
-    return await judge_required_step(input_data, bedrock_runtime, settings.BEDROCK_MODEL_ID)
+    return await judge_required_step(
+        input_data, bedrock_runtime, settings.BEDROCK_MODEL_ID
+    )
 
 
 async def call_generate(input_data):
-    return await generate_steps(input_data, bedrock_runtime, bedrock_agent, settings.BEDROCK_MODEL_ID, settings.BEDROCK_KB_ID)
+    return await generate_steps(
+        input_data,
+        bedrock_runtime,
+        bedrock_agent,
+        settings.BEDROCK_MODEL_ID,
+        settings.BEDROCK_KB_ID,
+    )
 
 
 async def call_side_panel(input_data):
-    return await generate_side_panel(input_data, bedrock_runtime, bedrock_agent, settings.BEDROCK_MODEL_ID, settings.BEDROCK_KB_ID)
+    return await generate_side_panel(
+        input_data,
+        bedrock_runtime,
+        bedrock_agent,
+        settings.BEDROCK_MODEL_ID,
+        settings.BEDROCK_KB_ID,
+    )
