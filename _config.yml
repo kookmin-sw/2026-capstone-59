@@ -7,6 +7,7 @@ show_downloads: false
 repository: kookmin-sw/2026-capstone-59
 
 # Markdown 설정
+# (kramdown + GFM 입력 모드, rouge 코드 하이라이터)
 markdown: kramdown
 kramdown:
   input: GFM
