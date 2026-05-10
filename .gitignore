@@ -6,6 +6,16 @@ __pycache__/
 .vscode/
 .kiro/
 
+# Python test cache
+.pytest_cache/
+.hypothesis/
+.coverage
+
+# Node.js
+node_modules/
+dist/
+build/
+
 # Personal scripts (local only)
 scripts/
 
@@ -14,9 +24,6 @@ content/
 
 # Personal work context (not for public repo)
 CLAUDE.md
-
-# Local-only assets (use assets/ folder for published images)
-AWS 서버리스 중심 아키텍처.png
 
 # Jekyll / GitHub Pages
 _site/
