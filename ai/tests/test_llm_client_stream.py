@@ -69,7 +69,8 @@ class TestInvokeStream:
 
         chunks = await _collect(client.invoke_stream("prompt"))
 
-        assert chunks == ["A", "B", "C"]
+        # Tail-buffer batches final chars; check content, not exact chunk split.
+        assert "".join(chunks) == "ABC"
 
     @pytest.mark.asyncio
     async def test_invoke_stream_max_tokens_priority(self) -> None:
@@ -128,7 +129,7 @@ class TestInvokeStream:
 
         chunks = await _collect(client.invoke_stream("prompt"))
 
-        assert chunks == ["A", "B"]
+        assert "".join(chunks) == "AB"
 
     @pytest.mark.asyncio
     async def test_invoke_stream_does_not_block_event_loop(self) -> None:
@@ -172,5 +173,51 @@ class TestInvokeStream:
         gen2 = client.invoke_stream("p2")
         t1, t2 = await asyncio.gather(_first_chunk_time(gen1), _first_chunk_time(gen2))
 
-        # 직렬화되면 t2 >= 5 * 0.05 = 0.25s. async면 t2 < 0.2s.
+        # Tail-buffer delays first yield by ~3 events (3 * 0.05 = 0.15s).
+        # Serialized: t2 >= 5 * 0.05 + 3 * 0.05 = 0.40s. Async: t2 ~= 0.15s.
         assert t2 < 0.2, f"두 번째 stream이 직렬화됨: t1={t1:.3f}s, t2={t2:.3f}s"
+
+    @pytest.mark.asyncio
+    async def test_invoke_stream_strips_json_fence(self) -> None:
+        """```json ... ``` 코드 펜스를 벗겨내고 내용만 yield."""
+        events = [
+            _delta_event("```json\n"),
+            _delta_event('{"a": '),
+            _delta_event("1}"),
+            _delta_event("\n```"),
+        ]
+        bedrock = _make_bedrock_mock(events)
+        client = LLMClient(bedrock_client=bedrock, model_id=MODEL_ID)
+
+        chunks = await _collect(client.invoke_stream("prompt"))
+
+        assert "".join(chunks) == '{"a": 1}'
+
+    @pytest.mark.asyncio
+    async def test_invoke_stream_strips_plain_fence(self) -> None:
+        """``` ... ``` (언어 없는) 코드 펜스를 벗겨내고 내용만 yield."""
+        events = [
+            _delta_event("```\n"),
+            _delta_event('{"a": 1}'),
+            _delta_event("\n```"),
+        ]
+        bedrock = _make_bedrock_mock(events)
+        client = LLMClient(bedrock_client=bedrock, model_id=MODEL_ID)
+
+        chunks = await _collect(client.invoke_stream("prompt"))
+
+        assert "".join(chunks) == '{"a": 1}'
+
+    @pytest.mark.asyncio
+    async def test_invoke_stream_no_fence_passthrough(self) -> None:
+        """펜스 없는 응답은 내용이 변형 없이 yield된다."""
+        events = [
+            _delta_event('{"a"'),
+            _delta_event(": 1}"),
+        ]
+        bedrock = _make_bedrock_mock(events)
+        client = LLMClient(bedrock_client=bedrock, model_id=MODEL_ID)
+
+        chunks = await _collect(client.invoke_stream("prompt"))
+
+        assert "".join(chunks) == '{"a": 1}'
