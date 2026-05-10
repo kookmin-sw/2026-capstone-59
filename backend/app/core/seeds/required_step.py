@@ -1591,6 +1591,10 @@ def run(db: Session) -> None:
             raise ValueError(
                 f"Stage sequence {seq} 를 찾을 수 없습니다. Stage 시드를 먼저 실행하세요."
             )
+
+        # template_url: 사전 생성된 Notion 템플릿 URL (시드에서 제공)
+        template_url = item.get("template_url", "")
+
         rows.append(
             {
                 "stage_id": stage_map[seq],
@@ -1605,6 +1609,7 @@ def run(db: Session) -> None:
                 "doj_reference": item["doj_reference"],
                 "default_mentoring": item["default_mentoring"],
                 "default_dictionary": item["default_dictionary"],
+                "template_url": template_url,
             }
         )
 
@@ -1630,6 +1635,7 @@ def run(db: Session) -> None:
                 "doj_reference": insert(RequiredStep).excluded.doj_reference,
                 "default_mentoring": insert(RequiredStep).excluded.default_mentoring,
                 "default_dictionary": insert(RequiredStep).excluded.default_dictionary,
+                "template_url": insert(RequiredStep).excluded.template_url,
             },
         )
     )

@@ -167,13 +167,11 @@ def add_step_content(
     *,
     mentoring: str | None = None,
     dictionary: str | None = None,
-    template_url: str | None = None,
 ) -> StepContent:
     content = StepContent(
         step_id=step_id,
         mentoring=mentoring,
         dictionary=dictionary,
-        template_url=template_url,
     )
     db.add(content)
     return content
