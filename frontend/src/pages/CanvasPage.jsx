@@ -288,44 +288,49 @@ export default function CanvasPage() {
     if (!selectedStep) return
     if (isAccepting) return
 
-    const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
-    if (!selectedStage) return
+    setIsAccepting(true) 
+    try {
+      const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
+      if (!selectedStage) return
 
-    const hasLaterCompletedStage = stages.some(
-      (s) =>
-        s.stage_sequence > selectedStage.stage_sequence &&
-        s.stage_sequence < currentStageSequence
-    )
+      const hasLaterCompletedStage = stages.some(
+        (s) =>
+          s.stage_sequence > selectedStage.stage_sequence &&
+          s.stage_sequence < currentStageSequence
+      )
 
-    if (hasLaterCompletedStage) {
-      setRollbackModal(true)
-      return
-    }
+      if (hasLaterCompletedStage) {
+        setRollbackModal(true)
+        return
+      }
 
-    const latestActive = getLatestActiveStage(stages)
+      const latestActive = getLatestActiveStage(stages)
 
-    if (latestActive && latestActive.stage_sequence > selectedStage.stage_sequence) {
-      if (stageHasProgressRef.current[latestActive.stage_id] === undefined) {
-        try {
-          const treeData = await getStepTree(projectId, latestActive.stage_id)
-          const { nodes: n, edges: e } = flattenTree(
-            treeData.steps ?? [],
-            latestActive.stage_sequence
-          )
-          stageHasProgressRef.current[latestActive.stage_id] = getStageProgressFromTree(n, e)
-        } catch {
-          alert('잠시후 다시 시도해주세요.')
+      if (latestActive && latestActive.stage_sequence > selectedStage.stage_sequence) {
+        if (stageHasProgressRef.current[latestActive.stage_id] === undefined) {
+          try {
+            const treeData = await getStepTree(projectId, latestActive.stage_id)
+            const { nodes: n, edges: e } = flattenTree(
+              treeData.steps ?? [],
+              latestActive.stage_sequence
+            )
+            stageHasProgressRef.current[latestActive.stage_id] = getStageProgressFromTree(n, e)
+          } catch {
+            alert('잠시후 다시 시도해주세요.')
+            return
+          }
+        }
+
+        if (stageHasProgressRef.current[latestActive.stage_id] === true) {
+          setRollbackModal(true)
           return
         }
       }
 
-      if (stageHasProgressRef.current[latestActive.stage_id] === true) {
-        setRollbackModal(true)
-        return
-      }
+      await executeAccept()
+    } finally {
+      setIsAccepting(false)
     }
-
-    await executeAccept()
   }
 
   async function handleRollbackConfirm() {
