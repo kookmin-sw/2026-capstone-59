@@ -45,6 +45,7 @@ export default function CanvasPage() {
   const [toastVisible, setToastVisible] = useState(false)
   const [rfInstance, setRfInstance] = useState(null)
   const [rollbackModal, setRollbackModal] = useState(false)
+  const [isAccepting, setIsAccepting] = useState(false)
 
   const timerRef = useRef(null)
   const currentRequiredStepName = useRef(null)
@@ -162,6 +163,7 @@ export default function CanvasPage() {
 
   async function handleAccept() {
     if (!selectedStep) return
+    if (isAccepting) return
 
     const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
     const nextStage = stages.find(
@@ -220,6 +222,7 @@ export default function CanvasPage() {
   }
 
  async function executeAccept({ skipRollback = false } = {}) {
+  setIsAccepting(true)
   const status = selectedStep.data?.status
 
   const needsRollback =
@@ -299,6 +302,7 @@ export default function CanvasPage() {
   }
 
   await fetchAndRenderTree(selectedStageId)
+  setIsAccepting(false)
   setSelectedStep(null)
   setStepDetail(null)
 }
@@ -399,6 +403,7 @@ export default function CanvasPage() {
           step={selectedStep}
           detail={stepDetail}
           isOpen={!!selectedStep}
+          isAccepting={isAccepting}
           hasChildren={selectedHasChildren}
           onClose={() => { setSelectedStep(null); setStepDetail(null) }}
           onAccept={handleAccept}

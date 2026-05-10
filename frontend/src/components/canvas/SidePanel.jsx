@@ -327,7 +327,7 @@ function MentoringContent({ raw, isLoading }) {
   )
 }
 
-export default function SidePanel({ step, detail, isOpen, onClose, onAccept, hasChildren }) {
+export default function SidePanel({ step, detail, isOpen, onClose, onAccept, hasChildren, isAccepting }) {
   const [activeTab, setActiveTab] = useState('mentoring')
   const [lastStep, setLastStep] = useState(step)
 
@@ -434,7 +434,7 @@ export default function SidePanel({ step, detail, isOpen, onClose, onAccept, has
 
       <div className={styles.footer}>
         {(status !== 'ACCEPTED' || !hasChildren) && (
-          <button className={styles.acceptBtn} onClick={onAccept}>
+          <button className={styles.acceptBtn} onClick={onAccept} disabled={isAccepting}>
             <HiCheck size={15} />
             accept
           </button>
