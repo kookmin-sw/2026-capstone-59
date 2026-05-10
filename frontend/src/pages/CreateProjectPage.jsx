@@ -6,7 +6,7 @@ import styles from './CreateProjectPage.module.css'
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 5 }, (_, i) => currentYear + i)
 const months = Array.from({ length: 12 }, (_, i) => i + 1)
-const members = Array.from({ length: 20 }, (_, i) => i + 1)
+const members = Array.from({ length: 10 }, (_, i) => i + 1)
 
 function toMonthValue(year, month) {
   return year * 12 + month
@@ -175,7 +175,7 @@ export default function CreateProjectPage() {
                   value={memberCount}
                   onChange={(e) => setMemberCount(e.target.value)}
                 >
-                  <option value="">1 ~ 20명</option>
+                  <option value="">1 ~ 10명</option>
                   {members.map((m) => (
                     <option key={m} value={m}>{m}명</option>
                   ))}
