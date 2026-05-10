@@ -35,3 +35,9 @@ Gemfile.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# AWS Lambda Layer build artifacts (not tracked — reproducible from backend/requirements.txt)
+layer-build/
+
+# Lambda deployment packages (built locally, not tracked)
+*.zip
