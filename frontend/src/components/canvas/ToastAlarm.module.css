@@ -11,7 +11,6 @@
   border-radius: 0 0 20px 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   padding: 3px 16px;
-  cursor: pointer;
   overflow: hidden;
   white-space: nowrap;
   transition: box-shadow 0.1s ease, opacity 0.1s ease;
@@ -26,6 +25,42 @@
   pointer-events: auto;
 }
 
+.pillContent {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pillToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9E99C0;
+  padding: 2px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.closeBtn:hover {
+  color: #1A1040;
+  background: rgba(0, 0, 0, 0.05);
+}
+
 .message {
   display: inline-block;
   max-width: 0;
@@ -35,14 +70,12 @@
   font-weight: 600;
   color: #1A1040;
   white-space: nowrap;
-  margin-right: 0;
 }
 
 .pillOpen .message {
   max-width: 500px;
   opacity: 1;
-  margin-right: 8px;
-  transition: max-width 0.4s ease, opacity 0.25s ease, margin-right 0.4s ease;
+  transition: max-width 0.4s ease, opacity 0.25s ease;
 }
 
 .pillFading {
@@ -56,6 +89,18 @@
   transition: transform 0.3s ease;
 }
 
-.iconUp {
-  transform: rotate(180deg);
+.progressBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: #847eff;
+  border-radius: 0 0 20px 20px;
+  animation: shrinkProgress linear forwards;
+}
+
+@keyframes shrinkProgress {
+  from { width: 100%; }
+  to { width: 0%; }
 }
