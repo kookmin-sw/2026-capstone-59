@@ -424,6 +424,11 @@
   opacity: 0.85;
 }
 
+.acceptBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .skeleton {
   display: flex;
   flex-direction: column;
