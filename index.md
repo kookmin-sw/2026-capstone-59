@@ -655,4 +655,4 @@ docker-compose up -d
 
 ---
 
-<sub>*본 프로젝트는 소프트웨어 공학 지식체계 **SWEBOK V4.0a** (2024, IEEE Computer Society) 및 미국 법무부(**DOJ**) **SDLC Guidance Document** 를 근거로 설계되었습니다.*</sub>
+<sub>*본 프로젝트는 소프트웨어 공학 지식체계 **SWEBOK V4.0a** (2024, IEEE Computer Society) 및 미국 법무부(**DOJ**) **SDLC(소프트웨어 개발 수명 주기) Guidance Document** 를 근거로 설계되었습니다.*</sub>
