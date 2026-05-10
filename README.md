@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
+  <!-- <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a> -->
   <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_Track_59팀-FF9900?logo=amazon-aws" alt="AWS Track" /></a>
 </p>
