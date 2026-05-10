@@ -1,16 +1,10 @@
 import boto3
-from ai import generate_steps, judge_required_step, generate_side_panel
+from typing import AsyncIterator
 
-# boto3 클라이언트 생성 (Lambda에서는 IAM Role로 자동 인증)
-bedrock_runtime = boto3.client("bedrock-runtime", region_name="us-east-1")
-bedrock_agent = boto3.client("bedrock-agent-runtime", region_name="us-east-1")
-
-MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
-KB_ID = "ZAEWSDQVP1"  # 환경변수로 관리 권장
-
-import boto3
 from app.core.config import settings
-from ai import generate_steps, judge_required_step, generate_side_panel
+from ai import generate_steps, judge_required_step, generate_side_panel, generate_side_panel_stream
+from ai.clients.llm import LLMClient
+from ai.clients.rag import RAGClient
 
 bedrock_runtime = boto3.client("bedrock-runtime", region_name="us-east-1")
 bedrock_agent = boto3.client("bedrock-agent-runtime", region_name="us-east-1")
@@ -40,3 +34,10 @@ async def call_side_panel(input_data):
         settings.BEDROCK_MODEL_ID,
         settings.BEDROCK_KB_ID,
     )
+
+
+async def call_side_panel_stream(input_data) -> AsyncIterator[str]:
+    llm = LLMClient(bedrock_client=bedrock_runtime, model_id=settings.BEDROCK_MODEL_ID)
+    rag = RAGClient(bedrock_agent_client=bedrock_agent, kb_id=settings.BEDROCK_KB_ID)
+    async for chunk in generate_side_panel_stream(input_data, llm, rag):
+        yield chunk
