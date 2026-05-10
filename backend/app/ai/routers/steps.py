@@ -10,7 +10,6 @@ from app.ai.services import orchestrator, step_service
 from app.core.api.route import EnvelopeRouter
 from app.core.database import get_db
 from app.core.schemas.step import (
-    NotionTemplateResponse,
     StepAcceptResponse,
     StepDetailResponse,
 )
@@ -52,14 +51,3 @@ async def sidepanel_stream(step_id: UUID, db: Session = Depends(get_db)):
             yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
-
-
-@router.post(
-    "/steps/{step_id}/notion-template", status_code=http_status.HTTP_201_CREATED
-)
-def create_notion_template(step_id: UUID) -> NotionTemplateResponse:
-    """Required Step의 Notion 템플릿 페이지 생성 — TODO: Notion API 연동."""
-    return NotionTemplateResponse(
-        notion_page_id="placeholder",
-        notion_page_url="https://notion.so/placeholder",
-    )

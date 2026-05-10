@@ -21,9 +21,6 @@ class Settings(BaseSettings):
     BEDROCK_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
     BEDROCK_KB_ID: str = ""
 
-    # Notion
-    NOTION_TOKEN: str = ""
-
     # JWT
     JWT_SECRET_KEY: str = "change-me"
     JWT_ALGORITHM: str = "HS256"

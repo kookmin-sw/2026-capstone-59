@@ -444,8 +444,8 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
     # 필수 Step → DB 캐시 반환. content가 없으면 RequiredStep 기본값으로 생성
     if step.required_step_id is not None:
         content = step.content
+        rs = db.get(RequiredStepModel, step.required_step_id)
         if content is None:
-            rs = db.get(RequiredStepModel, step.required_step_id)
             content = StepContentModel(step_id=step.id)
             if rs is not None:
                 if rs.default_mentoring is not None:
@@ -470,7 +470,7 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
                 if content and content.dictionary
                 else None
             ),
-            template_url=content.template_url if content else None,
+            template_url=rs.template_url if rs else None,
         )
 
     # 일반 Step → DB 캐시 확인 후 없으면 AI 호출
