@@ -16,7 +16,7 @@ import RequiredStepNode from '../components/canvas/RequiredStepNode'
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep } from '../api/step'
 
-import { STAGE_ENGLISH, flattenTree } from '../utils/canvasUtils'
+import { STAGE_ENGLISH, flattenTree, getStageProgressFromTree, findRequiredStep } from '../utils/canvasUtils'
 
 import styles from './CanvasPage.module.css'
 import { HiOutlineUser } from 'react-icons/hi'
@@ -56,17 +56,6 @@ export default function CanvasPage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
-
-  function getStageProgressFromTree(nodes, edges) {
-    const firstRequired = nodes.find(
-      (node) =>
-        node.type === 'requiredStepNode' &&
-        !edges.some((edge) => edge.target === node.id)
-    )
-    return firstRequired
-      ? edges.some((edge) => edge.source === firstRequired.id)
-      : false
-  }
 
   useEffect(() => {
     if (!projectId) return
@@ -221,15 +210,6 @@ export default function CanvasPage() {
     await executeAccept({ skipRollback: true })
   }
 
-  function findRequiredStep(nodeId) {
-    const parentEdge = edges.find((e) => e.target === nodeId)
-    if (!parentEdge) return null
-    const parentNode = nodes.find((n) => n.id === parentEdge.source)
-    if (!parentNode) return null
-    if (parentNode.type === 'requiredStepNode') return parentNode
-    return findRequiredStep(parentNode.id)
-  }
-
  async function executeAccept({ skipRollback = false } = {}) {
   const status = selectedStep.data?.status
 
@@ -276,7 +256,7 @@ export default function CanvasPage() {
     const requiredNode =
       selectedStep.type === 'requiredStepNode'
         ? selectedStep
-        : findRequiredStep(selectedStep.id)
+        : findRequiredStep(selectedStep.id, nodes, edges)
 
     const name = requiredNode?.data?.label
     if (name) {
@@ -313,7 +293,6 @@ export default function CanvasPage() {
   setSelectedStep(null)
   setStepDetail(null)
 }
-
 
   function handleNodeContextMenu(event, node) {
     event.preventDefault()
