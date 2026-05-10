@@ -55,6 +55,9 @@ export default function CanvasPage() {
   const stageHasProgressRef = useRef({})
   const detailRequestRef = useRef(0)
   const streamBuffers = useRef(new Map())
+  const enqueuedLenRef = useRef(0)
+  const typingQueueRef = useRef('')
+  const typingTimerRef = useRef(null)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -66,6 +69,32 @@ export default function CanvasPage() {
       buf.onUpdate = null
       buf.onComplete = null
     })
+  }
+
+  function clearTyping() {
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current)
+      typingTimerRef.current = null
+    }
+    typingQueueRef.current = ''
+    enqueuedLenRef.current = 0
+  }
+
+  function enqueueTyping(newChars) {
+    typingQueueRef.current += newChars
+    if (typingTimerRef.current) return  // 이미 돌고 있으면 큐에만 쌓음
+
+    typingTimerRef.current = setInterval(() => {
+      if (!typingQueueRef.current) {
+        clearInterval(typingTimerRef.current)
+        typingTimerRef.current = null
+        return
+      }
+      const step = Math.min(2, typingQueueRef.current.length)
+      const chars = typingQueueRef.current.slice(0, step)
+      typingQueueRef.current = typingQueueRef.current.slice(step)
+      setStreamingText(prev => (prev ?? '') + chars)
+    }, 16)
   }
 
   function startNodeStream(nodeId) {
@@ -181,6 +210,7 @@ export default function CanvasPage() {
   }, [selectedStageId, projectId])
 
   useEffect(() => {
+    clearTyping()
     setSelectedStep(null)
     setStepDetail(null)
     setStreamingText(null)
@@ -220,9 +250,20 @@ export default function CanvasPage() {
         //
       }
     } else if (buf && !buf.isDone) {
-      setStreamingText(buf.text)
-      buf.onUpdate = (text) => setStreamingText(text)
+      clearTyping()
+      const baseText = buf.text
+      setStreamingText(baseText)
+      enqueuedLenRef.current = baseText.length
+
+      buf.onUpdate = (fullText) => {
+        const newPart = fullText.slice(enqueuedLenRef.current)
+        if (newPart) {
+          enqueuedLenRef.current = fullText.length
+          enqueueTyping(newPart)
+        }
+      }
       buf.onComplete = async () => {
+        clearTyping()
         setStreamingText(null)
         try {
           const detail = await getStepDetail(node.id)
@@ -426,6 +467,7 @@ export default function CanvasPage() {
 
   function handlePaneClick() {
     clearStreamCallbacks()
+    clearTyping() 
     setSelectedStep(null)
     setStepDetail(null)
     setStreamingText(null)
@@ -511,6 +553,7 @@ export default function CanvasPage() {
           hasChildren={selectedHasChildren}
           onClose={() => {
             clearStreamCallbacks()
+            clearTyping()
             setSelectedStep(null)
             setStepDetail(null)
             setStreamingText(null)
