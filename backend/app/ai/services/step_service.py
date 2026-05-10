@@ -228,24 +228,6 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     )
     db.flush()
 
-    # ⑦ 일반 Step 사이드패널 병렬 생성
-    regular_steps = [s for s in steps if s.required_step_id is None]
-    side_panel_requests = [_build_side_panel_request(db, s) for s in regular_steps]
-    side_panel_results = await asyncio.gather(
-        *[orchestrator.call_side_panel(req) for req in side_panel_requests]
-    )
-
-    # ⑧ 사이드패널 DB 저장
-    for s, result in zip(regular_steps, side_panel_results):
-        content = StepContentModel(step_id=s.id)
-        content.mentoring = json.dumps(
-            result.mentoring.model_dump(), ensure_ascii=False
-        )
-        content.dictionary = json.dumps(
-            [d.model_dump() for d in result.dictionary], ensure_ascii=False
-        )
-        db.add(content)
-
     db.commit()
     for s in steps:
         db.refresh(s)
@@ -506,7 +488,7 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
     )
 
 
-def _build_side_panel_request(db: Session, step: StepModel) -> SidePanelRequest:
+def build_side_panel_request(db: Session, step: StepModel) -> SidePanelRequest:
     fulfilled_ids = _get_fulfilled_required_step_ids(db, step.project_id)
     stage = step.stage
 
@@ -540,3 +522,37 @@ def _build_side_panel_request(db: Session, step: StepModel) -> SidePanelRequest:
         ),
         rag_context={"results": rag_results},
     )
+
+
+def get_step_for_stream(db: Session, step_id: uuid.UUID) -> StepModel:
+    """SSE 스트림용 Step 조회 — 필수 Step이거나 존재하지 않으면 예외."""
+    step = db.get(StepModel, step_id)
+    if step is None:
+        raise StepNotFoundError()
+    return step
+
+
+def save_side_panel_content(db: Session, step_id: uuid.UUID, full_text: str) -> None:
+    """SSE 스트리밍 완료 후 누적 텍스트를 파싱해 DB에 저장."""
+    from pydantic import ValidationError
+    from ai.schemas.side_panel import SidePanelOutput
+
+    try:
+        stripped = full_text.strip()
+        if stripped.startswith("```"):
+            lines = stripped.splitlines()
+            stripped = "\n".join(lines[1:-1]).strip()
+        payload = json.loads(stripped)
+        result = SidePanelOutput.model_validate(payload)
+    except (json.JSONDecodeError, ValidationError):
+        return  # 파싱 실패 시 저장 생략
+
+    content = db.get(StepContentModel, step_id)
+    if content is None:
+        content = StepContentModel(step_id=step_id)
+        db.add(content)
+    content.mentoring = json.dumps(result.mentoring.model_dump(), ensure_ascii=False)
+    content.dictionary = json.dumps(
+        [d.model_dump() for d in result.dictionary], ensure_ascii=False
+    )
+    db.commit()
