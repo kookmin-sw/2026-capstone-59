@@ -364,26 +364,41 @@ export default function CanvasPage() {
 
   async function executeAccept({ skipRollback = false } = {}) {
     setIsAccepting(true)
+
     try {
       const status = selectedStep.data?.status
 
+      const parentEdge = edges.find((e) => e.target === selectedStep.id)
+
+      const siblings = parentEdge
+        ? nodes.filter(
+            (n) =>
+              n.id !== selectedStep.id &&
+              edges.some(
+                (e) => e.source === parentEdge.source && e.target === n.id
+              )
+          )
+        : []
+
+      const acceptedSibling = siblings.find(
+        (n) => n.data?.status === 'ACCEPTED'
+      )
+
       const needsRollback =
         status === 'CANCELED' ||
-        (status === 'READY' &&
-          (() => {
-            const parentEdge = edges.find((e) => e.target === selectedStep.id)
-            if (!parentEdge) return false
-            const siblings = nodes.filter(
-              (n) =>
-                n.id !== selectedStep.id &&
-                edges.some((e) => e.source === parentEdge.source && e.target === n.id)
-            )
-            return siblings.some((n) => n.data?.status === 'ACCEPTED')
-          })())
+        (status === 'READY' && !!acceptedSibling)
 
       if (!skipRollback && needsRollback) {
+        const nodeToRollback =
+          status === 'CANCELED' ? selectedStep : acceptedSibling
+
+        if (!nodeToRollback) {
+          alert('롤백 대상을 찾지 못했어요. 다시 시도해주세요.')
+          return
+        }
+
         try {
-          await rollbackStep(selectedStep.id)
+          await rollbackStep(nodeToRollback.id)
         } catch (err) {
           const msg =
             err?.code === 'INVALID_ROLLBACK_TARGET'
@@ -453,6 +468,7 @@ export default function CanvasPage() {
       setIsAccepting(false)
     }
   }
+
 
   function handleNodeContextMenu(event, node) {
     event.preventDefault()
