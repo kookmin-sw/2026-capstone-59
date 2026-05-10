@@ -429,7 +429,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
                 </a>
                 <p className={styles.templateHint}>
                   작성한 내용을 Poco에 제출할 필요는 없어요.<br />
-                  자유롭게 활용하세요.
+                  Notion에서 복제 후 자유롭게 활용하세요!
                 </p>
               </div>
             ) : (
