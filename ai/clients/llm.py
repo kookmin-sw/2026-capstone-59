@@ -206,6 +206,7 @@ class LLMClient:
         - max_tokens 우선순위: 인자 > self.max_tokens > 생성자 기본값 (invoke와 동일).
         - ClientError/BotoCoreError → BedrockAPIError로 래핑하여 re-raise.
         - JSON decode 실패 청크는 log warning 후 skip (스트림 전체는 계속).
+        - 응답이 코드 펜스(```json...``` 또는 ```...```)로 감싸인 경우 자동으로 벗겨낸다.
         """
         correlation_id = str(uuid.uuid4())
         effective_max_tokens = max_tokens if max_tokens is not None else self.max_tokens
@@ -252,6 +253,16 @@ class LLMClient:
                 details=error_details,
             ) from exc
 
+        # Opening fence prefixes Bedrock may prepend to JSON output.
+        _FENCE_PREFIXES = ("```json\n", "```json\r\n", "```\n", "```\r\n")
+        # Must be ≥ len("\n```") = 4 to catch the longest trailing fence.
+        _TAIL_BUFFER_SIZE = 4
+
+        first_flush = False   # True once opening-fence decision is made
+        fence_active = False  # True if an opening fence was stripped
+        pending = ""          # pre-flush accumulator
+        tail_buffer = ""      # sliding window for trailing-fence detection
+
         _SENTINEL = object()
         try:
             event_iter = iter(response["body"])
@@ -279,9 +290,47 @@ class LLMClient:
                 if payload.get("type") != "content_block_delta":
                     continue
                 text = payload.get("delta", {}).get("text", "")
-                if text:
-                    total_chunks += 1
-                    yield text
+                if not text:
+                    continue
+
+                total_chunks += 1
+
+                if not first_flush:
+                    pending += text
+                    stripped_p = pending.lstrip()
+                    ready = False
+                    if not stripped_p.startswith("`"):
+                        # Definitely not a fence — flush immediately (TTFT优先)
+                        ready = True
+                    elif len(stripped_p) >= 3 and not stripped_p.startswith("```"):
+                        # Starts with ` or `` but not ``` — not a fence
+                        ready = True
+                    elif stripped_p.startswith("```") and ("\n" in pending or len(pending) >= 200):
+                        # Confirmed fence opening; wait for the newline that ends the fence line
+                        ready = True
+                    if ready:
+                        matched = None
+                        for prefix in _FENCE_PREFIXES:
+                            if stripped_p.startswith(prefix):
+                                matched = prefix
+                                break
+                        if matched:
+                            fence_active = True
+                            leading_ws = len(pending) - len(stripped_p)
+                            tail_buffer = pending[leading_ws + len(matched):]
+                        else:
+                            tail_buffer = pending
+                        first_flush = True
+                        pending = ""
+                else:
+                    tail_buffer += text
+
+                # Yield safe portion; keep last _TAIL_BUFFER_SIZE chars for trailing-fence check.
+                if first_flush and len(tail_buffer) > _TAIL_BUFFER_SIZE:
+                    safe = tail_buffer[:-_TAIL_BUFFER_SIZE]
+                    tail_buffer = tail_buffer[-_TAIL_BUFFER_SIZE:]
+                    if safe:
+                        yield safe
         except (ClientError, BotoCoreError) as exc:
             elapsed = time.perf_counter() - start
             error_details = {
@@ -296,6 +345,33 @@ class LLMClient:
                 message="Bedrock 스트리밍 수신 중 오류가 발생했습니다.",
                 details=error_details,
             ) from exc
+
+        # End-of-stream flush.
+        # If first_flush never triggered (response shorter than detection threshold),
+        # process pending now.
+        if pending:
+            stripped_p = pending.lstrip()
+            matched = None
+            for prefix in _FENCE_PREFIXES:
+                if stripped_p.startswith(prefix):
+                    matched = prefix
+                    break
+            if matched:
+                fence_active = True
+                leading_ws = len(pending) - len(stripped_p)
+                tail_buffer = pending[leading_ws + len(matched):]
+            else:
+                tail_buffer = pending
+
+        # Strip trailing closing fence only when an opening fence was detected.
+        final = tail_buffer.rstrip()
+        if fence_active:
+            for suffix in ("```", "\n```"):
+                if final.endswith(suffix):
+                    final = final[: -len(suffix)].rstrip()
+                    break
+        if final:
+            yield final
 
         elapsed = time.perf_counter() - start
         _log(
