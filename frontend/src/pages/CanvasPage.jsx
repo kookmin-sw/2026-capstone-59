@@ -67,9 +67,17 @@ export default function CanvasPage() {
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
   function clearStreamCallbacks() {
+    if (timerRef.current) clearTimeout(timerRef.current)
+
     streamBuffers.current.forEach((buf) => {
       buf.onUpdate = null
       buf.onComplete = null
+
+    setToastVisible(false)
+    setToastPersistent(false)
+
+    currentRequiredStepName.current = null
+    lastCompletedRequiredStepRef.current = null
     })
   }
 
@@ -196,7 +204,11 @@ export default function CanvasPage() {
     if (!rfInstance || nodes.length === 0) return
     if (!shouldFitViewRef.current) return
     shouldFitViewRef.current = false
-    if (nodes.length < 4) return
+    if (nodes.length < 4) {
+      rfInstance.setViewport({ x: -10, y: 0, zoom: 1 }, { duration: 0 })
+      return
+    }
+    
     ;(async () => {
       await rfInstance.fitView({ duration: 0, padding: 0.1 })
       const { y, zoom } = rfInstance.getViewport()
@@ -545,16 +557,20 @@ export default function CanvasPage() {
           <ToastAlarm
             message={toast}
             visible={toastVisible}
+            showProgress={!toastPersistent}
+            duration={3000}
             onToggle={() => {
               const next = !toastVisible
               setToastVisible(next)
-              if (next) {
-                if (currentRequiredStepName.current) {
-                  setToast(`📌 ${currentRequiredStepName.current} 진행 중이에요`)
-                }
+              if (next && !toastPersistent && currentRequiredStepName.current) {
+                setToast(`📌 ${currentRequiredStepName.current} 진행 중이에요`)
                 if (timerRef.current) clearTimeout(timerRef.current)
                 timerRef.current = setTimeout(() => setToastVisible(false), 3000)
               }
+            }}
+            onClose={() => {
+              if (timerRef.current) clearTimeout(timerRef.current)
+              setToastVisible(false)
             }}
           />
 
