@@ -42,9 +42,6 @@ export const getStepTree = (projectId, stageId) =>
 export const acceptStep = (stepId) =>
   aiApi.post(`/steps/${stepId}/accept`)
 
-export const createNotionTemplate = (stepId) =>
-  aiApi.post(`/steps/${stepId}/notion-template`)
-
 export const getStepDetail = (stepId) =>
   aiApi.get(`/steps/${stepId}`)
 
