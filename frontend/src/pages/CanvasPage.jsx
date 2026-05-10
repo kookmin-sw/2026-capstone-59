@@ -47,7 +47,9 @@ export default function CanvasPage() {
   const [rfInstance, setRfInstance] = useState(null)
   const [rollbackModal, setRollbackModal] = useState(false)
   const [isAccepting, setIsAccepting] = useState(false)
+  const [toastPersistent, setToastPersistent] = useState(false)
 
+  const lastCompletedRequiredStepRef = useRef(null)
   const timerRef = useRef(null)
   const currentRequiredStepName = useRef(null)
   const autoOpenedStageRef = useRef(null)
@@ -426,18 +428,24 @@ export default function CanvasPage() {
             : findRequiredStep(selectedStep.id, nodes, edges)
 
         const name = requiredNode?.data?.label
-        if (name) {
+        if (name && name !== lastCompletedRequiredStepRef.current) {
+          lastCompletedRequiredStepRef.current = name
           const isStageComplete = acceptResult?.is_current_stage_completed
           const message = isStageComplete
-            ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
+            ? `🎉 전체 단계가 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요!`
             : `✅ ${name}이(가) 종료됐어요!`
 
           if (timerRef.current) clearTimeout(timerRef.current)
           setToast(message)
+          setToastPersistent(isStageComplete)
           setToastVisible(true)
-          timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+
+          if (!isStageComplete) {
+            timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+          }
 
           if (isStageComplete) {
+            currentRequiredStepName.current = null
             getStages(projectId).then((data) => {
               const list = data.stages ?? []
               setStages(list)
@@ -449,11 +457,17 @@ export default function CanvasPage() {
       }
 
       if (selectedStep.type === 'requiredStepNode') {
-        currentRequiredStepName.current = selectedStep.data.label
+        const stepName = selectedStep.data.label
+        currentRequiredStepName.current = stepName
+        lastCompletedRequiredStepRef.current = null
         if (timerRef.current) clearTimeout(timerRef.current)
-        setToast(`📌 ${selectedStep.data.label}이(가) 시작됐어요!`)
+        setToast(`📌 ${stepName}이(가) 시작됐어요!`)
+        setToastPersistent(false)
         setToastVisible(true)
-        timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+        timerRef.current = setTimeout(() => {
+          setToastVisible(false)
+          setToast(`📌 ${stepName} 진행 중이에요`)
+        }, 3000)
       }
 
       streamBuffers.current.forEach((buf) => buf.stream?.abort())
