@@ -75,3 +75,23 @@ export function flattenTree(steps, stageSequence) {
 
   return { nodes, edges }
 }
+
+export function getStageProgressFromTree(nodes, edges) {
+  const firstRequired = nodes.find(
+    (node) =>
+      node.type === 'requiredStepNode' &&
+      !edges.some((edge) => edge.target === node.id)
+  )
+  return firstRequired
+    ? edges.some((edge) => edge.source === firstRequired.id)
+    : false
+}
+
+export function findRequiredStep(nodeId, nodes, edges) {
+  const parentEdge = edges.find((e) => e.target === nodeId)
+  if (!parentEdge) return null
+  const parentNode = nodes.find((n) => n.id === parentEdge.source)
+  if (!parentNode) return null
+  if (parentNode.type === 'requiredStepNode') return parentNode
+  return findRequiredStep(parentNode.id, nodes, edges)
+}

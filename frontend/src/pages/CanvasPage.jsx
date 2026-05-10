@@ -16,7 +16,7 @@ import RequiredStepNode from '../components/canvas/RequiredStepNode'
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep } from '../api/step'
 
-import { STAGE_ENGLISH, flattenTree } from '../utils/canvasUtils'
+import { STAGE_ENGLISH, flattenTree, getStageProgressFromTree, findRequiredStep } from '../utils/canvasUtils'
 
 import styles from './CanvasPage.module.css'
 import { HiOutlineUser } from 'react-icons/hi'
@@ -45,11 +45,14 @@ export default function CanvasPage() {
   const [toastVisible, setToastVisible] = useState(false)
   const [rfInstance, setRfInstance] = useState(null)
   const [rollbackModal, setRollbackModal] = useState(false)
+  const [isAccepting, setIsAccepting] = useState(false)
 
   const timerRef = useRef(null)
   const currentRequiredStepName = useRef(null)
   const autoOpenedStageRef = useRef(null)
   const shouldFitViewRef = useRef(false)
+  const stageHasProgressRef = useRef({})
+  const detailRequestRef = useRef(0)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -61,16 +64,13 @@ export default function CanvasPage() {
     getStages(projectId).then((data) => {
       const list = data.stages ?? []
       setStages(list)
-      const active = list.find(s => s.is_active)
+      const active = list.find((s) => s.is_active)
       if (active) setCurrentStageSequence(active.stage_sequence)
 
       const saved = sessionStorage.getItem(`selectedStage_${projectId}`)
-      const savedStage = list.find(s => s.stage_id === saved)
-      if (savedStage) {
-        setSelectedStageId(savedStage.stage_id)
-      } else if (active) {
-        setSelectedStageId(active.stage_id)
-      }
+      const savedStage = list.find((s) => s.stage_id === saved)
+      if (savedStage) setSelectedStageId(savedStage.stage_id)
+      else if (active) setSelectedStageId(active.stage_id)
     })
   }, [projectId])
 
@@ -78,20 +78,32 @@ export default function CanvasPage() {
     const treeData = await getStepTree(projectId, stageId)
     const stage = stages.find((s) => s.stage_id === stageId)
     const { nodes: n, edges: e } = flattenTree(treeData.steps ?? [], stage?.stage_sequence)
+
+    const hasProgress = getStageProgressFromTree(n, e)
+    stageHasProgressRef.current[stageId] = hasProgress
+
     setNodes(n)
     setEdges(e)
 
-    if (autoOpenedStageRef.current !== stageId) {
-      const firstRequired = n.find((node) => node.type === 'requiredStepNode')
+    if (!hasProgress && autoOpenedStageRef.current !== stageId) {
+      const firstRequired = n.find(
+        (node) =>
+          node.type === 'requiredStepNode' &&
+          !e.some((edge) => edge.target === node.id)
+      )
       if (firstRequired) {
         autoOpenedStageRef.current = stageId
         setSelectedStep(firstRequired)
         setStepDetail(null)
+
+        const requestId = ++detailRequestRef.current
+
         try {
           const detail = await getStepDetail(firstRequired.id)
+          if (requestId !== detailRequestRef.current) return
           setStepDetail(detail)
         } catch {
-          // 상세 정보 로드 실패해도 노드 선택은 유지
+          //
         }
       }
     }
@@ -111,7 +123,7 @@ export default function CanvasPage() {
 
   useEffect(() => {
     if (!selectedStageId || !projectId) return
-    shouldFitViewRef.current = true 
+    shouldFitViewRef.current = true
     fetchAndRenderTree(selectedStageId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStageId, projectId])
@@ -122,7 +134,7 @@ export default function CanvasPage() {
     autoOpenedStageRef.current = null
   }, [selectedStageId])
 
-  const uiStages = stages.map(s => ({
+  const uiStages = stages.map((s) => ({
     id: s.stage_id,
     sequence: s.stage_sequence,
     name: s.stage_name,
@@ -132,134 +144,178 @@ export default function CanvasPage() {
       : 'locked',
   }))
 
-  const currentStageId = stages.find(s => s.is_active)?.stage_id ?? null
-  const targetSeq = stages.find(s => s.stage_id === selectedStageId)?.stage_sequence ?? 0
-  const currentSeq = stages.find(s => s.stage_id === currentStageId)?.stage_sequence ?? 0
-  const stagesToClear = uiStages
-    .filter(s => s.sequence > targetSeq && s.sequence <= currentSeq)
-    .map(s => s.sequence)
-    .join(', ')
+  const currentStageId = stages.find((s) => s.is_active)?.stage_id ?? null
 
   async function handleNodeClick(event, node) {
     setSelectedStep(node)
     setStepDetail(null)
+
+    const requestId = ++detailRequestRef.current
+
     try {
       const detail = await getStepDetail(node.id)
+      if (requestId !== detailRequestRef.current) return
       setStepDetail(detail)
     } catch {
-      // 상세 정보 로드 실패해도 노드 선택은 유지
+      //
     }
   }
 
   async function handleAccept() {
     if (!selectedStep) return
+    if (isAccepting) return
 
-    if (selectedStageId !== currentStageId) {
-      setRollbackModal(selectedStageId)
+    const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
+    if (!selectedStage) return
+
+    const hasLaterCompletedStage = stages.some(
+      (s) =>
+        s.stage_sequence > selectedStage.stage_sequence &&
+        s.stage_sequence < currentStageSequence
+    )
+
+    if (hasLaterCompletedStage) {
+      setRollbackModal(true)
       return
+    }
+
+    const activeStage = stages.find((s) => s.is_active)
+
+    if (activeStage && activeStage.stage_sequence > selectedStage.stage_sequence) {
+      if (stageHasProgressRef.current[activeStage.stage_id] === undefined) {
+        try {
+          const treeData = await getStepTree(projectId, activeStage.stage_id)
+          const { nodes: n, edges: e } = flattenTree(
+            treeData.steps ?? [],
+            activeStage.stage_sequence
+          )
+          stageHasProgressRef.current[activeStage.stage_id] = getStageProgressFromTree(n, e)
+        } catch {
+          alert('잠시후 다시 시도해주세요.')
+          return
+        }
+      }
+
+      if (stageHasProgressRef.current[activeStage.stage_id] === true) {
+        setRollbackModal(true)
+        return
+      }
     }
 
     await executeAccept()
   }
 
   async function handleRollbackConfirm() {
-    setRollbackModal(null)
-    currentRequiredStepName.current = null
+    setRollbackModal(false)
 
-    await executeAccept()
-
-    const data = await getStages(projectId)
-    const list = data.stages ?? []
-    setStages(list)
-    const active = list.find(s => s.is_active)
-    if (active) {
-      setCurrentStageSequence(active.stage_sequence)
-      setSelectedStageId(active.stage_id)
-    }
-  }
-
-  function findRequiredStep(nodeId) {
-    const parentEdge = edges.find(e => e.target === nodeId)
-    if (!parentEdge) return null
-    const parentNode = nodes.find(n => n.id === parentEdge.source)
-    if (!parentNode) return null
-    if (parentNode.type === 'requiredStepNode') return parentNode
-    return findRequiredStep(parentNode.id)
-  }
-
-  async function executeAccept() {
-    const status = selectedStep.data?.status
-
-    const needsRollback = status === 'CANCELED' || (status === 'READY' && (() => {
-      const parentEdge = edges.find(e => e.target === selectedStep.id)
-      if (!parentEdge) return false
-      const siblings = nodes.filter(n =>
-        n.id !== selectedStep.id &&
-        edges.some(e => e.source === parentEdge.source && e.target === n.id)
-      )
-      return siblings.some(n => n.data?.status === 'ACCEPTED')
-    })())
-
-    if (needsRollback) {
-      try {
-        await rollbackStep(selectedStep.id)
-      } catch (err) {
-        const msg =
-          err?.code === 'INVALID_ROLLBACK_TARGET'
-            ? '자식 Step이 있는 노드는 롤백할 수 없어요.\n마지막 Step을 선택해주세요.'
-            : '롤백에 실패했어요. 다시 시도해주세요.'
-        alert(msg)
-        return
-      }
-    }
-
-    let acceptResult
     try {
-      acceptResult = await acceptStep(selectedStep.id)
+      await rollbackStep(selectedStep.id)
     } catch (err) {
-      if (err?.code !== 'STEP_ALREADY_ACCEPTED') {
-        alert('Step 생성에 실패했어요. 다시 시도해주세요.')
-        return
-      }
+      const msg =
+        err?.code === 'INVALID_ROLLBACK_TARGET'
+          ? '자식 Step이 있는 노드는 롤백할 수 없어요.\n마지막 Step을 선택해주세요.'
+          : '롤백에 실패했어요. 다시 시도해주세요.'
+      alert(msg)
+      return
     }
 
-    if (acceptResult?.is_current_required_step_completed) {
-      const requiredNode = selectedStep.type === 'requiredStepNode'
+    const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
+    const nextStage = stages.find(
+      (s) => s.stage_sequence === (selectedStage?.stage_sequence ?? 0) + 1
+    )
+
+    if (nextStage) {
+      stageHasProgressRef.current[nextStage.stage_id] = false
+    }
+
+    await executeAccept({ skipRollback: true })
+  }
+
+ async function executeAccept({ skipRollback = false } = {}) {
+  setIsAccepting(true)
+  const status = selectedStep.data?.status
+
+  const needsRollback =
+    status === 'CANCELED' ||
+    (status === 'READY' &&
+      (() => {
+        const parentEdge = edges.find((e) => e.target === selectedStep.id)
+        if (!parentEdge) return false
+
+        const siblings = nodes.filter(
+          (n) =>
+            n.id !== selectedStep.id &&
+            edges.some((e) => e.source === parentEdge.source && e.target === n.id)
+        )
+
+        return siblings.some((n) => n.data?.status === 'ACCEPTED')
+      })())
+
+  if (!skipRollback && needsRollback) {
+    try {
+      await rollbackStep(selectedStep.id)
+    } catch (err) {
+      const msg =
+        err?.code === 'INVALID_ROLLBACK_TARGET'
+          ? '자식 Step이 있는 노드는 롤백할 수 없어요.\n마지막 Step을 선택해주세요.'
+          : '롤백에 실패했어요. 다시 시도해주세요.'
+      alert(msg)
+      return
+    }
+  }
+
+  let acceptResult
+  try {
+    acceptResult = await acceptStep(selectedStep.id)
+  } catch (err) {
+    if (err?.code !== 'STEP_ALREADY_ACCEPTED') {
+      alert('Step 생성에 실패했어요. 다시 시도해주세요.')
+      return
+    }
+  }
+
+  if (acceptResult?.is_current_required_step_completed) {
+    const requiredNode =
+      selectedStep.type === 'requiredStepNode'
         ? selectedStep
-        : findRequiredStep(selectedStep.id)
-      const name = requiredNode?.data?.label
-      if (name) {
-        const isStageComplete = acceptResult?.is_current_stage_completed
-        const message = isStageComplete
-          ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
-          : `✅ ${name}이(가) 종료됐어요!`
-        if (timerRef.current) clearTimeout(timerRef.current)
-        setToast(message)
-        setToastVisible(true)
-        timerRef.current = setTimeout(() => setToastVisible(false), 3000)
-        if (isStageComplete) {
-          getStages(projectId).then((data) => {
-            const list = data.stages ?? []
-            setStages(list)
-            const active = list.find(s => s.is_active)
-            if (active) setCurrentStageSequence(active.stage_sequence)
-          })
-        }
-      }
-    }
+        : findRequiredStep(selectedStep.id, nodes, edges)
 
-    if (selectedStep.type === 'requiredStepNode') {
-      currentRequiredStepName.current = selectedStep.data.label
+    const name = requiredNode?.data?.label
+    if (name) {
+      const isStageComplete = acceptResult?.is_current_stage_completed
+      const message = isStageComplete
+        ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
+        : `✅ ${name}이(가) 종료됐어요!`
+
       if (timerRef.current) clearTimeout(timerRef.current)
-      setToast(`📌 ${selectedStep.data.label}이(가) 시작됐어요!`)
+      setToast(message)
       setToastVisible(true)
       timerRef.current = setTimeout(() => setToastVisible(false), 3000)
-    }
 
-    await fetchAndRenderTree(selectedStageId)
-    setSelectedStep(null)
-    setStepDetail(null)
+      if (isStageComplete) {
+        getStages(projectId).then((data) => {
+          const list = data.stages ?? []
+          setStages(list)
+          const active = list.find((s) => s.is_active)
+          if (active) setCurrentStageSequence(active.stage_sequence)
+        })
+      }
+    }
   }
+
+  if (selectedStep.type === 'requiredStepNode') {
+    currentRequiredStepName.current = selectedStep.data.label
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setToast(`📌 ${selectedStep.data.label}이(가) 시작됐어요!`)
+    setToastVisible(true)
+    timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+  }
+
+  await fetchAndRenderTree(selectedStageId)
+  setIsAccepting(false)
+  setSelectedStep(null)
+  setStepDetail(null)
+}
 
   function handleNodeContextMenu(event, node) {
     event.preventDefault()
@@ -282,7 +338,7 @@ export default function CanvasPage() {
     setStepDetail(null)
   }
 
-  const selectedHasChildren = edges.some(e => e.source === selectedStep?.id)
+  const selectedHasChildren = edges.some((e) => e.source === selectedStep?.id)
 
   return (
     <div className={styles.layout}>
@@ -312,7 +368,8 @@ export default function CanvasPage() {
             const next = !navCollapsed
             setNavCollapsed(next)
             localStorage.setItem('navCollapsed', next)
-          }}        />
+          }}
+        />
 
         <div className={styles.canvasWrapper}>
           <ToastAlarm
@@ -356,6 +413,7 @@ export default function CanvasPage() {
           step={selectedStep}
           detail={stepDetail}
           isOpen={!!selectedStep}
+          isAccepting={isAccepting}
           hasChildren={selectedHasChildren}
           onClose={() => { setSelectedStep(null); setStepDetail(null) }}
           onAccept={handleAccept}
@@ -372,15 +430,15 @@ export default function CanvasPage() {
         )}
 
         {rollbackModal && (
-          <div className={styles.overlay} onClick={() => setRollbackModal(null)}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+          <div className={styles.overlay} onClick={() => setRollbackModal(false)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
               <div className={styles.iconWrap}>⚠️</div>
-              <p className={styles.title}>선택한 Step으로 돌아가시겠습니까?</p>
+              <p className={styles.title}>이전 Stage로 돌아가시겠습니까?</p>
               <p className={styles.desc}>
-                stage {stagesToClear}의 모든 진행 내역이 삭제됩니다. 계속 하시겠습니까?
+                이후 Stage의 진행 내역이 삭제될 수 있습니다. 계속 하시겠습니까?
               </p>
               <div className={styles.actions}>
-                <button className={styles.cancelBtn} onClick={() => setRollbackModal(null)}>
+                <button className={styles.cancelBtn} onClick={() => setRollbackModal(false)}>
                   취소
                 </button>
                 <button className={styles.rollbackBtn} onClick={handleRollbackConfirm}>
