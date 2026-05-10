@@ -14,9 +14,9 @@ import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
 import { getStages } from '../api/stage'
-import { getStepTree, getStepDetail, acceptStep, rollbackStep } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream } from '../api/step'
 
-import { STAGE_ENGLISH, flattenTree, getStageProgressFromTree, findRequiredStep } from '../utils/canvasUtils'
+import { STAGE_ENGLISH, flattenTree, getStageProgressFromTree, findRequiredStep, getLatestActiveStage } from '../utils/canvasUtils'
 
 import styles from './CanvasPage.module.css'
 import { HiOutlineUser } from 'react-icons/hi'
@@ -40,6 +40,7 @@ export default function CanvasPage() {
   )
   const [selectedStep, setSelectedStep] = useState(null)
   const [stepDetail, setStepDetail] = useState(null)
+  const [streamingText, setStreamingText] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
@@ -53,24 +54,98 @@ export default function CanvasPage() {
   const shouldFitViewRef = useRef(false)
   const stageHasProgressRef = useRef({})
   const detailRequestRef = useRef(0)
+  const streamBuffers = useRef(new Map())
+  const enqueuedLenRef = useRef(0)
+  const typingQueueRef = useRef('')
+  const typingTimerRef = useRef(null)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
+  function clearStreamCallbacks() {
+    streamBuffers.current.forEach((buf) => {
+      buf.onUpdate = null
+      buf.onComplete = null
+    })
+  }
+
+  function clearTyping() {
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current)
+      typingTimerRef.current = null
+    }
+    typingQueueRef.current = ''
+    enqueuedLenRef.current = 0
+  }
+
+  function enqueueTyping(newChars) {
+    typingQueueRef.current += newChars
+    if (typingTimerRef.current) return  // 이미 돌고 있으면 큐에만 쌓음
+
+    typingTimerRef.current = setInterval(() => {
+      if (!typingQueueRef.current) {
+        clearInterval(typingTimerRef.current)
+        typingTimerRef.current = null
+        return
+      }
+      const step = Math.min(2, typingQueueRef.current.length)
+      const chars = typingQueueRef.current.slice(0, step)
+      typingQueueRef.current = typingQueueRef.current.slice(step)
+      setStreamingText(prev => (prev ?? '') + chars)
+    }, 16)
+  }
+
+  function startNodeStream(nodeId) {
+    if (streamBuffers.current.has(nodeId)) return
+    const buf = { text: '', isDone: false, stream: null, onUpdate: null, onComplete: null }
+    streamBuffers.current.set(nodeId, buf)
+
+    const stream = createSidePanelStream(nodeId)
+    buf.stream = stream
+
+    stream.start({
+      onChunk: (delta) => {
+        const b = streamBuffers.current.get(nodeId)
+        if (!b) return
+        b.text += delta
+        b.onUpdate?.(b.text)
+      },
+      onDone: async () => {
+        const b = streamBuffers.current.get(nodeId)
+        if (!b) return
+        b.isDone = true
+        const complete = b.onComplete
+        b.onUpdate = null
+        b.onComplete = null
+        await complete?.()
+      },
+      onError: async () => {
+        const b = streamBuffers.current.get(nodeId)
+        if (!b) return
+        b.isDone = true
+        const complete = b.onComplete
+        b.onUpdate = null
+        b.onComplete = null
+        await complete?.()
+      },
+    })
+  }
+
   useEffect(() => {
     if (!projectId) return
     getStages(projectId).then((data) => {
       const list = data.stages ?? []
       setStages(list)
-      const active = list.find((s) => s.is_active)
-      if (active) setCurrentStageSequence(active.stage_sequence)
+
+      const latestActive = getLatestActiveStage(list)
+      if (latestActive) setCurrentStageSequence(latestActive.stage_sequence)
 
       const saved = sessionStorage.getItem(`selectedStage_${projectId}`)
       const savedStage = list.find((s) => s.stage_id === saved)
       if (savedStage) setSelectedStageId(savedStage.stage_id)
-      else if (active) setSelectedStageId(active.stage_id)
+      else if (latestActive) setSelectedStageId(latestActive.stage_id)
     })
   }, [projectId])
 
@@ -85,6 +160,12 @@ export default function CanvasPage() {
     setNodes(n)
     setEdges(e)
 
+    n.filter((node) =>
+      node.data.status === 'READY' &&
+      node.type !== 'requiredStepNode' &&
+      !streamBuffers.current.has(node.id)
+    ).forEach((node) => startNodeStream(node.id))
+
     if (!hasProgress && autoOpenedStageRef.current !== stageId) {
       const firstRequired = n.find(
         (node) =>
@@ -95,9 +176,9 @@ export default function CanvasPage() {
         autoOpenedStageRef.current = stageId
         setSelectedStep(firstRequired)
         setStepDetail(null)
+        setStreamingText(null)
 
         const requestId = ++detailRequestRef.current
-
         try {
           const detail = await getStepDetail(firstRequired.id)
           if (requestId !== detailRequestRef.current) return
@@ -129,35 +210,77 @@ export default function CanvasPage() {
   }, [selectedStageId, projectId])
 
   useEffect(() => {
+    clearTyping()
     setSelectedStep(null)
     setStepDetail(null)
+    setStreamingText(null)
     autoOpenedStageRef.current = null
+    streamBuffers.current.forEach((buf) => buf.stream?.abort())
+    streamBuffers.current.clear()
   }, [selectedStageId])
+
+  const activeStage = getLatestActiveStage(stages)
+  const currentStageId = activeStage?.stage_id ?? null
 
   const uiStages = stages.map((s) => ({
     id: s.stage_id,
     sequence: s.stage_sequence,
     name: s.stage_name,
     englishName: STAGE_ENGLISH[s.stage_sequence] ?? '',
-    status: s.is_active ? 'active'
+    status: activeStage?.stage_id === s.stage_id ? 'active'
       : s.stage_sequence < currentStageSequence ? 'completed'
       : 'locked',
   }))
 
-  const currentStageId = stages.find((s) => s.is_active)?.stage_id ?? null
-
   async function handleNodeClick(event, node) {
+    clearStreamCallbacks()
     setSelectedStep(node)
     setStepDetail(null)
+    setStreamingText(null)
 
     const requestId = ++detailRequestRef.current
+    const buf = streamBuffers.current.get(node.id)
 
-    try {
-      const detail = await getStepDetail(node.id)
-      if (requestId !== detailRequestRef.current) return
-      setStepDetail(detail)
-    } catch {
-      //
+    if (buf?.isDone) {
+      try {
+        const detail = await getStepDetail(node.id)
+        if (requestId !== detailRequestRef.current) return
+        setStepDetail(detail)
+      } catch {
+        //
+      }
+    } else if (buf && !buf.isDone) {
+      clearTyping()
+      const baseText = buf.text
+      setStreamingText(baseText)
+      enqueuedLenRef.current = baseText.length
+
+      buf.onUpdate = (fullText) => {
+        const newPart = fullText.slice(enqueuedLenRef.current)
+        if (newPart) {
+          enqueuedLenRef.current = fullText.length
+          enqueueTyping(newPart)
+        }
+      }
+      buf.onComplete = async () => {
+        clearTyping()
+        setStreamingText(null)
+        try {
+          const detail = await getStepDetail(node.id)
+          if (requestId !== detailRequestRef.current) return
+          setStepDetail(detail)
+        } catch {
+          //
+        }
+      }
+    } else {
+      try {
+        const detail = await getStepDetail(node.id)
+        if (requestId !== detailRequestRef.current) return
+        setStepDetail(detail)
+      } catch {
+        //
+      }
     }
   }
 
@@ -165,48 +288,55 @@ export default function CanvasPage() {
     if (!selectedStep) return
     if (isAccepting) return
 
-    const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
-    if (!selectedStage) return
+    setIsAccepting(true) 
+    try {
+      const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
+      if (!selectedStage) return
 
-    const hasLaterCompletedStage = stages.some(
-      (s) =>
-        s.stage_sequence > selectedStage.stage_sequence &&
-        s.stage_sequence < currentStageSequence
-    )
+      const hasLaterCompletedStage = stages.some(
+        (s) =>
+          s.stage_sequence > selectedStage.stage_sequence &&
+          s.stage_sequence < currentStageSequence
+      )
 
-    if (hasLaterCompletedStage) {
-      setRollbackModal(true)
-      return
-    }
+      if (hasLaterCompletedStage) {
+        setRollbackModal(true)
+        return
+      }
 
-    const activeStage = stages.find((s) => s.is_active)
+      const latestActive = getLatestActiveStage(stages)
 
-    if (activeStage && activeStage.stage_sequence > selectedStage.stage_sequence) {
-      if (stageHasProgressRef.current[activeStage.stage_id] === undefined) {
-        try {
-          const treeData = await getStepTree(projectId, activeStage.stage_id)
-          const { nodes: n, edges: e } = flattenTree(
-            treeData.steps ?? [],
-            activeStage.stage_sequence
-          )
-          stageHasProgressRef.current[activeStage.stage_id] = getStageProgressFromTree(n, e)
-        } catch {
-          alert('잠시후 다시 시도해주세요.')
+      if (latestActive && latestActive.stage_sequence > selectedStage.stage_sequence) {
+        if (stageHasProgressRef.current[latestActive.stage_id] === undefined) {
+          try {
+            const treeData = await getStepTree(projectId, latestActive.stage_id)
+            const { nodes: n, edges: e } = flattenTree(
+              treeData.steps ?? [],
+              latestActive.stage_sequence
+            )
+            stageHasProgressRef.current[latestActive.stage_id] = getStageProgressFromTree(n, e)
+          } catch {
+            alert('잠시후 다시 시도해주세요.')
+            return
+          }
+        }
+
+        if (stageHasProgressRef.current[latestActive.stage_id] === true) {
+          setRollbackModal(true)
           return
         }
       }
 
-      if (stageHasProgressRef.current[activeStage.stage_id] === true) {
-        setRollbackModal(true)
-        return
-      }
+      await executeAccept()
+    } finally {
+      setIsAccepting(false)
     }
-
-    await executeAccept()
   }
 
   async function handleRollbackConfirm() {
     setRollbackModal(false)
+    clearStreamCallbacks()
+    setStreamingText(null)
 
     try {
       await rollbackStep(selectedStep.id)
@@ -219,103 +349,126 @@ export default function CanvasPage() {
       return
     }
 
-    const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
-    const nextStage = stages.find(
-      (s) => s.stage_sequence === (selectedStage?.stage_sequence ?? 0) + 1
-    )
+    const data = await getStages(projectId)
+    const list = data.stages ?? []
+    setStages(list)
 
-    if (nextStage) {
-      stageHasProgressRef.current[nextStage.stage_id] = false
+    const latestActive = getLatestActiveStage(list)
+    if (latestActive) {
+      setCurrentStageSequence(latestActive.stage_sequence)
+      stageHasProgressRef.current[latestActive.stage_id] = false
     }
 
     await executeAccept({ skipRollback: true })
   }
 
- async function executeAccept({ skipRollback = false } = {}) {
-  setIsAccepting(true)
-  const status = selectedStep.data?.status
+  async function executeAccept({ skipRollback = false } = {}) {
+    setIsAccepting(true)
 
-  const needsRollback =
-    status === 'CANCELED' ||
-    (status === 'READY' &&
-      (() => {
-        const parentEdge = edges.find((e) => e.target === selectedStep.id)
-        if (!parentEdge) return false
-
-        const siblings = nodes.filter(
-          (n) =>
-            n.id !== selectedStep.id &&
-            edges.some((e) => e.source === parentEdge.source && e.target === n.id)
-        )
-
-        return siblings.some((n) => n.data?.status === 'ACCEPTED')
-      })())
-
-  if (!skipRollback && needsRollback) {
     try {
-      await rollbackStep(selectedStep.id)
-    } catch (err) {
-      const msg =
-        err?.code === 'INVALID_ROLLBACK_TARGET'
-          ? '자식 Step이 있는 노드는 롤백할 수 없어요.\n마지막 Step을 선택해주세요.'
-          : '롤백에 실패했어요. 다시 시도해주세요.'
-      alert(msg)
-      return
-    }
-  }
+      const status = selectedStep.data?.status
 
-  let acceptResult
-  try {
-    acceptResult = await acceptStep(selectedStep.id)
-  } catch (err) {
-    if (err?.code !== 'STEP_ALREADY_ACCEPTED') {
-      alert('Step 생성에 실패했어요. 다시 시도해주세요.')
-      return
-    }
-  }
+      const parentEdge = edges.find((e) => e.target === selectedStep.id)
 
-  if (acceptResult?.is_current_required_step_completed) {
-    const requiredNode =
-      selectedStep.type === 'requiredStepNode'
-        ? selectedStep
-        : findRequiredStep(selectedStep.id, nodes, edges)
+      const siblings = parentEdge
+        ? nodes.filter(
+            (n) =>
+              n.id !== selectedStep.id &&
+              edges.some(
+                (e) => e.source === parentEdge.source && e.target === n.id
+              )
+          )
+        : []
 
-    const name = requiredNode?.data?.label
-    if (name) {
-      const isStageComplete = acceptResult?.is_current_stage_completed
-      const message = isStageComplete
-        ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
-        : `✅ ${name}이(가) 종료됐어요!`
+      const acceptedSibling = siblings.find(
+        (n) => n.data?.status === 'ACCEPTED'
+      )
 
-      if (timerRef.current) clearTimeout(timerRef.current)
-      setToast(message)
-      setToastVisible(true)
-      timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+      const needsRollback =
+        status === 'CANCELED' ||
+        (status === 'READY' && !!acceptedSibling)
 
-      if (isStageComplete) {
-        getStages(projectId).then((data) => {
-          const list = data.stages ?? []
-          setStages(list)
-          const active = list.find((s) => s.is_active)
-          if (active) setCurrentStageSequence(active.stage_sequence)
-        })
+      if (!skipRollback && needsRollback) {
+        const nodeToRollback =
+          status === 'CANCELED' ? selectedStep : acceptedSibling
+
+        if (!nodeToRollback) {
+          alert('롤백 대상을 찾지 못했어요. 다시 시도해주세요.')
+          return
+        }
+
+        try {
+          await rollbackStep(nodeToRollback.id)
+        } catch (err) {
+          const msg =
+            err?.code === 'INVALID_ROLLBACK_TARGET'
+              ? '자식 Step이 있는 노드는 롤백할 수 없어요.\n마지막 Step을 선택해주세요.'
+              : '롤백에 실패했어요. 다시 시도해주세요.'
+          alert(msg)
+          return
+        }
       }
+
+      let acceptResult
+      try {
+        acceptResult = await acceptStep(selectedStep.id)
+      } catch (err) {
+        if (err?.code !== 'STEP_ALREADY_ACCEPTED') {
+          alert('Step 생성에 실패했어요. 다시 시도해주세요.')
+          return
+        }
+      }
+
+      if (acceptResult?.is_current_required_step_completed) {
+        const requiredNode =
+          selectedStep.type === 'requiredStepNode'
+            ? selectedStep
+            : findRequiredStep(selectedStep.id, nodes, edges)
+
+        const name = requiredNode?.data?.label
+        if (name) {
+          const isStageComplete = acceptResult?.is_current_stage_completed
+          const message = isStageComplete
+            ? `✅ ${name}이(가) 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요.`
+            : `✅ ${name}이(가) 종료됐어요!`
+
+          if (timerRef.current) clearTimeout(timerRef.current)
+          setToast(message)
+          setToastVisible(true)
+          timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+
+          if (isStageComplete) {
+            getStages(projectId).then((data) => {
+              const list = data.stages ?? []
+              setStages(list)
+              const latestActive = getLatestActiveStage(list)
+              if (latestActive) setCurrentStageSequence(latestActive.stage_sequence)
+            })
+          }
+        }
+      }
+
+      if (selectedStep.type === 'requiredStepNode') {
+        currentRequiredStepName.current = selectedStep.data.label
+        if (timerRef.current) clearTimeout(timerRef.current)
+        setToast(`📌 ${selectedStep.data.label}이(가) 시작됐어요!`)
+        setToastVisible(true)
+        timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+      }
+
+      streamBuffers.current.forEach((buf) => buf.stream?.abort())
+      streamBuffers.current.clear()
+      clearStreamCallbacks()
+      setStreamingText(null)
+
+      await fetchAndRenderTree(selectedStageId)
+      setSelectedStep(null)
+      setStepDetail(null)
+    } finally {
+      setIsAccepting(false)
     }
   }
 
-  if (selectedStep.type === 'requiredStepNode') {
-    currentRequiredStepName.current = selectedStep.data.label
-    if (timerRef.current) clearTimeout(timerRef.current)
-    setToast(`📌 ${selectedStep.data.label}이(가) 시작됐어요!`)
-    setToastVisible(true)
-    timerRef.current = setTimeout(() => setToastVisible(false), 3000)
-  }
-
-  await fetchAndRenderTree(selectedStageId)
-  setIsAccepting(false)
-  setSelectedStep(null)
-  setStepDetail(null)
-}
 
   function handleNodeContextMenu(event, node) {
     event.preventDefault()
@@ -334,8 +487,11 @@ export default function CanvasPage() {
   }
 
   function handlePaneClick() {
+    clearStreamCallbacks()
+    clearTyping() 
     setSelectedStep(null)
     setStepDetail(null)
+    setStreamingText(null)
   }
 
   const selectedHasChildren = edges.some((e) => e.source === selectedStep?.id)
@@ -412,10 +568,17 @@ export default function CanvasPage() {
         <SidePanel
           step={selectedStep}
           detail={stepDetail}
+          streamingText={streamingText}
           isOpen={!!selectedStep}
           isAccepting={isAccepting}
           hasChildren={selectedHasChildren}
-          onClose={() => { setSelectedStep(null); setStepDetail(null) }}
+          onClose={() => {
+            clearStreamCallbacks()
+            clearTyping()
+            setSelectedStep(null)
+            setStepDetail(null)
+            setStreamingText(null)
+          }}
           onAccept={handleAccept}
         />
 

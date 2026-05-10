@@ -11,7 +11,7 @@ function NotionIcon({ size = 18 }) {
   )
 }
 
-function TypewriterText({ text, speed = 18, onComplete }) {
+function TypewriterText({ text, speed = 13, onComplete }) {
   const [displayed, setDisplayed] = useState('')
 
   useEffect(() => {
@@ -90,7 +90,7 @@ function TitledSkeleton({ title }) {
   )
 }
 
-function MentoringContent({ raw, isLoading }) {
+function MentoringContent({ raw, isLoading, streamingText }) {
   const [revealedIndex, setRevealedIndex] = useState(-1)
 
   useEffect(() => {
@@ -103,6 +103,13 @@ function MentoringContent({ raw, isLoading }) {
   const advance = useCallback(() => setRevealedIndex(prev => prev + 1), [])
 
   if (isLoading) {
+    if (streamingText) {
+      return (
+        <div className={styles.markdown}>
+          <ReactMarkdown>{streamingText}</ReactMarkdown>
+        </div>
+      )
+    }
     return (
       <div className={styles.mentoringJson}>
         {LOADING_SKELETONS.map((title, i) => (
@@ -327,7 +334,7 @@ function MentoringContent({ raw, isLoading }) {
   )
 }
 
-export default function SidePanel({ step, detail, isOpen, onClose, onAccept, hasChildren, isAccepting }) {
+export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting }) {
   const [activeTab, setActiveTab] = useState('mentoring')
   const [lastStep, setLastStep] = useState(step)
 
@@ -382,7 +389,7 @@ export default function SidePanel({ step, detail, isOpen, onClose, onAccept, has
 
       <div className={styles.content}>
         {activeTab === 'mentoring' && (
-          <MentoringContent raw={mentoring} isLoading={!detail} />
+          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText}/>
         )}
 
         {activeTab === 'dictionary' && (

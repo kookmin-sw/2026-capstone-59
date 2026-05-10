@@ -95,3 +95,12 @@ export function findRequiredStep(nodeId, nodes, edges) {
   if (parentNode.type === 'requiredStepNode') return parentNode
   return findRequiredStep(parentNode.id, nodes, edges)
 }
+
+export function getLatestActiveStage(stageList) {
+  const activeStages = stageList.filter((s) => s.is_active)
+  return activeStages.length > 0
+    ? activeStages.reduce((max, s) =>
+        s.stage_sequence > max.stage_sequence ? s : max
+      )
+    : null
+}
