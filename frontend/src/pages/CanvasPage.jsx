@@ -51,6 +51,7 @@ export default function CanvasPage() {
   const autoOpenedStageRef = useRef(null)
   const shouldFitViewRef = useRef(false)
   const stageHasProgressRef = useRef({})
+  const detailRequestRef = useRef(0)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -93,11 +94,15 @@ export default function CanvasPage() {
         autoOpenedStageRef.current = stageId
         setSelectedStep(firstRequired)
         setStepDetail(null)
+
+        const requestId = ++detailRequestRef.current
+
         try {
           const detail = await getStepDetail(firstRequired.id)
+          if (requestId !== detailRequestRef.current) return
           setStepDetail(detail)
         } catch {
-          // 상세 정보 로드 실패해도 노드 선택은 유지
+          //
         }
       }
     }
@@ -143,11 +148,15 @@ export default function CanvasPage() {
   async function handleNodeClick(event, node) {
     setSelectedStep(node)
     setStepDetail(null)
+
+    const requestId = ++detailRequestRef.current
+
     try {
       const detail = await getStepDetail(node.id)
+      if (requestId !== detailRequestRef.current) return
       setStepDetail(detail)
     } catch {
-      // 상세 정보 로드 실패해도 노드 선택은 유지
+      //
     }
   }
 
