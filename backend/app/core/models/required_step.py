@@ -39,4 +39,7 @@ class RequiredStep(Base):
     default_mentoring: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     default_dictionary: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
+    # Notion 템플릿 URL (사전 생성된 고정 URL)
+    template_url: Mapped[str | None] = mapped_column(String, nullable=True)
+
     stage: Mapped["Stage"] = relationship(back_populates="required_steps")  # noqa: F821

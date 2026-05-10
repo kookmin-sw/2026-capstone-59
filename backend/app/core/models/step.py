@@ -70,7 +70,6 @@ class StepContent(Base):
     )
     dictionary: Mapped[str | None] = mapped_column(Text, nullable=True)
     mentoring: Mapped[str | None] = mapped_column(Text, nullable=True)
-    template_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     step: Mapped["Step"] = relationship(back_populates="content")
 
