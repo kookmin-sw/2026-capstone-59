@@ -56,6 +56,17 @@ export default function CanvasPage() {
 
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
+  function getStageProgressFromTree(nodes, edges) {
+    const firstRequired = nodes.find(
+      (node) =>
+        node.type === 'requiredStepNode' &&
+        !edges.some((edge) => edge.target === node.id)
+    )
+    return firstRequired
+      ? edges.some((edge) => edge.source === firstRequired.id)
+      : false
+  }
+
   useEffect(() => {
     if (!projectId) return
     getStages(projectId).then((data) => {
