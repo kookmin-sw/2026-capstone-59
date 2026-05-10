@@ -166,27 +166,37 @@ export default function CanvasPage() {
     if (isAccepting) return
 
     const selectedStage = stages.find((s) => s.stage_id === selectedStageId)
-    const nextStage = stages.find(
-      (s) => s.stage_sequence === (selectedStage?.stage_sequence ?? 0) + 1
+    if (!selectedStage) return
+
+    const hasLaterCompletedStage = stages.some(
+      (s) =>
+        s.stage_sequence > selectedStage.stage_sequence &&
+        s.stage_sequence < currentStageSequence
     )
 
-    if (nextStage?.is_active) {
-      if (stageHasProgressRef.current[nextStage.stage_id] === undefined) {
+    if (hasLaterCompletedStage) {
+      setRollbackModal(true)
+      return
+    }
+
+    const activeStage = stages.find((s) => s.is_active)
+
+    if (activeStage && activeStage.stage_sequence > selectedStage.stage_sequence) {
+      if (stageHasProgressRef.current[activeStage.stage_id] === undefined) {
         try {
-          const treeData = await getStepTree(projectId, nextStage.stage_id)
+          const treeData = await getStepTree(projectId, activeStage.stage_id)
           const { nodes: n, edges: e } = flattenTree(
             treeData.steps ?? [],
-            nextStage.stage_sequence
+            activeStage.stage_sequence
           )
-          stageHasProgressRef.current[nextStage.stage_id] =
-            getStageProgressFromTree(n, e)
+          stageHasProgressRef.current[activeStage.stage_id] = getStageProgressFromTree(n, e)
         } catch {
-          alert('다음 스테이지 진행 여부를 확인하지 못했어요. 다시 시도해주세요.')
+          alert('잠시후 다시 시도해주세요.')
           return
         }
       }
 
-      if (stageHasProgressRef.current[nextStage.stage_id] === true) {
+      if (stageHasProgressRef.current[activeStage.stage_id] === true) {
         setRollbackModal(true)
         return
       }
