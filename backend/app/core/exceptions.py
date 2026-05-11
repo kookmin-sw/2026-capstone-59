@@ -43,15 +43,6 @@ class StepAlreadyAcceptedError(PocoError):
         )
 
 
-class InvalidRollbackTargetError(PocoError):
-    def __init__(self, message: str = "롤백할 수 없는 대상입니다."):
-        super().__init__(
-            code="INVALID_ROLLBACK_TARGET",
-            message=message,
-            status_code=http_status.HTTP_400_BAD_REQUEST,
-        )
-
-
 class ProjectNotFoundError(PocoError):
     def __init__(self, message: str = "프로젝트를 찾을 수 없습니다."):
         super().__init__(
