@@ -47,37 +47,153 @@ function SectionSkeleton() {
   )
 }
 
-function RevealList({ items, renderItem, onComplete, itemDelay = 100 }) {
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [doneIndices, setDoneIndices] = useState([])
+function parseStreamingMentoring(text) {
+  if (!text) return {}
+  try { return JSON.parse(text) } catch {
+    //
+  }
 
-  const handleItemDone = useCallback((index) => {
-    setDoneIndices(prev => [...prev, index])
-    if (index + 1 >= items.length) {
-      setTimeout(() => onComplete?.(), 0)
-    } else {
-      setTimeout(() => setActiveIndex(index + 1), itemDelay)
+  const result = {}
+
+  function extractString(key) {
+    const re = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`)
+    const m = text.match(re)
+    return m ? m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : undefined
+  }
+
+  function extractArray(key) {
+    const re = new RegExp(`"${key}"\\s*:\\s*\\[`)
+    const m = text.match(re)
+    if (!m) return undefined
+    const start = m.index + m[0].length - 1
+    let depth = 0, inString = false, i = start
+    while (i < text.length) {
+      const c = text[i]
+      if (inString) {
+        if (c === '\\') { i += 2; continue }
+        if (c === '"') inString = false
+      } else {
+        if (c === '"') inString = true
+        else if (c === '[') depth++
+        else if (c === ']') {
+          depth--
+          if (depth === 0) {
+            try { return JSON.parse(text.slice(start, i + 1)) } catch { return undefined }
+          }
+        }
+      }
+      i++
     }
-  }, [items.length, itemDelay, onComplete])
+    return undefined
+  }
+
+  result.description = extractString('description')
+  result.perspectives = extractArray('perspectives')
+  result.goals = extractArray('goals')
+  result.recommended_methods = extractArray('recommended_methods')
+  result.common_mistakes = extractArray('common_mistakes')
+  result.one_line_tip = extractString('one_line_tip')
+
+  Object.keys(result).forEach(k => { if (result[k] === undefined) delete result[k] })
+  return result
+}
+
+function LoadingSpinner() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 1000)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
-    <>
-      {items.map((item, i) => {
-        if (doneIndices.includes(i)) return renderItem(item, i, false)
-        if (i === activeIndex) return renderItem(item, i, true, () => handleItemDone(i))
-        return null
-      })}
-    </>
+    <div className={styles.spinnerWrap} style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+      <svg className={styles.floatingIcon} width="26" height="23" viewBox="0 0 26 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5.48038 9.06491C6.19361 10.6221 5.61325 12.4223 4.1841 13.0857C2.75495 13.7491 1.01822 13.0246 0.304985 11.4673C-0.408245 9.91013 0.172119 8.10994 1.60127 7.44653C3.03041 6.78311 4.76715 7.50769 5.48038 9.06491Z" fill="#4A35D0"/>
+        <path d="M20.5196 9.06491C19.8064 10.6221 20.3868 12.4223 21.8159 13.0857C23.245 13.7491 24.9818 13.0246 25.695 11.4673C26.4082 9.91013 25.8279 8.10994 24.3987 7.44653C22.9696 6.78311 21.2329 7.50769 20.5196 9.06491Z" fill="#4A35D0"/>
+        <path d="M13.7173 3.30832C13.3244 5.45563 14.5778 7.48791 16.517 7.84754C18.4562 8.20716 20.3467 6.75795 20.7396 4.61063C21.1325 2.46331 19.879 0.43103 17.9399 0.0714064C16.0007 -0.288217 14.1102 1.161 13.7173 3.30832Z" fill="#4A35D0"/>
+        <path d="M12.2447 3.29168C12.6376 5.439 11.3841 7.47128 9.44495 7.8309C7.50579 8.19052 5.61526 6.74131 5.22235 4.59399C4.82943 2.44667 6.08291 0.414392 8.02208 0.0547683C9.96125 -0.304855 11.8518 1.14436 12.2447 3.29168Z" fill="#4A35D0"/>
+        <path d="M20.029 22.0422C17.1938 24.3954 14.9862 21.6718 12.995 21.6718C11.0038 21.6718 8.92611 24.4608 5.85279 21.8679C1.74061 17.5319 7.82229 9.48651 12.9861 9.48651C18.1498 9.48651 24.2927 17.6845 20.029 22.0422Z" fill="#4A35D0"/>
+      </svg>
+    </div>
   )
 }
 
-const LOADING_SKELETONS = [
-  '📖 Step 설명',
-  '👀 생각해보면 좋은 관점',
-  '🎯 이 Step의 목표',
-  '🔥 추천 방법',
-  '💡 한 줄 팁',
-]
+function StreamingStructuredView({ data }) {
+  return (
+    <div className={styles.mentoringJson}>
+      {data.description
+        ? <section className={styles.mentoringSection}>
+            <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
+            <p className={styles.mentoringDescription}>{data.description}</p>
+          </section>
+        : <TitledSkeleton title="📖 Step 설명" />}
+
+      {data.perspectives?.length > 0
+        ? <section className={styles.mentoringSection}>
+            <h4 className={styles.mentoringSectionTitle}>👀 생각해보면 좋은 관점</h4>
+            <ul className={styles.perspectiveList}>
+              {data.perspectives.map((p, i) => <li key={i} className={styles.perspectiveItem}>{p}</li>)}
+            </ul>
+          </section>
+        : <TitledSkeleton title="👀 생각해보면 좋은 관점" />}
+
+      {data.goals?.length > 0
+        ? <section className={styles.mentoringSection}>
+            <h4 className={styles.mentoringSectionTitle}>🎯 이 Step의 목표</h4>
+            <ul className={styles.goalList}>
+              {data.goals.map((g, i) => (
+                <li key={i} className={styles.goalItem}><span className={styles.goalCheck}>✓</span>{g}</li>
+              ))}
+            </ul>
+          </section>
+        : <TitledSkeleton title="🎯 이 Step의 목표" />}
+
+      {data.recommended_methods?.length > 0
+        ? <section className={styles.mentoringSection}>
+            <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
+            <div className={styles.methodList}>
+              {data.recommended_methods.map((m, i) => (
+                <div key={i} className={styles.methodItem}>
+                  <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
+                  {m.content.split('\n').filter(Boolean).map((line, j) => (
+                    <p key={j} className={styles.methodContent}>{line}</p>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </section>
+        : <TitledSkeleton title="🔥 추천 방법" />}
+
+      {data.common_mistakes?.length > 0
+        ? <section className={styles.mentoringSection}>
+            <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
+            <div className={styles.mistakeList}>
+              {data.common_mistakes.map((m, i) => (
+                <div key={i} className={styles.mistakeItem}>
+                  <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>
+                  {(m.bad_example || m.good_example) && (
+                    <div className={styles.mistakeExamples}>
+                      {m.bad_example && <p className={styles.mistakeBad}>❌ "{m.bad_example}"</p>}
+                      {m.good_example && <p className={styles.mistakeGood}>✅ "{m.good_example}"</p>}
+                    </div>
+                  )}
+                  {m.explanation && <p className={styles.mistakeExplanation}>{m.explanation}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+        : <TitledSkeleton title="⚠️ 자주 하는 실수" />}
+
+      {data.one_line_tip
+        ? <div className={styles.tipBox}>
+            <span className={styles.tipTitle}>💡 한 줄 팁</span>
+            <p className={styles.tipText}>{data.one_line_tip}</p>
+          </div>
+        : <TitledSkeleton title="💡 한 줄 팁" />}
+    </div>
+  )
+}
 
 function TitledSkeleton({ title }) {
   return (
