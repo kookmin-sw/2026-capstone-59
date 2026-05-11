@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BsChevronDown } from 'react-icons/bs'
+import { BsChevronDown, BsX } from 'react-icons/bs'
 import styles from './ToastAlarm.module.css'
 
 export default function ToastAlarm({
@@ -47,7 +47,7 @@ export default function ToastAlarm({
       {showProgress && show && (
         <div
           key={progressKey}
-          className={styles.progress}
+          className={styles.progressBar}
           style={{ animationDuration: `${duration}ms` }}
         />
       )}
