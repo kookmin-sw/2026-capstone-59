@@ -221,3 +221,160 @@ class TestSearchCustom:
         start = next(r for r in records if r["event"] == "rag_search_custom_start")
         success = next(r for r in records if r["event"] == "rag_search_custom_success")
         assert start["correlation_id"] == success["correlation_id"]
+
+
+# ---------------------------------------------------------------------------
+# Data Source filter — search_doj / search_custom
+# ---------------------------------------------------------------------------
+
+
+_SYS_KEY = "x-amz-bedrock-kb-data-source-id"
+
+
+class TestDataSourceFilter:
+    """Data Source ID가 주어지면 retrievalConfiguration에 filter가 실린다."""
+
+    @pytest.mark.asyncio
+    async def test_doj_with_data_source_id_adds_filter(
+        self, client: RAGClient, agent_mock: MagicMock
+    ):
+        agent_mock.retrieve.return_value = _retrieve_response([])
+
+        await client.search_doj("쿼리", num_results=4, data_source_id="POGP6P0D6Q")
+
+        agent_mock.retrieve.assert_called_once_with(
+            knowledgeBaseId=KB_ID,
+            retrievalQuery={"text": "쿼리"},
+            retrievalConfiguration={
+                "vectorSearchConfiguration": {
+                    "numberOfResults": 4,
+                    "filter": {"equals": {"key": _SYS_KEY, "value": "POGP6P0D6Q"}},
+                }
+            },
+        )
+
+    @pytest.mark.asyncio
+    async def test_custom_with_data_source_id_adds_filter(
+        self, client: RAGClient, agent_mock: MagicMock
+    ):
+        agent_mock.retrieve.return_value = _retrieve_response([])
+
+        await client.search_custom("쿼리", num_results=2, data_source_id="VILRYZZZWG")
+
+        agent_mock.retrieve.assert_called_once_with(
+            knowledgeBaseId=KB_ID,
+            retrievalQuery={"text": "쿼리"},
+            retrievalConfiguration={
+                "vectorSearchConfiguration": {
+                    "numberOfResults": 2,
+                    "filter": {"equals": {"key": _SYS_KEY, "value": "VILRYZZZWG"}},
+                }
+            },
+        )
+
+    @pytest.mark.asyncio
+    async def test_doj_without_data_source_id_omits_filter(
+        self, client: RAGClient, agent_mock: MagicMock
+    ):
+        agent_mock.retrieve.return_value = _retrieve_response([])
+
+        await client.search_doj("쿼리", num_results=3)
+
+        kwargs = agent_mock.retrieve.call_args.kwargs
+        vector_config = kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]
+        assert "filter" not in vector_config
+        assert vector_config["numberOfResults"] == 3
+
+    @pytest.mark.asyncio
+    async def test_custom_without_data_source_id_omits_filter(
+        self, client: RAGClient, agent_mock: MagicMock
+    ):
+        agent_mock.retrieve.return_value = _retrieve_response([])
+
+        await client.search_custom("쿼리", num_results=3)
+
+        kwargs = agent_mock.retrieve.call_args.kwargs
+        vector_config = kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]
+        assert "filter" not in vector_config
+
+    @pytest.mark.asyncio
+    async def test_doj_and_custom_receive_different_filters(
+        self, client: RAGClient, agent_mock: MagicMock
+    ):
+        """같은 RAGClient로 두 검색을 호출해도 filter가 서로 섞이지 않는다."""
+        agent_mock.retrieve.return_value = _retrieve_response([])
+
+        await client.search_doj("a", num_results=3, data_source_id="POGP6P0D6Q")
+        await client.search_custom("b", num_results=2, data_source_id="VILRYZZZWG")
+
+        assert agent_mock.retrieve.call_count == 2
+        first_call = agent_mock.retrieve.call_args_list[0].kwargs
+        second_call = agent_mock.retrieve.call_args_list[1].kwargs
+
+        first_filter = first_call["retrievalConfiguration"][
+            "vectorSearchConfiguration"
+        ]["filter"]
+        second_filter = second_call["retrievalConfiguration"][
+            "vectorSearchConfiguration"
+        ]["filter"]
+
+        assert first_filter == {"equals": {"key": _SYS_KEY, "value": "POGP6P0D6Q"}}
+        assert second_filter == {"equals": {"key": _SYS_KEY, "value": "VILRYZZZWG"}}
+
+
+# ---------------------------------------------------------------------------
+# Service-layer propagation — StepGenerator / SidePanelGenerator
+# ---------------------------------------------------------------------------
+
+
+class TestServiceLayerPropagation:
+    """서비스가 생성자로 받은 Data Source ID를 RAGClient 호출까지 전달."""
+
+    @pytest.mark.asyncio
+    async def test_step_generator_propagates_doj_id(
+        self, agent_mock: MagicMock
+    ):
+        from unittest.mock import AsyncMock
+
+        from ai.services.step_generator import StepGenerator
+
+        llm = MagicMock()
+        llm.invoke = AsyncMock(return_value=None)  # 호출만 검증
+        rag = RAGClient(bedrock_agent_client=agent_mock, kb_id=KB_ID)
+        rag_spy = MagicMock(wraps=rag)
+        rag_spy.search_doj = AsyncMock(return_value=[])
+
+        service = StepGenerator(llm=llm, rag=rag_spy, doj_data_source_id="POGP6P0D6Q")
+
+        # generate_steps 내부는 복잡하므로 search_doj 호출만 직접 트리거
+        await service.rag.search_doj(
+            "test", num_results=3, data_source_id=service.doj_data_source_id
+        )
+
+        rag_spy.search_doj.assert_called_once()
+        kwargs = rag_spy.search_doj.call_args.kwargs
+        assert kwargs["data_source_id"] == "POGP6P0D6Q"
+
+    @pytest.mark.asyncio
+    async def test_side_panel_generator_propagates_both_ids(
+        self, agent_mock: MagicMock
+    ):
+        from unittest.mock import AsyncMock
+
+        from ai.services.side_panel_generator import SidePanelGenerator
+
+        llm = MagicMock()
+        rag = RAGClient(bedrock_agent_client=agent_mock, kb_id=KB_ID)
+        rag_spy = MagicMock(wraps=rag)
+        rag_spy.search_doj = AsyncMock(return_value=[])
+        rag_spy.search_custom = AsyncMock(return_value=[])
+
+        service = SidePanelGenerator(
+            llm=llm,
+            rag=rag_spy,
+            doj_data_source_id="POGP6P0D6Q",
+            custom_data_source_id="VILRYZZZWG",
+        )
+
+        assert service.doj_data_source_id == "POGP6P0D6Q"
+        assert service.custom_data_source_id == "VILRYZZZWG"

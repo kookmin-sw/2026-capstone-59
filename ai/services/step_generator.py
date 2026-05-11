@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
@@ -39,9 +39,15 @@ def _coerce(value: Any, default: str = "") -> str:
 class StepGenerator:
     """generate 시나리오 — 일반 Step 3개 동적 생성."""
 
-    def __init__(self, llm: LLMClient, rag: RAGClient) -> None:
+    def __init__(
+        self,
+        llm: LLMClient,
+        rag: RAGClient,
+        doj_data_source_id: Optional[str] = None,
+    ) -> None:
         self.llm = llm
         self.rag = rag
+        self.doj_data_source_id = doj_data_source_id
 
     async def generate_steps(self, input_data: GenerateInput) -> GenerateOutput:
         """입력을 받아 Claude로 일반 Step 3개를 생성한다.
@@ -55,7 +61,11 @@ class StepGenerator:
         project = input_data.project_info
 
         rag_query = f"Stage {stage.stage_sequence} {stage.name} activities"
-        chunks = await self.rag.search_doj(rag_query, num_results=3)
+        chunks = await self.rag.search_doj(
+            rag_query,
+            num_results=3,
+            data_source_id=self.doj_data_source_id,
+        )
 
         decision_history_json = json.dumps(
             [item.model_dump(mode='json') for item in input_data.decision_history],
