@@ -2,7 +2,7 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-RUN pip install poetry
+RUN pip install poetry==2.3.3
 COPY backend/pyproject.toml backend/poetry.lock ./
 RUN poetry config virtualenvs.create false && \
     poetry install --no-interaction
