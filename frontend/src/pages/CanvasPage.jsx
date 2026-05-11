@@ -170,6 +170,13 @@ export default function CanvasPage() {
     setNodes(n)
     setEdges(e)
 
+    const acceptedRequiredNode = n.find(
+      (node) => node.type === 'requiredStepNode' && node.data.status === 'ACCEPTED'
+    )
+    if (acceptedRequiredNode) {
+      currentRequiredStepName.current = acceptedRequiredNode.data.label
+    }
+
     n.filter((node) =>
       node.data.status === 'READY' &&
       node.type !== 'requiredStepNode' &&
@@ -361,7 +368,7 @@ export default function CanvasPage() {
 
     try {
       await rollbackStep(selectedStep.id)
-    } catch (err) {
+    } catch {
       alert('롤백에 실패했어요. 다시 시도해주세요.')
       return
     }
@@ -406,17 +413,9 @@ export default function CanvasPage() {
         (status === 'READY' && !!acceptedSibling)
 
       if (!skipRollback && needsRollback) {
-        const nodeToRollback =
-          status === 'CANCELED' ? selectedStep : acceptedSibling
-
-        if (!nodeToRollback) {
-          alert('롤백 대상을 찾지 못했어요. 다시 시도해주세요.')
-          return
-        }
-
         try {
-          await rollbackStep(nodeToRollback.id)
-        } catch (err) {
+          await rollbackStep(selectedStep.id)
+        } catch {
           alert('롤백에 실패했어요. 다시 시도해주세요.')
           return
         }
