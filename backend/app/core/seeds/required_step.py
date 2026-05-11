@@ -1640,3 +1640,4 @@ def run(db: Session) -> None:
         )
     )
     db.execute(stmt)
+    db.commit()
