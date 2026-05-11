@@ -142,23 +142,6 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     # ② ACCEPTED 처리
     step.status = StepStatus.ACCEPTED
 
-    # ③ 형제 Step CANCELED (필수 Step 노드 제외)
-    if step.parent_step_id is not None:
-        siblings = (
-            db.query(StepModel)
-            .filter(
-                StepModel.parent_step_id == step.parent_step_id,
-                StepModel.id != step_id,
-                StepModel.status == StepStatus.READY,
-            )
-            .all()
-        )
-        for sibling in siblings:
-            if sibling.required_step_id is None:
-                sibling.status = StepStatus.CANCELED
-
-    db.flush()
-
     # ④ accept + generate 병렬 호출
     generate_request = _build_generate_request(db, step)
     if step.belonging_required_step_id is not None:
@@ -313,7 +296,32 @@ def _upsert_required_step_status(
 def _attach_or_create_required_step_node(
     db: Session, parent_step: StepModel, steps: list[StepModel]
 ) -> None:
-    """다음 미충족 필수 Step 노드를 재사용하거나 새로 생성하여 steps에 추가."""
+    # 형제 중 다이아몬드 노드(required_step_id IS NOT NULL) 찾기
+    if parent_step.parent_step_id is not None:
+        diamond_sibling = (
+            db.query(StepModel)
+            .filter(
+                StepModel.parent_step_id == parent_step.parent_step_id,
+                StepModel.id != parent_step.id,
+                StepModel.required_step_id.isnot(None),
+                StepModel.status == StepStatus.READY,
+            )
+            .first()
+        )
+        if diamond_sibling:
+            # 다이아몬드 노드의 parent를 accept된 스텝으로 변경
+            diamond_sibling.parent_step_id = parent_step.id
+            diamond_sibling.sort_order = 0
+            db.query(StepTreeModel).filter(
+                StepTreeModel.descendant == diamond_sibling.id
+            ).delete()
+            db.flush()
+            _insert_closure_rows(db, diamond_sibling.id, parent_step.id)
+            db.flush()
+            steps.append(diamond_sibling)
+            return
+
+    # 형제 중 다이아몬드 없으면 기존 로직으로 새 노드 생성
     next_rs_id = _get_next_unfulfilled_required_step_id(db, parent_step)
     if next_rs_id is None:
         return
@@ -325,45 +333,22 @@ def _attach_or_create_required_step_node(
     if already_inside:
         return
 
-    # 기존 READY 필수 Step 노드 재사용
-    existing_pending = (
-        db.query(StepModel)
-        .filter(
-            StepModel.project_id == parent_step.project_id,
-            StepModel.stage_id == parent_step.stage_id,
-            StepModel.required_step_id == next_rs_id,
-            StepModel.status == StepStatus.READY,
-        )
-        .first()
+    next_rs = db.get(RequiredStepModel, next_rs_id)
+    req_step = StepModel(
+        id=uuid.uuid4(),
+        project_id=parent_step.project_id,
+        stage_id=parent_step.stage_id,
+        parent_step_id=parent_step.id,
+        required_step_id=next_rs_id,
+        belonging_required_step_id=None,
+        name=next_rs.name,
+        status=StepStatus.READY,
+        sort_order=0,
     )
-
-    if existing_pending:
-        existing_pending.parent_step_id = parent_step.id
-        existing_pending.sort_order = 0
-        db.query(StepTreeModel).filter(
-            StepTreeModel.descendant == existing_pending.id
-        ).delete()
-        db.flush()
-        _insert_closure_rows(db, existing_pending.id, parent_step.id)
-        db.flush()
-        steps.append(existing_pending)
-    else:
-        next_rs = db.get(RequiredStepModel, next_rs_id)
-        req_step = StepModel(
-            id=uuid.uuid4(),
-            project_id=parent_step.project_id,
-            stage_id=parent_step.stage_id,
-            parent_step_id=parent_step.id,
-            required_step_id=next_rs_id,
-            belonging_required_step_id=None,
-            name=next_rs.name,
-            status=StepStatus.READY,
-            sort_order=0,
-        )
-        db.add(req_step)
-        db.flush()
-        _insert_closure_rows(db, req_step.id, parent_step.id)
-        steps.append(req_step)
+    db.add(req_step)
+    db.flush()
+    _insert_closure_rows(db, req_step.id, parent_step.id)
+    steps.append(req_step)
 
 
 def _create_generated_step_nodes(
