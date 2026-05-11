@@ -393,6 +393,8 @@ export default function CanvasPage() {
       const status = selectedStep.data?.status
 
       const parentEdge = edges.find((e) => e.target === selectedStep.id)
+      const parentNode = parentEdge ? nodes.find((n) => n.id === parentEdge.source) : null
+      const parentStatus = parentNode?.data?.status
 
       const siblings = parentEdge
         ? nodes.filter(
@@ -410,7 +412,8 @@ export default function CanvasPage() {
 
       const needsRollback =
         status === 'CANCELED' ||
-        (status === 'READY' && !!acceptedSibling)
+        (status === 'READY' && !!acceptedSibling) ||
+        (status === 'READY' && !!parentNode && parentStatus !== 'ACCEPTED')
 
       if (!skipRollback && needsRollback) {
         try {
