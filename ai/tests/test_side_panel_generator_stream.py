@@ -192,3 +192,89 @@ class TestGenerateStream:
         stream_prompt = stream_llm.invoke_stream.call_args.args[0]
 
         assert sync_prompt == stream_prompt, "sync/stream 프롬프트가 불일치"
+
+
+# ---------------------------------------------------------------------------
+# Data Source ID propagation — streaming path
+# ---------------------------------------------------------------------------
+
+
+class TestStreamDataSourceIdPropagation:
+    """generate_side_panel_stream도 doj/custom data source ID를
+    retrieve filter까지 전달해야 한다."""
+
+    @pytest.mark.asyncio
+    async def test_stream_passes_both_ids_to_retrieve(self):
+        from ai.clients.llm import LLMClient
+        from ai.clients.rag import RAGClient
+        from ai.services import generate_side_panel_stream
+
+        # RAG mock (retrieve call 검증 대상)
+        agent = MagicMock()
+        agent.retrieve.return_value = {"retrievalResults": []}
+
+        # LLM mock: invoke_stream은 빈 async generator
+        llm_client = MagicMock(spec=LLMClient)
+
+        async def _empty_stream(*_args, **_kwargs):
+            if False:
+                yield ""  # generator 문법 유지
+            return
+
+        llm_client.invoke_stream = _empty_stream
+        rag_client = RAGClient(bedrock_agent_client=agent, kb_id="test-kb")
+
+        # 입력 fixture는 같은 파일의 기존 _input_full() 활용
+        chunks = []
+        async for c in generate_side_panel_stream(
+            input_data=_input_full(),
+            llm_client=llm_client,
+            rag_client=rag_client,
+            doj_data_source_id="POGP6P0D6Q",
+            custom_data_source_id="VILRYZZZWG",
+        ):
+            chunks.append(c)
+
+        # streaming은 sync 경로와 동일하게 retrieve 2회 (DOJ + Custom)
+        assert agent.retrieve.call_count == 2
+        values = {
+            call.kwargs["retrievalConfiguration"]["vectorSearchConfiguration"][
+                "filter"
+            ]["equals"]["value"]
+            for call in agent.retrieve.call_args_list
+        }
+        assert values == {"POGP6P0D6Q", "VILRYZZZWG"}
+
+    @pytest.mark.asyncio
+    async def test_stream_without_ids_omits_filters(self):
+        from ai.clients.llm import LLMClient
+        from ai.clients.rag import RAGClient
+        from ai.services import generate_side_panel_stream
+
+        agent = MagicMock()
+        agent.retrieve.return_value = {"retrievalResults": []}
+
+        llm_client = MagicMock(spec=LLMClient)
+
+        async def _empty_stream(*_args, **_kwargs):
+            if False:
+                yield ""
+            return
+
+        llm_client.invoke_stream = _empty_stream
+        rag_client = RAGClient(bedrock_agent_client=agent, kb_id="test-kb")
+
+        chunks = []
+        async for c in generate_side_panel_stream(
+            input_data=_input_full(),
+            llm_client=llm_client,
+            rag_client=rag_client,
+        ):
+            chunks.append(c)
+
+        assert agent.retrieve.call_count == 2
+        for call in agent.retrieve.call_args_list:
+            vector_config = call.kwargs["retrievalConfiguration"][
+                "vectorSearchConfiguration"
+            ]
+            assert "filter" not in vector_config

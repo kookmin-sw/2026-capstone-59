@@ -23,6 +23,7 @@ async def call_generate(input_data):
         bedrock_agent,
         settings.BEDROCK_MODEL_ID,
         settings.BEDROCK_KB_ID,
+        doj_data_source_id=settings.BEDROCK_DOJ_DATA_SOURCE_ID or None,
     )
 
 
@@ -33,11 +34,19 @@ async def call_side_panel(input_data):
         bedrock_agent,
         settings.BEDROCK_MODEL_ID,
         settings.BEDROCK_KB_ID,
+        doj_data_source_id=settings.BEDROCK_DOJ_DATA_SOURCE_ID or None,
+        custom_data_source_id=settings.BEDROCK_CUSTOM_DATA_SOURCE_ID or None,
     )
 
 
 async def call_side_panel_stream(input_data) -> AsyncIterator[str]:
     llm = LLMClient(bedrock_client=bedrock_runtime, model_id=settings.BEDROCK_MODEL_ID)
     rag = RAGClient(bedrock_agent_client=bedrock_agent, kb_id=settings.BEDROCK_KB_ID)
-    async for chunk in generate_side_panel_stream(input_data, llm, rag):
+    async for chunk in generate_side_panel_stream(
+        input_data,
+        llm,
+        rag,
+        doj_data_source_id=settings.BEDROCK_DOJ_DATA_SOURCE_ID or None,
+        custom_data_source_id=settings.BEDROCK_CUSTOM_DATA_SOURCE_ID or None,
+    ):
         yield chunk

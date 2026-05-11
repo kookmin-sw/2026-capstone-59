@@ -467,3 +467,98 @@ class TestDeliveryInterface:
                     imported.add(node.module.split(".")[0])
             violations = imported & banned
             assert not violations, f"{path}: 백엔드 전용 패키지 import 발견 — {violations}"
+
+
+# ---------------------------------------------------------------------------
+# Data Source ID propagation — public orchestrator functions
+# ---------------------------------------------------------------------------
+
+
+_SYS_KEY = "x-amz-bedrock-kb-data-source-id"
+
+
+class TestDataSourceIdPropagation:
+    """3개 public 함수가 Data Source ID를 retrieve 호출 filter까지 전달."""
+
+    @pytest.mark.asyncio
+    async def test_generate_steps_passes_doj_id_to_retrieve(self):
+        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+        agent = _bedrock_agent_mock([{"text": "DOJ 청크", "score": 0.9}])
+
+        await generate_steps(
+            input_data=_generate_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+            doj_data_source_id="POGP6P0D6Q",
+        )
+
+        agent.retrieve.assert_called_once()
+        kwargs = agent.retrieve.call_args.kwargs
+        vector_config = kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]
+        assert vector_config["filter"] == {
+            "equals": {"key": _SYS_KEY, "value": "POGP6P0D6Q"}
+        }
+
+    @pytest.mark.asyncio
+    async def test_generate_steps_without_id_omits_filter(self):
+        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+        agent = _bedrock_agent_mock()
+
+        await generate_steps(
+            input_data=_generate_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+        )
+
+        kwargs = agent.retrieve.call_args.kwargs
+        vector_config = kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]
+        assert "filter" not in vector_config
+
+    @pytest.mark.asyncio
+    async def test_generate_side_panel_passes_both_ids(self):
+        runtime = _bedrock_runtime_mock(_valid_side_panel_payload())
+        agent = _bedrock_agent_mock()
+
+        await generate_side_panel(
+            input_data=_side_panel_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+            doj_data_source_id="POGP6P0D6Q",
+            custom_data_source_id="VILRYZZZWG",
+        )
+
+        # SidePanelGenerator는 search_doj, search_custom 둘 다 호출 → retrieve 2회
+        assert agent.retrieve.call_count == 2
+        filters = [
+            call.kwargs["retrievalConfiguration"]["vectorSearchConfiguration"][
+                "filter"
+            ]
+            for call in agent.retrieve.call_args_list
+        ]
+        values = {f["equals"]["value"] for f in filters}
+        assert values == {"POGP6P0D6Q", "VILRYZZZWG"}
+
+    @pytest.mark.asyncio
+    async def test_generate_side_panel_without_ids_omits_filters(self):
+        runtime = _bedrock_runtime_mock(_valid_side_panel_payload())
+        agent = _bedrock_agent_mock()
+
+        await generate_side_panel(
+            input_data=_side_panel_input(),
+            bedrock_runtime_client=runtime,
+            bedrock_agent_client=agent,
+            model_id=_MODEL_ID,
+            kb_id=_KB_ID,
+        )
+
+        for call in agent.retrieve.call_args_list:
+            vector_config = call.kwargs["retrievalConfiguration"][
+                "vectorSearchConfiguration"
+            ]
+            assert "filter" not in vector_config
