@@ -174,7 +174,14 @@ export default function CanvasPage() {
       node.data.status === 'READY' &&
       node.type !== 'requiredStepNode' &&
       !streamBuffers.current.has(node.id)
-    ).forEach((node) => startNodeStream(node.id))
+    ).forEach(async (node) => {
+      try {
+        const detail = await getStepDetail(node.id)
+        if (!detail?.mentoring) startNodeStream(node.id)
+      } catch {
+        startNodeStream(node.id)
+      }
+    })
 
     if (!hasProgress && autoOpenedStageRef.current !== stageId) {
       const firstRequired = n.find(
