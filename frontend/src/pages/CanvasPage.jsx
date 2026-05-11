@@ -170,6 +170,13 @@ export default function CanvasPage() {
     setNodes(n)
     setEdges(e)
 
+    const acceptedRequiredNode = n.find(
+      (node) => node.type === 'requiredStepNode' && node.data.status === 'ACCEPTED'
+    )
+    if (acceptedRequiredNode) {
+      currentRequiredStepName.current = acceptedRequiredNode.data.label
+    }
+
     n.filter((node) =>
       node.data.status === 'READY' &&
       node.type !== 'requiredStepNode' &&
