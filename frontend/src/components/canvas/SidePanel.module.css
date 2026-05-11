@@ -483,3 +483,26 @@
     transform: translateY(0);
   }
 }
+
+.spinnerWrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+}
+
+.floatingIcon {
+  animation: float 1.8s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.markdown {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-text);
+}
