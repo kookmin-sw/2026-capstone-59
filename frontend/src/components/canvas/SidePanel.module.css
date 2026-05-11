@@ -500,3 +500,9 @@
   50%  { transform: translateY(-8px); }
   100% { transform: translateY(0px); }
 }
+
+.markdown {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-text);
+}
