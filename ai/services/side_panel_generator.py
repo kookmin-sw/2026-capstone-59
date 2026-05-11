@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Optional
 
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
@@ -55,9 +55,17 @@ def _coerce(value: Any, default: str = _NONE_LABEL) -> str:
 class SidePanelGenerator:
     """side_panel 시나리오 — 일반 Step 사이드패널 콘텐츠 동적 생성."""
 
-    def __init__(self, llm: LLMClient, rag: RAGClient) -> None:
+    def __init__(
+        self,
+        llm: LLMClient,
+        rag: RAGClient,
+        doj_data_source_id: Optional[str] = None,
+        custom_data_source_id: Optional[str] = None,
+    ) -> None:
         self.llm = llm
         self.rag = rag
+        self.doj_data_source_id = doj_data_source_id
+        self.custom_data_source_id = custom_data_source_id
 
     def _build_prompt(
         self,
@@ -116,8 +124,16 @@ class SidePanelGenerator:
         custom_query = target.name
 
         doj_chunks, custom_chunks = await asyncio.gather(
-            self.rag.search_doj(doj_query, num_results=3),
-            self.rag.search_custom(custom_query, num_results=2),
+            self.rag.search_doj(
+                doj_query,
+                num_results=3,
+                data_source_id=self.doj_data_source_id,
+            ),
+            self.rag.search_custom(
+                custom_query,
+                num_results=2,
+                data_source_id=self.custom_data_source_id,
+            ),
         )
 
         prompt = self._build_prompt(input_data, doj_chunks, custom_chunks)
@@ -157,8 +173,16 @@ class SidePanelGenerator:
         custom_query = target.name
 
         doj_chunks, custom_chunks = await asyncio.gather(
-            self.rag.search_doj(doj_query, num_results=3),
-            self.rag.search_custom(custom_query, num_results=2),
+            self.rag.search_doj(
+                doj_query,
+                num_results=3,
+                data_source_id=self.doj_data_source_id,
+            ),
+            self.rag.search_custom(
+                custom_query,
+                num_results=2,
+                data_source_id=self.custom_data_source_id,
+            ),
         )
 
         prompt = self._build_prompt(input_data, doj_chunks, custom_chunks)
