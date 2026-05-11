@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     AWS_REGION: str = "ap-northeast-2"
     BEDROCK_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
     BEDROCK_KB_ID: str = ""
+    BEDROCK_DOJ_DATA_SOURCE_ID: str = ""
+    BEDROCK_CUSTOM_DATA_SOURCE_ID: str = ""
 
     # JWT
     JWT_SECRET_KEY: str = "change-me"
