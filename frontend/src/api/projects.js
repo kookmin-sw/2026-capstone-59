@@ -9,7 +9,7 @@ function getCsrfToken() {
 }
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true, // 쿠키 자동 전송 (fetch의 credentials: 'include'와 동일)
 })
 

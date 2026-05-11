@@ -8,12 +8,12 @@ function getCsrfToken() {
 }
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true,
 })
 
 const aiApi = axios.create({
-  baseURL: '/ai',
+  baseURL: import.meta.env.VITE_AI_URL || '/ai',
   withCredentials: true,
 })
 
@@ -57,7 +57,7 @@ export function createSidePanelStream(stepId) {
 
       ;(async () => {
         try {
-          const response = await fetch(`/ai/steps/${stepId}/sidepanel-stream`, {
+          const response = await fetch(`${import.meta.env.VITE_AI_URL || '/ai'}/steps/${stepId}/sidepanel-stream`, {
             method: 'GET',
             headers: {
               Accept: 'text/event-stream',
