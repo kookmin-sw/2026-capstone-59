@@ -19,6 +19,10 @@ build/
 # Personal scripts (local only)
 scripts/
 
+# Custom KB source guides — pre-processed working copy, not production
+# (production docs live in ai/data/custom/ and S3 pj-kmucd1-09-poco-knowledge/custom/)
+poco-kiro-guides/
+
 # Backend team's working directory (handled separately by backend team)
 content/
 
