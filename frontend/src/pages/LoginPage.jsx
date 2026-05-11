@@ -4,7 +4,7 @@ import { SiGoogle, SiNaver } from 'react-icons/si'
 
 export default function LoginPage() {
   function handleLogin(provider) {
-    window.location.href = `/api/auth/${provider}/login`
+    window.location.href = `${import.meta.env.VITE_API_URL || '/api'}/auth/${provider}/login`
   }
 
   return (
