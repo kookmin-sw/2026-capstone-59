@@ -48,6 +48,7 @@ export default function CanvasPage() {
   const [rollbackModal, setRollbackModal] = useState(false)
   const [isAccepting, setIsAccepting] = useState(false)
   const [toastPersistent, setToastPersistent] = useState(false)
+  const [isStreamMode, setIsStreamMode] = useState(false)
 
   const lastCompletedRequiredStepRef = useRef(null)
   const timerRef = useRef(null)
@@ -270,6 +271,7 @@ export default function CanvasPage() {
     const buf = streamBuffers.current.get(node.id)
 
     if (buf?.isDone) {
+      setIsStreamMode(false) 
       try {
         const detail = await getStepDetail(node.id)
         if (requestId !== detailRequestRef.current) return
@@ -278,6 +280,7 @@ export default function CanvasPage() {
         //
       }
     } else if (buf && !buf.isDone) {
+      setIsStreamMode(false) 
       clearTyping()
       const baseText = buf.text
       setStreamingText(baseText)
@@ -302,6 +305,7 @@ export default function CanvasPage() {
         }
       }
     } else {
+      setIsStreamMode(false) 
       try {
         const detail = await getStepDetail(node.id)
         if (requestId !== detailRequestRef.current) return
@@ -602,6 +606,7 @@ export default function CanvasPage() {
           streamingText={streamingText}
           isOpen={!!selectedStep}
           isAccepting={isAccepting}
+          isStreamMode={isStreamMode}
           hasChildren={selectedHasChildren}
           onClose={() => {
             clearStreamCallbacks()
