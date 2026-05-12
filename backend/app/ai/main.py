@@ -7,7 +7,10 @@ from app.core import exception_handlers
 from app.core.auth.csrf import verify_csrf
 from app.core.auth.dependencies import get_current_user_id
 from app.core.config import settings
+from app.core.logging import setup_logging
 from app.core.schemas.health import HealthResponse
+
+setup_logging()
 
 app = FastAPI(title="Poco AI Orchestrator")
 

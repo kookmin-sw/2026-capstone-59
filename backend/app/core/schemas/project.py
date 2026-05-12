@@ -18,6 +18,7 @@ class ProjectUpdateRequest(BaseModel):
     description: str | None = None
     duration_months: int | None = None
     member_count: int | None = None
+    is_deleted: bool | None = None
 
 
 class ProjectResponse(BaseModel):

@@ -22,10 +22,11 @@
 
 1. [한 줄 요약](#-한-줄-요약)
 2. [핵심 기능](#-핵심-기능)
-3. [기술 스택](#-기술-스택)
-4. [빠른 시작](#-빠른-시작)
-5. [레포지토리 구조](#-레포지토리-구조)
-6. [팀원](#-팀원)
+3. [시스템 아키텍처](#-시스템-아키텍처)
+4. [기술 스택](#-기술-스택)
+5. [빠른 시작](#-빠른-시작)
+6. [레포지토리 구조](#-레포지토리-구조)
+7. [팀원](#-팀원)
 
 &nbsp;
 
@@ -48,13 +49,21 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 
 > 딱딱한 방법론 문서 대신, 맥락에 맞는 가이드가 곁에.
 
-노드 클릭 시 **멘토링 · 용어 사전 · 노션 템플릿**이 사이드패널로 펼쳐집니다.
+노드 클릭 시 **멘토링 · 용어 사전**이 사이드패널로 펼쳐지고, 핵심 관문에서는 **팀이 설계한 노션 템플릿**(웹 게시 링크)이 연결됩니다.
 
 ### 3. Footprint — 의사결정 궤적
 
 > 되돌아갈 수 있는 선택, 자산으로 남는 사고 과정.
 
 선택한 경로가 **캔버스 트리**로 남아, 이전 분기점으로 롤백하며 새로운 길을 AI가 다시 제안합니다.
+
+&nbsp;
+
+## 🐾 시스템 아키텍처
+
+<img src="./assets/architecture.png" alt="Poco System Architecture" />
+
+<!-- > *AI가 검증된 방법론을 실시간 참조하는 구조. [자세히 보기 →](https://kookmin-sw.github.io/2026-capstone-59/)* -->
 
 &nbsp;
 
@@ -74,7 +83,7 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 ![Pydantic](https://img.shields.io/badge/Pydantic_v2-E92063?style=flat-square&logo=pydantic&logoColor=white)
 ![Amazon API Gateway](https://img.shields.io/badge/Amazon_API_Gateway-FF4F8B?style=flat-square&logo=amazonapigateway&logoColor=white)
 ![AWS Lambda](https://img.shields.io/badge/AWS_Lambda_%28Business_API%29-FF9900?style=flat-square&logo=awslambda&logoColor=white)
-![Amazon RDS](https://img.shields.io/badge/Amazon_RDS-527FFF?style=flat-square&logo=amazonrds&logoColor=white)
+![Amazon RDS](https://img.shields.io/badge/Amazon_RDS-C924D0?style=flat-square&logo=amazonrds&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
 
 **AI & RAG**
@@ -91,10 +100,6 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
-
-**External**
-
-![Notion API](https://img.shields.io/badge/Notion_API-000000?style=flat-square&logo=notion&logoColor=white)
 
 &nbsp;
 
@@ -174,4 +179,4 @@ docker-compose up -d
 
 ---
 
-*<sub>본 프로젝트는 소프트웨어 공학 지식체계 <b>SWEBOK V4.0a</b> (2024, IEEE Computer Society) 및 미국 법무부(<b>DOJ</b>) <b>SDLC(소프트웨어 개발 수명 주기) Guidance Document</b>를 근거로 설계되었습니다.</sub>*
+<sub>본 프로젝트는 미국 법무부(<b>DOJ</b>) <b>SDLC Guidance Document</b>의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, <b>SWEBOK V4.0a</b> (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.</sub>
