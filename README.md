@@ -63,7 +63,7 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 
 <img src="./assets/architecture.png" alt="Poco System Architecture" />
 
-> *AI가 검증된 방법론을 실시간 참조하는 구조. [자세히 보기 →](https://kookmin-sw.github.io/2026-capstone-59/)*
+<!-- > *AI가 검증된 방법론을 실시간 참조하는 구조. [자세히 보기 →](https://kookmin-sw.github.io/2026-capstone-59/)* -->
 
 &nbsp;
 
