@@ -159,3 +159,145 @@
   font-size: 13px;
   cursor: pointer;
 }
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shareBtn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #EEEDF8;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: background 0.15s;
+}
+
+.shareBtn:hover {
+  background: #EEEDF8;
+}
+
+.shareBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.readOnlyBadge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #dbdbdb;
+  font-size: 12px;
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.shareModal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shareModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.shareModalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.closeBtn {
+  position: absolute;
+  right: 0;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding-bottom: 40px;
+}
+
+.shareModalDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.7;
+  margin-bottom: 10px;
+}
+
+.shareLinkBox {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e0dfee;
+  border-radius: 10px;
+  padding: 10px 14px;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.shareLinkInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  min-width: 0;
+}
+
+.shareLinkPlaceholder {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-text-disabled);
+}
+
+.copyBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.copyBtn:hover {
+  color: var(--color-primary);
+}
+
+.copyBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.revokeBtn {
+  align-self: flex-start;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid #EEEDF8;
+  background: #dbdbdb;
+  font-size: 12px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.revokeBtn:hover {
+  background: #d4d4d4;
+}
