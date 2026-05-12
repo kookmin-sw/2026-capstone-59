@@ -125,28 +125,66 @@ def add_step(db: Session, **fields: Any) -> Step:
 
 
 def detach_steps_from_parent_in_stages(
-    db: Session, project_id: UUID, stage_ids: Iterable[UUID]
+    db: Session,
+    project_id: UUID,
+    stage_ids: Iterable[UUID],
+    exclude_step_ids: Iterable[UUID] | None = None,
 ) -> None:
     """Step.parent_step_id 를 NULL 로 끊는다 (FK 자기참조 회피용)."""
     ids = list(stage_ids)
     if not ids:
         return
-    db.query(Step).filter(
+    query = db.query(Step).filter(
         Step.project_id == project_id,
         Step.stage_id.in_(ids),
-    ).update({"parent_step_id": None}, synchronize_session=False)
+    )
+    if exclude_step_ids:
+        exc = list(exclude_step_ids)
+        if exc:
+            query = query.filter(Step.id.notin_(exc))
+    query.update({"parent_step_id": None}, synchronize_session=False)
 
 
 def delete_steps_in_stages(
-    db: Session, project_id: UUID, stage_ids: Iterable[UUID]
+    db: Session,
+    project_id: UUID,
+    stage_ids: Iterable[UUID],
+    exclude_step_ids: Iterable[UUID] | None = None,
 ) -> None:
     ids = list(stage_ids)
     if not ids:
         return
-    db.query(Step).filter(
+    query = db.query(Step).filter(
         Step.project_id == project_id,
         Step.stage_id.in_(ids),
-    ).delete(synchronize_session=False)
+    )
+    if exclude_step_ids:
+        exc = list(exclude_step_ids)
+        if exc:
+            query = query.filter(Step.id.notin_(exc))
+    query.delete(synchronize_session=False)
+
+
+def get_first_rs_step_ids_in_stages(
+    db: Session, project_id: UUID, stage_ids: Iterable[UUID]
+) -> list[UUID]:
+    """각 Stage의 첫 번째 Required Step(sequence=1)에 해당하는 Step ID 목록."""
+    from app.core.models.required_step import RequiredStep
+
+    ids = list(stage_ids)
+    if not ids:
+        return []
+    return [
+        step_id
+        for (step_id,) in db.query(Step.id)
+        .join(RequiredStep, Step.required_step_id == RequiredStep.id)
+        .filter(
+            Step.project_id == project_id,
+            Step.stage_id.in_(ids),
+            RequiredStep.sequence == 1,
+        )
+        .all()
+    ]
 
 
 def set_status_bulk(steps: Iterable[Step], status: str) -> None:
