@@ -104,6 +104,7 @@ class DecisionHistoryItem(BaseModel):
     step_id: UUID
     name: str
     status: str
+    stage_sequence: int
 
 
 class TargetStep(BaseModel):
