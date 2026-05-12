@@ -171,6 +171,14 @@ export default function CanvasPage() {
     setNodes(n)
     setEdges(e)
 
+    const newNodeIds = new Set(n.map((node) => node.id))
+    streamBuffers.current.forEach((buf, id) => {
+      if (!newNodeIds.has(id)) {
+        buf.stream?.abort()
+        streamBuffers.current.delete(id)
+      }
+    })
+
     const acceptedRequiredNode = n.find(
       (node) => node.type === 'requiredStepNode' && node.data.status === 'ACCEPTED'
     )
@@ -185,12 +193,22 @@ export default function CanvasPage() {
     ).forEach(async (node) => {
       try {
         const detail = await getStepDetail(node.id)
-        if (!detail?.mentoring) startNodeStream(node.id)
+        if (!detail?.mentoring) {
+          startNodeStream(node.id)
+        } else {
+          streamBuffers.current.set(node.id, {
+            text: detail.mentoring,
+            isDone: true,
+            stream: null,
+            onUpdate: null,
+            onComplete: null,
+          })
+        }
       } catch {
         startNodeStream(node.id)
       }
     })
-
+    
     if (!hasProgress && autoOpenedStageRef.current !== stageId) {
       const firstRequired = n.find(
         (node) =>
@@ -487,12 +505,6 @@ export default function CanvasPage() {
         }, 3000)
       }
 
-      streamBuffers.current.forEach((buf, id) => {
-        if (!buf.isDone) {
-          buf.stream?.abort()
-          streamBuffers.current.delete(id)
-        }
-      })
       clearStreamCallbacks()
       setStreamingText(null)
 
