@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
+  <!-- <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a> -->
   <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_Track_59팀-FF9900?logo=amazon-aws" alt="AWS Track" /></a>
 </p>
@@ -49,7 +49,7 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 
 > 딱딱한 방법론 문서 대신, 맥락에 맞는 가이드가 곁에.
 
-노드 클릭 시 **멘토링 · 용어 사전 · 노션 템플릿**이 사이드패널로 펼쳐집니다.
+노드 클릭 시 **멘토링 · 용어 사전**이 사이드패널로 펼쳐지고, 핵심 관문에서는 **팀이 설계한 노션 템플릿**(웹 게시 링크)이 연결됩니다.
 
 ### 3. Footprint — 의사결정 궤적
 
@@ -63,7 +63,7 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 
 <img src="./assets/architecture.png" alt="Poco System Architecture" />
 
-> RAG 파이프라인과 "단기 기억(RDS) · 장기 지식(S3 Vectors)" 분리 설계로, AI가 검증된 방법론을 실시간 참조합니다.
+> *AI가 검증된 방법론을 실시간 참조하는 구조. [자세히 보기 →](https://kookmin-sw.github.io/2026-capstone-59/)*
 
 &nbsp;
 
@@ -83,7 +83,7 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 ![Pydantic](https://img.shields.io/badge/Pydantic_v2-E92063?style=flat-square&logo=pydantic&logoColor=white)
 ![Amazon API Gateway](https://img.shields.io/badge/Amazon_API_Gateway-FF4F8B?style=flat-square&logo=amazonapigateway&logoColor=white)
 ![AWS Lambda](https://img.shields.io/badge/AWS_Lambda_%28Business_API%29-FF9900?style=flat-square&logo=awslambda&logoColor=white)
-![Amazon RDS](https://img.shields.io/badge/Amazon_RDS-527FFF?style=flat-square&logo=amazonrds&logoColor=white)
+![Amazon RDS](https://img.shields.io/badge/Amazon_RDS-C924D0?style=flat-square&logo=amazonrds&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
 
 **AI & RAG**
