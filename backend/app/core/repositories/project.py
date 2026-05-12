@@ -214,3 +214,19 @@ def unfulfill_by_required_step_ids(
         {"is_fulfilled": False, "fulfilled_at": None},
         synchronize_session=False,
     )
+
+
+def fulfill_by_required_step_ids(
+    db: Session, project_id: UUID, required_step_ids: Iterable[UUID]
+) -> None:
+    """주어진 required_step_id 들의 status 를 일괄 충족 처리."""
+    ids = list(required_step_ids)
+    if not ids:
+        return
+    db.query(ProjectRequiredStepStatus).filter(
+        ProjectRequiredStepStatus.project_id == project_id,
+        ProjectRequiredStepStatus.required_step_id.in_(ids),
+    ).update(
+        {"is_fulfilled": True, "fulfilled_at": datetime.now(timezone.utc)},
+        synchronize_session=False,
+    )

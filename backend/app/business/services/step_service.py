@@ -61,8 +61,8 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
 
     db.flush()
 
-    # ⑤ Belonging Required Step 이후의 Required Step 들 fulfilled 해제
-    _unfulfill_required_steps_from(db, step)
+    # ⑤ Belonging Required Step 기준 이전 RS는 fulfilled True, 이후는 fulfilled False
+    _realign_required_step_fulfillment(db, step)
 
     db.commit()
 
@@ -103,8 +103,12 @@ def _wipe_upper_stages_if_needed(db: Session, target_step: StepModel) -> None:
     db.flush()
 
 
-def _unfulfill_required_steps_from(db: Session, step: StepModel) -> None:
-    """롤백 대상의 Belonging Required Step 부터 같은 Stage 의 이후 Required Step 들 fulfilled 해제."""
+def _realign_required_step_fulfillment(db: Session, step: StepModel) -> None:
+    """롤백 대상의 Belonging Required Step 기준으로 fulfilled 상태를 재정렬.
+
+    - base_rs.sequence 이상: is_fulfilled = False
+    - base_rs.sequence 미만: is_fulfilled = True
+    """
     base_rs_id = step.belonging_required_step_id or step.required_step_id
     if base_rs_id is None:
         return
@@ -113,10 +117,17 @@ def _unfulfill_required_steps_from(db: Session, step: StepModel) -> None:
     if base_rs is None:
         return
 
+    # sequence >= base_rs.sequence → unfulfill
     target_rs_ids = required_step_repo.get_required_step_ids_from_sequence(
         db, base_rs.stage_id, base_rs.sequence
     )
     project_repo.unfulfill_by_required_step_ids(db, step.project_id, target_rs_ids)
+
+    # sequence < base_rs.sequence → fulfill
+    prior_rs_ids = required_step_repo.get_required_step_ids_before_sequence(
+        db, base_rs.stage_id, base_rs.sequence
+    )
+    project_repo.fulfill_by_required_step_ids(db, step.project_id, prior_rs_ids)
 
 
 def get_required_steps(db: Session, stage_id: uuid.UUID) -> RequiredStepListResponse:

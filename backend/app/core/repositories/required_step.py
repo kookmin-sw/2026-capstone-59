@@ -59,3 +59,18 @@ def get_required_step_ids_from_sequence(
         )
         .all()
     ]
+
+
+def get_required_step_ids_before_sequence(
+    db: Session, stage_id: UUID, max_sequence: int
+) -> list[UUID]:
+    """같은 Stage 안에서 sequence < max_sequence 인 Required Step ID 들."""
+    return [
+        rs_id
+        for (rs_id,) in db.query(RequiredStep.id)
+        .filter(
+            RequiredStep.stage_id == stage_id,
+            RequiredStep.sequence < max_sequence,
+        )
+        .all()
+    ]
