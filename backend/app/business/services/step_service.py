@@ -18,6 +18,10 @@ from app.core.schemas.step import (
     StepTreeResponse,
 )
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 def get_step_tree(
     db: Session, project_id: uuid.UUID, stage_id: uuid.UUID
@@ -47,8 +51,22 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
     ancestor_ids = {row.ancestor for row in ancestor_rows if row.depth > 0}
 
     # ③ 같은 Stage 내 ACCEPTED Step만 CANCELED 처리 (이전 Stage는 유지)
+    accepted_steps_in_stage = step_repo.get_accepted_steps_in_stage(
+        db, step.project_id, step.stage_id
+    )
+    logger.debug(
+        "rollback: canceling accepted steps in stage",
+        extra={
+            "project_id": str(step.project_id),
+            "stage_id": str(step.stage_id),
+            "rollback_target_step_id": str(step.id),
+            "canceled_count": len(accepted_steps_in_stage),
+            "canceled_step_ids": [str(s.id) for s in accepted_steps_in_stage],
+            "canceled_step_names": [s.name for s in accepted_steps_in_stage],
+        },
+    )
     step_repo.set_status_bulk(
-        step_repo.get_accepted_steps_in_stage(db, step.project_id, step.stage_id),
+        accepted_steps_in_stage,
         StepStatus.CANCELED,
     )
 
