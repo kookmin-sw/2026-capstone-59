@@ -487,8 +487,12 @@ export default function CanvasPage() {
         }, 3000)
       }
 
-      streamBuffers.current.forEach((buf) => buf.stream?.abort())
-      streamBuffers.current.clear()
+      streamBuffers.current.forEach((buf, id) => {
+        if (!buf.isDone) {
+          buf.stream?.abort()
+          streamBuffers.current.delete(id)
+        }
+      })
       clearStreamCallbacks()
       setStreamingText(null)
 
