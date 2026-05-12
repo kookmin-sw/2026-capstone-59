@@ -103,12 +103,13 @@ def list_projects(
     sort_order: str,
     keyword: str | None = None,
     user_id: UUID | None = None,
+    is_deleted: bool | None = None,
 ) -> ProjectListResponse:
     if sort_by not in _ALLOWED_SORT_COLUMNS:
         sort_by = "created_at"
 
     projects, total_count = project_repo.get_projects_by_user(
-        db, user_id, page, size, sort_by, sort_order, keyword
+        db, user_id, page, size, sort_by, sort_order, keyword, is_deleted
     )
 
     return ProjectListResponse(

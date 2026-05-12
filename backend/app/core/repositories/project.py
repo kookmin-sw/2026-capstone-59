@@ -52,11 +52,11 @@ def get_projects_by_user(
     sort_by: str,
     sort_order: str,
     keyword: str | None = None,
+    is_deleted: bool | None = None,
 ) -> tuple[list[Project], int]:
-    query = db.query(Project).filter(
-        Project.is_deleted.is_(False),
-        Project.user_id == user_id,
-    )
+    query = db.query(Project).filter(Project.user_id == user_id)
+    if is_deleted is not None:
+        query = query.filter(Project.is_deleted.is_(is_deleted))
     if keyword:
         query = query.filter(Project.name.ilike(f"%{keyword}%"))
 
