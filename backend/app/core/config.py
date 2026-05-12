@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # CORS (옵션 A: 프로덕션에서는 same-origin이라 비워두고, 개발에서만 명시)
     CORS_ALLOWED_ORIGINS: list[str] = []
 
+    # Logging
+    LOG_LEVEL: str = "INFO"  # DEBUG | INFO | WARNING | ERROR | CRITICAL
+    LOG_FORMAT: str = "json"  # "json" (Lambda/CloudWatch) | "text" (local dev)
+
     # Cookie
     COOKIE_SECURE: bool = True  # 개발 HTTP 환경에서는 false로 설정
     COOKIE_SAMESITE: str = "lax"  # same-site 가정
