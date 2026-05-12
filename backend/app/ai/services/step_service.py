@@ -382,11 +382,12 @@ def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequ
 
     accepted_steps = (
         db.query(StepModel)
+        .join(StageModel, StepModel.stage_id == StageModel.id)
         .filter(
             StepModel.project_id == parent_step.project_id,
-            StepModel.stage_id == parent_step.stage_id,
             StepModel.status == StepStatus.ACCEPTED,
         )
+        .order_by(StageModel.sequence, StepModel.created_at)
         .all()
     )
 
@@ -399,7 +400,12 @@ def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequ
             db, parent_step.stage_id, fulfilled_ids
         ),
         decision_history=[
-            DecisionHistoryItem(step_id=s.id, name=s.name, status=s.status)
+            DecisionHistoryItem(
+                step_id=s.id,
+                name=s.name,
+                status=s.status,
+                stage_sequence=s.stage.sequence,
+                )
             for s in accepted_steps
         ],
         current_step=AcceptedStepItem(step_id=parent_step.id, name=parent_step.name),
