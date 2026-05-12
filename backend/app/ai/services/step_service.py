@@ -382,6 +382,7 @@ def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequ
 
     accepted_steps = (
         db.query(StepModel)
+        .join(StageModel, StepModel.stage_id == StageModel.id)
         .filter(
             StepModel.project_id == parent_step.project_id,
             StepModel.status == StepStatus.ACCEPTED,
