@@ -46,9 +46,9 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
     ancestor_rows = step_repo.get_ancestors_ordered(db, step_id)
     ancestor_ids = {row.ancestor for row in ancestor_rows if row.depth > 0}
 
-    # ③ 프로젝트의 기존 ACCEPTED 흐름을 모두 CANCELED 처리
+    # ③ 같은 Stage 내 ACCEPTED Step만 CANCELED 처리 (이전 Stage는 유지)
     step_repo.set_status_bulk(
-        step_repo.get_accepted_steps_by_project(db, step.project_id),
+        step_repo.get_accepted_steps_in_stage(db, step.project_id, step.stage_id),
         StepStatus.CANCELED,
     )
 
