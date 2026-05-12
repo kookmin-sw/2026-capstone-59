@@ -83,11 +83,22 @@ def _wipe_upper_stages_if_needed(db: Session, target_step: StepModel) -> None:
         return
 
     # ① 윗 Stage Step 정리 (자기참조 FK 회피용 NULL → DELETE)
-    step_repo.detach_steps_from_parent_in_stages(
+    # 각 Stage의 첫 번째 Required Step에 해당하는 Step은 보존
+    first_rs_step_ids = step_repo.get_first_rs_step_ids_in_stages(
         db, target_step.project_id, upper_stage_ids
     )
+    step_repo.detach_steps_from_parent_in_stages(
+        db, target_step.project_id, upper_stage_ids, exclude_step_ids=first_rs_step_ids
+    )
     db.flush()
-    step_repo.delete_steps_in_stages(db, target_step.project_id, upper_stage_ids)
+    step_repo.delete_steps_in_stages(
+        db, target_step.project_id, upper_stage_ids, exclude_step_ids=first_rs_step_ids
+    )
+
+    # 보존된 첫 번째 RS Step은 status를 READY로 리셋
+    if first_rs_step_ids:
+        preserved_steps = step_repo.get_steps_by_ids(db, first_rs_step_ids)
+        step_repo.set_status_bulk(preserved_steps, StepStatus.READY)
 
     # ② 윗 Stage Required Step Status fulfilled 해제
     upper_rs_ids = required_step_repo.get_required_step_ids_in_stages(
