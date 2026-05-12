@@ -62,17 +62,6 @@ def get_accepted_steps_in_required(
     )
 
 
-def get_accepted_steps_by_project(db: Session, project_id: UUID) -> list[Step]:
-    return (
-        db.query(Step)
-        .filter(
-            Step.project_id == project_id,
-            Step.status == StepStatus.ACCEPTED,
-        )
-        .all()
-    )
-
-
 def get_ready_siblings(
     db: Session, parent_step_id: UUID, exclude_step_id: UUID
 ) -> list[Step]:

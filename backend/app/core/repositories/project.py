@@ -24,6 +24,11 @@ def get_active_project_by_id(db: Session, project_id: UUID) -> Project | None:
     )
 
 
+def get_project_by_id(db: Session, project_id: UUID) -> Project | None:
+    """is_deleted 여부와 무관하게 프로젝트 조회."""
+    return db.get(Project, project_id)
+
+
 def get_active_project_by_name(
     db: Session, name: str, exclude_id: UUID | None = None
 ) -> Project | None:
@@ -52,11 +57,11 @@ def get_projects_by_user(
     sort_by: str,
     sort_order: str,
     keyword: str | None = None,
+    is_deleted: bool | None = None,
 ) -> tuple[list[Project], int]:
-    query = db.query(Project).filter(
-        Project.is_deleted.is_(False),
-        Project.user_id == user_id,
-    )
+    query = db.query(Project).filter(Project.user_id == user_id)
+    if is_deleted is not None:
+        query = query.filter(Project.is_deleted.is_(is_deleted))
     if keyword:
         query = query.filter(Project.name.ilike(f"%{keyword}%"))
 
