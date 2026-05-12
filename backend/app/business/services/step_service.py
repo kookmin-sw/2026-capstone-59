@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
-from app.core.exceptions import StepNotFoundError
+from app.core.exceptions import InvalidRollbackError, StepNotFoundError
 from app.core.models.step import Step as StepModel
 from app.core.repositories import (
     project as project_repo,
@@ -34,6 +34,10 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
     step = step_repo.get_step(db, step_id)
     if step is None:
         raise StepNotFoundError()
+
+    # ① 자식 Step이 있으면 Rollback 불가
+    if step_repo.has_children(db, step_id):
+        raise InvalidRollbackError()
 
     # ⓪ 롤백 대상이 현재 진행 Stage보다 낮은 Stage이면 윗 Stage 정리
     _wipe_upper_stages_if_needed(db, step)

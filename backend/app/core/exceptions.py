@@ -149,3 +149,12 @@ class UserNotFoundError(PocoError):
             message=message,
             status_code=http_status.HTTP_404_NOT_FOUND,
         )
+
+
+class InvalidRollbackError(PocoError):
+    def __init__(self, message: str = "자식 Step이 존재하는 경우 Rollback할 수 없습니다."):
+        super().__init__(
+            code="INVALID_ROLLBACK",
+            message=message,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+        )

@@ -95,7 +95,7 @@ def get_project_stage(
 
 
 def get_active_stage_sequence(db: Session, project_id: UUID) -> int | None:
-    """프로젝트의 현재 활성 Stage sequence."""
+    """프로젝트의 현재 진행 중인 Stage sequence (is_active=True 중 가장 높은 sequence)."""
     row = (
         db.query(Stage.sequence)
         .join(ProjectStage, ProjectStage.stage_id == Stage.id)
@@ -103,7 +103,7 @@ def get_active_stage_sequence(db: Session, project_id: UUID) -> int | None:
             ProjectStage.project_id == project_id,
             ProjectStage.is_active.is_(True),
         )
-        .order_by(Stage.sequence)
+        .order_by(Stage.sequence.desc())
         .first()
     )
     return row[0] if row else None
