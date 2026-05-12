@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { HiX, HiCheck } from 'react-icons/hi'
 import styles from './SidePanel.module.css'
@@ -20,6 +20,29 @@ function SectionSkeleton() {
       <div className={styles.skeletonLineShort} />
     </div>
   )
+}
+
+function TypewriterText({ text, className, speed = 12, onComplete }) {
+  const [displayed, setDisplayed] = useState('')
+  const indexRef = useRef(0)
+  const onCompleteRef = useRef(onComplete)
+
+  useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
+
+  useEffect(() => {
+    indexRef.current = 0
+    const interval = setInterval(() => {
+      indexRef.current++
+      setDisplayed(text.slice(0, indexRef.current))
+      if (indexRef.current >= text.length) {
+        clearInterval(interval)
+        onCompleteRef.current?.()
+      }
+    }, speed)
+    return () => clearInterval(interval)
+  }, [text, speed])
+
+  return <p className={className}>{displayed}</p>
 }
 
 function parseStreamingMentoring(text) {
@@ -63,8 +86,6 @@ function parseStreamingMentoring(text) {
   }
 
   result.description = extractString('description')
-  result.perspectives = extractArray('perspectives')
-  result.goals = extractArray('goals')
   result.recommended_methods = extractArray('recommended_methods')
   result.common_mistakes = extractArray('common_mistakes')
   result.one_line_tip = extractString('one_line_tip')
@@ -94,59 +115,83 @@ function LoadingSpinner() {
   )
 }
 
-function StreamingStructuredView({ data }) {
+function MethodListTyping({ items }) {
+  const [typingIndex, setTypingIndex] = useState(0)
+  const [doneIndex, setDoneIndex] = useState(-1)
+
+  const handleComplete = () => {
+    setDoneIndex(typingIndex)
+    if (typingIndex < items.length - 1) {
+      setTimeout(() => setTypingIndex(t => t + 1), 150)
+    }
+  }
+
   return (
-    <div className={styles.mentoringJson}>
-      {data.description
-        ? <section className={styles.mentoringSection}>
-            <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
-            <p className={styles.mentoringDescription}>{data.description}</p>
-          </section>
-        : <TitledSkeleton title="📖 Step 설명" />}
-
-      {data.perspectives?.length > 0
-        ? <section className={styles.mentoringSection}>
-            <h4 className={styles.mentoringSectionTitle}>👀 생각해보면 좋은 관점</h4>
-            <ul className={styles.perspectiveList}>
-              {data.perspectives.map((p, i) => <li key={i} className={styles.perspectiveItem}>{p}</li>)}
-            </ul>
-          </section>
-        : <TitledSkeleton title="👀 생각해보면 좋은 관점" />}
-
-      {data.goals?.length > 0
-        ? <section className={styles.mentoringSection}>
-            <h4 className={styles.mentoringSectionTitle}>🎯 이 Step의 목표</h4>
-            <ul className={styles.goalList}>
-              {data.goals.map((g, i) => (
-                <li key={i} className={styles.goalItem}><span className={styles.goalCheck}>✓</span>{g}</li>
+    <div className={styles.methodList}>
+      {items.slice(0, typingIndex + 1).map((m, i) => (
+        <div key={i} className={styles.methodItem}>
+          {i < typingIndex ? (
+            <>
+              <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
+              {m.content.split('\n').filter(Boolean).map((line, j) => (
+                <p key={j} className={styles.methodContent}>{line}</p>
               ))}
-            </ul>
-          </section>
-        : <TitledSkeleton title="🎯 이 Step의 목표" />}
+            </>
+          ) : (
+            <>
+              <TypewriterText
+                key={`method-${i}`}
+                text={`${i + 1}. ${m.title}`}
+                className={styles.methodTitle}
+                onComplete={handleComplete}
+              />
+              {doneIndex >= i && m.content.split('\n').filter(Boolean).map((line, j) => (
+                <p key={j} className={styles.methodContent}>{line}</p>
+              ))}
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 
-      {data.recommended_methods?.length > 0
-        ? <section className={styles.mentoringSection}>
-            <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
-            <div className={styles.methodList}>
-              {data.recommended_methods.map((m, i) => (
-                <div key={i} className={styles.methodItem}>
-                  <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
-                  {m.content.split('\n').filter(Boolean).map((line, j) => (
-                    <p key={j} className={styles.methodContent}>{line}</p>
-                  ))}
+function MistakeListTyping({ items }) {
+  const [typingIndex, setTypingIndex] = useState(0)
+  const [doneIndex, setDoneIndex] = useState(-1)
+
+  const handleComplete = () => {
+    setDoneIndex(typingIndex)
+    if (typingIndex < items.length - 1) {
+      setTimeout(() => setTypingIndex(t => t + 1), 150)
+    }
+  }
+
+  return (
+    <div className={styles.mistakeList}>
+      {items.slice(0, typingIndex + 1).map((m, i) => (
+        <div key={i} className={styles.mistakeItem}>
+          {i < typingIndex ? (
+            <>
+              <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>
+              {(m.bad_example || m.good_example) && (
+                <div className={styles.mistakeExamples}>
+                  {m.bad_example && <p className={styles.mistakeBad}>❌ "{m.bad_example}"</p>}
+                  {m.good_example && <p className={styles.mistakeGood}>✅ "{m.good_example}"</p>}
                 </div>
-              ))}
-            </div>
-          </section>
-        : <TitledSkeleton title="🔥 추천 방법" />}
-
-      {data.common_mistakes?.length > 0
-        ? <section className={styles.mentoringSection}>
-            <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
-            <div className={styles.mistakeList}>
-              {data.common_mistakes.map((m, i) => (
-                <div key={i} className={styles.mistakeItem}>
-                  <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>
+              )}
+              {m.explanation && <p className={styles.mistakeExplanation}>{m.explanation}</p>}
+            </>
+          ) : (
+            <>
+              <TypewriterText
+                key={`mistake-${i}`}
+                text={`${i + 1}. ${m.mistake}`}
+                className={styles.mistakeTitle}
+                onComplete={handleComplete}
+              />
+              {doneIndex >= i && (
+                <>
                   {(m.bad_example || m.good_example) && (
                     <div className={styles.mistakeExamples}>
                       {m.bad_example && <p className={styles.mistakeBad}>❌ "{m.bad_example}"</p>}
@@ -154,16 +199,44 @@ function StreamingStructuredView({ data }) {
                     </div>
                   )}
                   {m.explanation && <p className={styles.mistakeExplanation}>{m.explanation}</p>}
-                </div>
-              ))}
-            </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function StreamingStructuredView({ data }) {
+  return (
+    <div className={styles.mentoringJson}>
+      {data.description
+    ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
+        <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
+        <TypewriterText key={data.description} text={data.description} className={styles.mentoringDescription} />
+      </section>
+    : <TitledSkeleton title="📖 Step 설명" />}
+
+      {data.recommended_methods?.length > 0
+        ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
+            <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
+            <MethodListTyping items={data.recommended_methods} />
+          </section>
+        : <TitledSkeleton title="🔥 추천 방법" />}
+
+      {data.common_mistakes?.length > 0
+        ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
+            <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
+            <MistakeListTyping items={data.common_mistakes} />
           </section>
         : <TitledSkeleton title="⚠️ 자주 하는 실수" />}
 
       {data.one_line_tip
-        ? <div className={styles.tipBox}>
+        ? <div className={`${styles.tipBox} ${styles.fadeInSection}`}>
             <span className={styles.tipTitle}>💡 한 줄 팁</span>
-            <p className={styles.tipText}>{data.one_line_tip}</p>
+            <TypewriterText key={data.one_line_tip} text={data.one_line_tip} className={styles.tipText} />
           </div>
         : <TitledSkeleton title="💡 한 줄 팁" />}
     </div>
@@ -181,8 +254,21 @@ function TitledSkeleton({ title }) {
   )
 }
 
-function MentoringContent({ raw, isLoading, streamingText }) {
-  if (isLoading && !streamingText) return <LoadingSpinner />
+function AllSkeleton() {
+  return (
+    <div className={styles.mentoringJson}>
+      <TitledSkeleton title="📖 Step 설명" />
+      <TitledSkeleton title="🔥 추천 방법" />
+      <TitledSkeleton title="⚠️ 자주 하는 실수" />
+      <TitledSkeleton title="💡 한 줄 팁" />
+    </div>
+  )
+}
+
+function MentoringContent({ raw, isLoading, streamingText, isRequired, isStreamMode }) {
+  if (isLoading && !streamingText) {
+    return isStreamMode ? <AllSkeleton /> : <LoadingSpinner />
+  }
 
   if (streamingText) {
     const partialData = parseStreamingMentoring(streamingText)
@@ -205,38 +291,43 @@ function MentoringContent({ raw, isLoading, streamingText }) {
           <p className={styles.mentoringDescription}>{data.description}</p>
         </section>
       )}
-      {data.perspectives?.length > 0 && (
-        <section className={styles.mentoringSection}>
-          <h4 className={styles.mentoringSectionTitle}>👀 생각해보면 좋은 관점</h4>
-          <ul className={styles.perspectiveList}>
-            {data.perspectives.map((p, i) => <li key={i} className={styles.perspectiveItem}>{p}</li>)}
-          </ul>
-        </section>
-      )}
-      {data.goals?.length > 0 && (
-        <section className={styles.mentoringSection}>
-          <h4 className={styles.mentoringSectionTitle}>🎯 이 Step의 목표</h4>
-          <ul className={styles.goalList}>
-            {data.goals.map((g, i) => (
-              <li key={i} className={styles.goalItem}><span className={styles.goalCheck}>✓</span>{g}</li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {data.recommended_methods?.length > 0 && (
-        <section className={styles.mentoringSection}>
-          <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
-          <div className={styles.methodList}>
-            {data.recommended_methods.map((m, i) => (
-              <div key={i} className={styles.methodItem}>
-                <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
-                {m.content.split('\n').filter(Boolean).map((line, j) => (
-                  <p key={j} className={styles.methodContent}>{line}</p>
+            {isRequired ? (
+        <>
+          {data.perspectives?.length > 0 && (
+            <section className={styles.mentoringSection}>
+              <h4 className={styles.mentoringSectionTitle}>👀 생각해보면 좋은 관점</h4>
+              <ul className={styles.perspectiveList}>
+                {data.perspectives.map((p, i) => <li key={i} className={styles.perspectiveItem}>{p}</li>)}
+              </ul>
+            </section>
+          )}
+          {data.goals?.length > 0 && (
+            <section className={styles.mentoringSection}>
+              <h4 className={styles.mentoringSectionTitle}>🎯 이 Step의 목표</h4>
+              <ul className={styles.goalList}>
+                {data.goals.map((g, i) => (
+                  <li key={i} className={styles.goalItem}><span className={styles.goalCheck}>✓</span>{g}</li>
                 ))}
-              </div>
-            ))}
-          </div>
-        </section>
+              </ul>
+            </section>
+          )}
+        </>
+      ) : (
+        data.recommended_methods?.length > 0 && (
+          <section className={styles.mentoringSection}>
+            <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
+            <div className={styles.methodList}>
+              {data.recommended_methods.map((m, i) => (
+                <div key={i} className={styles.methodItem}>
+                  <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
+                  {m.content.split('\n').filter(Boolean).map((line, j) => (
+                    <p key={j} className={styles.methodContent}>{line}</p>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </section>
+        )
       )}
       {data.common_mistakes?.length > 0 && (
         <section className={styles.mentoringSection}>
@@ -267,7 +358,7 @@ function MentoringContent({ raw, isLoading, streamingText }) {
   )
 }
 
-export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting }) {
+export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting, isStreamMode }) {
   const [activeTab, setActiveTab] = useState('mentoring')
   const [lastStep, setLastStep] = useState(step)
 
@@ -322,7 +413,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
 
       <div className={styles.content}>
         {activeTab === 'mentoring' && (
-          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText}/>
+          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} isStreamMode={isStreamMode} />
         )}
 
         {activeTab === 'dictionary' && (
