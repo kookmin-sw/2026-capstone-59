@@ -138,7 +138,9 @@ def list_projects(
 def update_project(
     db: Session, project_id: UUID, payload: ProjectUpdateRequest
 ) -> ProjectResponse:
-    project = get_project_or_raise(db, project_id)
+    project = project_repo.get_project_by_id(db, project_id)
+    if not project:
+        raise ProjectNotFoundError()
 
     if payload.name is not None:
         existing = project_repo.get_active_project_by_name(
@@ -153,6 +155,7 @@ def update_project(
         description=payload.description,
         duration_month=payload.duration_months,
         member_count=payload.member_count,
+        is_deleted=payload.is_deleted,
     )
 
     db.commit()

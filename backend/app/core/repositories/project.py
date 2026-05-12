@@ -24,6 +24,11 @@ def get_active_project_by_id(db: Session, project_id: UUID) -> Project | None:
     )
 
 
+def get_project_by_id(db: Session, project_id: UUID) -> Project | None:
+    """is_deleted 여부와 무관하게 프로젝트 조회."""
+    return db.get(Project, project_id)
+
+
 def get_active_project_by_name(
     db: Session, name: str, exclude_id: UUID | None = None
 ) -> Project | None:
