@@ -37,11 +37,12 @@ def list_projects(
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
     keyword: str | None = Query(None),
+    is_deleted: bool | None = Query(None),
     db: Session = Depends(get_db),
     current_user: AppUserModel = Depends(get_current_user),
 ) -> ProjectListResponse:
     return project_service.list_projects(
-        db, page, size, sort_by, sort_order, keyword, current_user.id
+        db, page, size, sort_by, sort_order, keyword, current_user.id, is_deleted
     )
 
 
