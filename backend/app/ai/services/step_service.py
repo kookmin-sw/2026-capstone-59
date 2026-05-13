@@ -9,6 +9,7 @@ from app.ai.services import orchestrator
 from app.ai.services.rag import retrieve
 from app.core.enums import StepStatus
 from app.core.exceptions import StepAlreadyAcceptedError, StepNotFoundError
+from app.core.logging import get_logger
 from app.core.models.project_required_step_status import ProjectRequiredStepStatus
 from app.core.models.required_step import RequiredStep as RequiredStepModel
 from app.core.models.project import ProjectStage
@@ -16,6 +17,8 @@ from app.core.models.step import Step as StepModel
 from app.core.models.step import StepContent as StepContentModel
 from app.core.models.step import StepTree as StepTreeModel
 from app.core.models.stage import Stage as StageModel
+
+logger = get_logger(__name__)
 from app.core.schemas.step import (
     AcceptedStepItem,
     AcceptRequest,
@@ -132,11 +135,25 @@ def _insert_closure_rows(
 
 
 async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
+    logger.debug("step: accept start", extra={"step_id": str(step_id)})
+
     # ① 조회 및 검증
     step = db.get(StepModel, step_id)
     if step is None:
+        logger.warning(
+            "step: accept rejected — not found",
+            extra={"step_id": str(step_id)},
+        )
         raise StepNotFoundError()
     if step.status == StepStatus.ACCEPTED:
+        logger.warning(
+            "step: accept rejected — already accepted",
+            extra={
+                "project_id": str(step.project_id),
+                "stage_id": str(step.stage_id),
+                "step_id": str(step_id),
+            },
+        )
         raise StepAlreadyAcceptedError()
 
     # ② ACCEPTED 처리
@@ -201,6 +218,15 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
             if next_project_stage:
                 next_project_stage.is_active = True
                 db.commit()
+                logger.info(
+                    "stage: advanced to next",
+                    extra={
+                        "project_id": str(step.project_id),
+                        "from_stage_id": str(step.stage_id),
+                        "to_stage_id": str(next_stage.id),
+                        "to_stage_sequence": next_stage.sequence,
+                    },
+                )
 
     # ⑥ generate 결과로 step 노드 생성
     belonging_rs_id = step.belonging_required_step_id or step.required_step_id
@@ -214,6 +240,19 @@ async def accept_step(db: Session, step_id: uuid.UUID) -> StepAcceptResponse:
     db.commit()
     for s in steps:
         db.refresh(s)
+
+    logger.info(
+        "step: accepted",
+        extra={
+            "project_id": str(step.project_id),
+            "stage_id": str(step.stage_id),
+            "step_id": str(step.id),
+            "is_required": step.required_step_id is not None,
+            "is_current_required_step_completed": is_completed,
+            "is_stage_completed": is_stage_completed,
+            "generated_step_count": len(steps),
+        },
+    )
 
     return StepAcceptResponse(
         is_current_required_step_completed=is_completed,
@@ -430,6 +469,10 @@ def _get_next_unfulfilled_required_step_id(
 def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
     step = db.get(StepModel, step_id)
     if step is None:
+        logger.warning(
+            "step: detail lookup failed — not found",
+            extra={"step_id": str(step_id)},
+        )
         raise StepNotFoundError()
 
     # 필수 Step → DB 캐시 반환. content가 없으면 RequiredStep 기본값으로 생성
@@ -449,6 +492,14 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
                     )
             db.add(content)
             db.commit()
+            logger.info(
+                "step: content seeded from required defaults",
+                extra={
+                    "project_id": str(step.project_id),
+                    "step_id": str(step.id),
+                    "required_step_id": str(step.required_step_id),
+                },
+            )
         return StepDetailResponse(
             is_required=True,
             step_id=step.id,
@@ -519,6 +570,10 @@ def get_step_for_stream(db: Session, step_id: uuid.UUID) -> StepModel:
     """SSE 스트림용 Step 조회 — 필수 Step이거나 존재하지 않으면 예외."""
     step = db.get(StepModel, step_id)
     if step is None:
+        logger.warning(
+            "step: stream lookup failed — not found",
+            extra={"step_id": str(step_id)},
+        )
         raise StepNotFoundError()
     return step
 
@@ -536,6 +591,10 @@ def save_side_panel_content(db: Session, step_id: uuid.UUID, full_text: str) -> 
         payload = json.loads(stripped)
         result = SidePanelOutput.model_validate(payload)
     except (json.JSONDecodeError, ValidationError):
+        logger.warning(
+            "ai: side_panel parse failed — skipping persist",
+            extra={"step_id": str(step_id), "text_len": len(full_text)},
+        )
         return  # 파싱 실패 시 저장 생략
 
     content = db.get(StepContentModel, step_id)
@@ -547,3 +606,7 @@ def save_side_panel_content(db: Session, step_id: uuid.UUID, full_text: str) -> 
         [d.model_dump() for d in result.dictionary], ensure_ascii=False
     )
     db.commit()
+    logger.info(
+        "ai: side_panel content saved",
+        extra={"step_id": str(step_id), "text_len": len(full_text)},
+    )
