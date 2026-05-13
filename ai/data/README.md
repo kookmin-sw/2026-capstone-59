@@ -156,3 +156,4 @@ custom/
 - [`ai/README.md`](../README.md) — AI 모듈 전체 개요
 - [`backend/README.md`](../../backend/README.md) — 백엔드 실행 방법
 - [`index.md`](../../index.md) — 프로젝트 전체 소개 페이지 (RAG 아키텍처·자체 가이드의 학술적 근거를 자세히 서술)
+
