@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.core.models.project import Project as ProjectModel
 from app.core.schemas.project import ProjectResponse
 from app.core.schemas.stage import StageListResponse
-from app.core.schemas.step import StepTreeResponse
+from app.core.schemas.step import StepDetailResponse, StepTreeResponse
 
 router = EnvelopeRouter()
 
@@ -50,3 +50,13 @@ def get_shared_step_tree(
 ) -> StepTreeResponse:
     """공유 프로젝트 Step 트리 조회."""
     return step_service.get_step_tree(db, project.id, stage_id)
+
+
+@router.get("/{share_token}/steps/{step_id}", status_code=http_status.HTTP_200_OK)
+def get_shared_step_content(
+    step_id: UUID,
+    db: Session = Depends(get_db),
+    project: ProjectModel = Depends(_get_shared_project),
+) -> StepDetailResponse:
+    """공유 프로젝트의 Step Content 조회 (DB read-only)."""
+    return step_service.get_step_content(db, project.id, step_id)
