@@ -11,17 +11,6 @@ function NotionIcon({ size = 18 }) {
   )
 }
 
-function SectionSkeleton() {
-  return (
-    <div className={styles.mentoringSection}>
-      <div className={styles.skeletonTitle} />
-      <div className={styles.skeletonLine} />
-      <div className={styles.skeletonLine} />
-      <div className={styles.skeletonLineShort} />
-    </div>
-  )
-}
-
 function TypewriterText({ text, className, speed = 12, onComplete }) {
   const [displayed, setDisplayed] = useState('')
   const indexRef = useRef(0)
@@ -438,59 +427,61 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
           </button>
         ))}
       </div>
-
-      <div style={{ display: activeTab === 'mentoring' ? 'block' : 'none' }}>
-        <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} />
-      </div>
-
-      <div style={{ display: activeTab === 'dictionary' ? 'block' : 'none' }}>
-        <div className={styles.dictionaryList}>
-          {!detail
-            ? [...Array(3)].map((_, i) => (
-                <div key={i} className={styles.dictionaryItem}>
-                  <div className={styles.skeletonTitle} />
-                  <div className={styles.skeletonLine} />
-                </div>
-              ))
-            : dictionary.map((item, i) => (
-                <div key={i} className={styles.dictionaryItem}>
-                  <p className={styles.dictionaryTerm}>{item.term}</p>
-                  <p className={styles.dictionaryDefinition}>{item.definition}</p>
-                </div>
-              ))
-          }
+      
+      <div className={styles.content}>
+        <div style={{ display: activeTab === 'mentoring' ? 'block' : 'none' }}>
+          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} />
         </div>
-      </div>
 
-      <div style={{ display: activeTab === 'template' ? 'block' : 'none' }}>
-        <div className={styles.templateTab}>
-          <p className={styles.templateIntro}>
-            이 단계의 산출물인 템플릿이 준비되어 있어요.<br />
-            Notion에서 바로 작성을 시작할 수 있어요.
-          </p>
-          {artifact ? (
-            <div className={styles.templateCard}>
-              <div className={styles.templateCardTop}>
-                <span>📄</span>
-                <span className={styles.templateCardTitle}>{name}</span>
+        <div style={{ display: activeTab === 'dictionary' ? 'block' : 'none' }}>
+          <div className={styles.dictionaryList}>
+            {!detail
+              ? [...Array(3)].map((_, i) => (
+                  <div key={i} className={styles.dictionaryItem}>
+                    <div className={styles.skeletonTitle} />
+                    <div className={styles.skeletonLine} />
+                  </div>
+                ))
+              : dictionary.map((item, i) => (
+                  <div key={i} className={styles.dictionaryItem}>
+                    <p className={styles.dictionaryTerm}>{item.term}</p>
+                    <p className={styles.dictionaryDefinition}>{item.definition}</p>
+                  </div>
+                ))
+            }
+          </div>
+        </div>
+
+        <div style={{ display: activeTab === 'template' ? 'block' : 'none' }}>
+          <div className={styles.templateTab}>
+            <p className={styles.templateIntro}>
+              이 단계의 산출물인 템플릿이 준비되어 있어요.<br />
+              Notion에서 바로 작성을 시작할 수 있어요.
+            </p>
+            {artifact ? (
+              <div className={styles.templateCard}>
+                <div className={styles.templateCardTop}>
+                  <span>📄</span>
+                  <span className={styles.templateCardTitle}>{name}</span>
+                </div>
+                <a
+                  href={artifact.notion_template_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.notionBtn}
+                >
+                  <NotionIcon size={16} />
+                  Notion에서 템플릿 열기
+                </a>
+                <p className={styles.templateHint}>
+                  작성한 내용을 Poco에 제출할 필요는 없어요.<br />
+                  Notion에서 복제 후 자유롭게 활용하세요!
+                </p>
               </div>
-              <a
-                href={artifact.notion_template_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.notionBtn}
-              >
-                <NotionIcon size={16} />
-                Notion에서 템플릿 열기
-              </a>
-              <p className={styles.templateHint}>
-                작성한 내용을 Poco에 제출할 필요는 없어요.<br />
-                Notion에서 복제 후 자유롭게 활용하세요!
-              </p>
-            </div>
-          ) : (
-            <DotsLoading />
-          )}
+            ) : (
+              <DotsLoading />
+            )}
+          </div>
         </div>
       </div>
 
