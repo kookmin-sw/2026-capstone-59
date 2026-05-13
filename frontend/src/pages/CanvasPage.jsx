@@ -320,13 +320,13 @@ export default function CanvasPage() {
       }
       buf.onComplete = async () => {
         clearTyping()
-        setStreamingText(null)
         try {
           const detail = await getStepDetail(node.id)
           if (requestId !== detailRequestRef.current) return
           setStepDetail(detail)
+          setStreamingText(null)
         } catch {
-          //
+          setStreamingText(null)
         }
       }
     } else {
