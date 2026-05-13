@@ -2,41 +2,59 @@ import boto3
 from typing import AsyncIterator
 
 from app.core.config import settings
+from app.core.logging import get_logger
 from ai import generate_steps, judge_required_step, generate_side_panel, generate_side_panel_stream
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
+
+logger = get_logger(__name__)
 
 bedrock_runtime = boto3.client("bedrock-runtime", region_name="us-east-1")
 bedrock_agent = boto3.client("bedrock-agent-runtime", region_name="us-east-1")
 
 
 async def call_accept(input_data):
-    return await judge_required_step(
-        input_data, bedrock_runtime, settings.BEDROCK_MODEL_ID
-    )
+    logger.debug("ai: invoking accept (judge_required_step)")
+    try:
+        return await judge_required_step(
+            input_data, bedrock_runtime, settings.BEDROCK_MODEL_ID
+        )
+    except Exception:
+        logger.error("ai: accept invocation failed", exc_info=True)
+        raise
 
 
 async def call_generate(input_data):
-    return await generate_steps(
-        input_data,
-        bedrock_runtime,
-        bedrock_agent,
-        settings.BEDROCK_MODEL_ID,
-        settings.BEDROCK_KB_ID,
-        doj_data_source_id=settings.BEDROCK_DOJ_DATA_SOURCE_ID or None,
-    )
+    logger.debug("ai: invoking generate_steps")
+    try:
+        return await generate_steps(
+            input_data,
+            bedrock_runtime,
+            bedrock_agent,
+            settings.BEDROCK_MODEL_ID,
+            settings.BEDROCK_KB_ID,
+            doj_data_source_id=settings.BEDROCK_DOJ_DATA_SOURCE_ID or None,
+        )
+    except Exception:
+        logger.error("ai: generate_steps invocation failed", exc_info=True)
+        raise
 
 
 async def call_side_panel(input_data):
-    return await generate_side_panel(
-        input_data,
-        bedrock_runtime,
-        bedrock_agent,
-        settings.BEDROCK_MODEL_ID,
-        settings.BEDROCK_KB_ID,
-        doj_data_source_id=settings.BEDROCK_DOJ_DATA_SOURCE_ID or None,
-        custom_data_source_id=settings.BEDROCK_CUSTOM_DATA_SOURCE_ID or None,
-    )
+    logger.debug("ai: invoking side_panel")
+    try:
+        return await generate_side_panel(
+            input_data,
+            bedrock_runtime,
+            bedrock_agent,
+            settings.BEDROCK_MODEL_ID,
+            settings.BEDROCK_KB_ID,
+            doj_data_source_id=settings.BEDROCK_DOJ_DATA_SOURCE_ID or None,
+            custom_data_source_id=settings.BEDROCK_CUSTOM_DATA_SOURCE_ID or None,
+        )
+    except Exception:
+        logger.error("ai: side_panel invocation failed", exc_info=True)
+        raise
 
 
 async def call_side_panel_stream(input_data) -> AsyncIterator[str]:

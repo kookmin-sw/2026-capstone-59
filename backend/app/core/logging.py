@@ -30,6 +30,15 @@ _RESERVED_LOGRECORD_ATTRS = {
 }
 
 
+def _collect_extras(record: logging.LogRecord) -> dict[str, Any]:
+    """LogRecord에서 사용자가 `extra=`로 넣은 필드만 추출."""
+    return {
+        k: v
+        for k, v in record.__dict__.items()
+        if k not in _RESERVED_LOGRECORD_ATTRS and not k.startswith("_")
+    }
+
+
 class JsonFormatter(logging.Formatter):
     """CloudWatch 가독성을 위한 JSON 포맷터."""
 
@@ -44,11 +53,27 @@ class JsonFormatter(logging.Formatter):
             payload["exception"] = self.formatException(record.exc_info)
 
         # 사용자가 logger.info(..., extra={...})로 넣은 추가 필드 병합
-        for key, value in record.__dict__.items():
-            if key not in _RESERVED_LOGRECORD_ATTRS and not key.startswith("_"):
-                payload[key] = value
+        payload.update(_collect_extras(record))
 
         return json.dumps(payload, ensure_ascii=False, default=str)
+
+
+class TextFormatter(logging.Formatter):
+    """로컬 개발용 텍스트 포맷터. extra 필드를 메시지 뒤에 `key=value` 로 출력."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+
+    def format(self, record: logging.LogRecord) -> str:
+        base = super().format(record)
+        extras = _collect_extras(record)
+        if extras:
+            extras_str = " ".join(f"{k}={v}" for k, v in extras.items())
+            base = f"{base} | {extras_str}"
+        return base
 
 
 def setup_logging() -> None:
@@ -68,12 +93,7 @@ def setup_logging() -> None:
     if settings.LOG_FORMAT.lower() == "json":
         handler.setFormatter(JsonFormatter())
     else:
-        handler.setFormatter(
-            logging.Formatter(
-                fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-        )
+        handler.setFormatter(TextFormatter())
 
     root.addHandler(handler)
 
