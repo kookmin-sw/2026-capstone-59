@@ -4,7 +4,7 @@ import { HiOutlineFolder, HiOutlineTrash } from 'react-icons/hi'
 import { HiOutlineUser } from 'react-icons/hi'
 import styles from './ProjectListPage.module.css'
 import { BsGrid, BsList, BsThreeDotsVertical, BsPencil, BsPlus } from 'react-icons/bs'
-import { getProjects, deleteProject } from '../api/projects'
+import { getProjects, deleteProject, updateProject } from '../api/projects'
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -31,9 +31,10 @@ export default function ProjectListPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({})
   const [deleteModal, setDeleteModal] = useState(null)
+  const [toast, setToast] = useState(null)
   
   useEffect(() => {
-    getProjects({ page, size, sort_by: sortBy }).then((data) => {
+    getProjects({ page, size, sort_by: sortBy, is_deleted: false }).then((data) => {
       setProjects(data.projects ?? [])
       setTotalCount(data.total_count ?? 0)
     })
@@ -73,27 +74,60 @@ export default function ProjectListPage() {
     setDeleteModal(project)
   }
 
-  function handleSaveInfo() {
-    // TODO: API 연동 후 실제 PATCH 호출로 교체
+  function showToast(message) {
+    setToast({ message })
+    setTimeout(() => setToast(null), 5500)
+  }
+
+  async function handleSaveInfo() {
+    const memberCount = Number(editData.member_count)
+    const durationMonth = Number(editData.duration_month)
+
+    try {
+      await updateProject(infoModal.project_id, {
+        name: editData.name || null,
+        member_count: editData.member_count ? memberCount : null,
+        duration_months: editData.duration_month ? durationMonth : null,
+        description: editData.description || null,
+        constraint: editData.constraint || null,
+      })
+    } catch {
+      showToast('수정에 실패했어요. 다시 시도해주세요.')
+      return
+    }
+
     setProjects(projects.map((p) =>
       p.project_id === infoModal.project_id
         ? { ...p, ...editData, name: editData.name || null }
         : p
     ))
+
+    setInfoModal((prev) => ({ ...prev, ...editData, name: editData.name || null }))
     setIsEditing(false)
-    setInfoModal(null)
   }
 
   async function handleDelete() {
     try {
       await deleteProject(deleteModal.project_id)
     } catch {
-      alert('삭제에 실패했어요. 다시 시도해주세요.')
+      showToast('삭제에 실패했어요. 다시 시도해주세요.')
       return
     }
-    setProjects(projects.filter((p) => p.project_id !== deleteModal.project_id))
-    setTotalCount((prev) => prev - 1)
+
+    const newTotalCount = totalCount - 1
+    const newTotalPages = Math.max(1, Math.ceil(newTotalCount / size))
+
+    setProjects(prev =>
+      prev.filter((p) => p.project_id !== deleteModal.project_id)
+    )
+    setTotalCount(newTotalCount)
     setDeleteModal(null)
+
+    if (page > newTotalPages) {
+      setPage(newTotalPages)
+    }
+
+    showToast('1개의 프로젝트가 휴지통으로 이동했어요.')
   }
 
   return (
@@ -108,7 +142,8 @@ export default function ProjectListPage() {
             <button className={styles.navItemActive}>
               <HiOutlineFolder size={18} /> 모든 프로젝트
             </button>
-            <button className={styles.navItem}>
+            <button className={styles.navItem} onClick={() =>
+              navigate('/projects/trash')}>
               <HiOutlineTrash size={18} /> 휴지통
             </button>
           </nav>
@@ -262,12 +297,14 @@ export default function ProjectListPage() {
 
             <div className={styles.infoTable}>
               {[
-                { label: '프로젝트 이름', key: 'name', type: 'input' },
-                { label: '프로젝트 인원', key: 'member_count', type: 'input', inputType: 'number', suffix: '명' },
-                { label: '프로젝트 기간', key: 'duration_month', type: 'input', inputType: 'number', suffix: '개월' },
+                { label: '프로젝트 이름', key: 'name', type: 'input', maxLength: 20 },
+                { label: '프로젝트 인원', key: 'member_count', type: 'select', suffix: '명',
+                  options: Array.from({ length: 20 }, (_, i) => i + 1) },
+                { label: '프로젝트 기간', key: 'duration_month', type: 'select', suffix: '개월',
+                  options: Array.from({ length: 12 }, (_, i) => i + 1) },
                 { label: '프로젝트 설명', key: 'description', type: 'textarea' },
                 { label: '프로젝트 제약 사항', key: 'constraint', type: 'textarea' },
-              ].map(({ label, key, type, inputType, suffix }) => (
+              ].map(({ label, key, type, inputType, suffix, maxLength, options }) => (
                 <div key={key} className={styles.infoRow}>
                   <span className={styles.infoLabel}>{label}</span>
                   {isEditing ? (
@@ -277,11 +314,23 @@ export default function ProjectListPage() {
                         value={editData[key] ?? ''}
                         onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
                       />
+                    ) : type === 'select' ? (
+                      <select
+                        className={styles.infoInput}
+                        value={editData[key] ?? ''}
+                        onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
+                      >
+                        <option value="">-</option>
+                        {options.map((o) => (
+                          <option key={o} value={o}>{o}{suffix}</option>
+                        ))}
+                      </select>
                     ) : (
                       <input
                         className={styles.infoInput}
                         type={inputType ?? 'text'}
                         value={editData[key] ?? ''}
+                        maxLength={maxLength}
                         onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
                       />
                     )
@@ -322,6 +371,13 @@ export default function ProjectListPage() {
               <button className={styles.deleteBtn} onClick={handleDelete}>삭제</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 토스트 알림 */}
+      {toast && (
+        <div className={styles.bottomToast}>
+          {toast.message}
         </div>
       )}
     </div>
