@@ -98,7 +98,17 @@ def setup_logging() -> None:
     root.addHandler(handler)
 
     # 외부 라이브러리 로그 레벨 조정 (노이즈 줄임)
-    for noisy in ("uvicorn.access", "botocore", "boto3", "urllib3", "s3transfer"):
+    for noisy in (
+        "uvicorn.access",
+        "botocore",
+        "boto3",
+        "urllib3",
+        "s3transfer",
+        "httpcore",
+        "httpcore.http11",
+        "httpcore.connection",
+        "httpx",
+    ):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
