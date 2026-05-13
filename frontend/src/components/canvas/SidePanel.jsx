@@ -82,7 +82,37 @@ function parseStreamingMentoring(text) {
       }
       i++
     }
-    return undefined
+    const items = []
+    let j = start + 1  // '[' 다음부터
+    while (j < text.length) {
+      while (j < text.length && /\s/.test(text[j])) j++
+      if (text[j] !== '{') break
+      let objDepth = 0, inStr = false, k = j
+      while (k < text.length) {
+        const ch = text[k]
+        if (inStr) {
+          if (ch === '\\') { k += 2; continue }
+          if (ch === '"') inStr = false
+        } else {
+          if (ch === '"') inStr = true
+          else if (ch === '{') objDepth++
+          else if (ch === '}') {
+            objDepth--
+            if (objDepth === 0) {
+              try {
+                items.push(JSON.parse(text.slice(j, k + 1)))
+                j = k + 1
+                while (j < text.length && /[\s,]/.test(text[j])) j++
+              } catch { return items.length > 0 ? items : undefined }
+              break
+            }
+          }
+        }
+        k++
+      }
+      if (objDepth > 0) break
+    }
+    return items.length > 0 ? items : undefined
   }
 
   result.description = extractString('description')
