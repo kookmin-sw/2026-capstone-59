@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from sqlalchemy.orm import Session
@@ -14,6 +15,7 @@ from app.core.repositories import (
 from app.core.schemas.step import (
     RequiredStepItem,
     RequiredStepListResponse,
+    StepDetailResponse,
     StepTreeNode,
     StepTreeResponse,
 )
@@ -31,6 +33,35 @@ def get_step_tree(
     return StepTreeResponse(
         current_path=_build_current_path(steps),
         steps=_build_tree(steps),
+    )
+
+
+def get_step_content(
+    db: Session, project_id: uuid.UUID, step_id: uuid.UUID
+) -> StepDetailResponse:
+    """DB에 저장된 StepContent를 그대로 반환 (read-only, AI 호출 없음)."""
+    step = step_repo.get_step(db, step_id)
+    if step is None or step.project_id != project_id:
+        raise StepNotFoundError()
+
+    content = step_repo.get_step_content(db, step_id)
+
+    template_url: str | None = None
+    if step.required_step_id is not None:
+        rs = required_step_repo.get_required_step(db, step.required_step_id)
+        template_url = rs.template_url if rs else None
+
+    return StepDetailResponse(
+        is_required=step.required_step_id is not None,
+        step_id=step.id,
+        name=step.name,
+        mentoring=(
+            json.loads(content.mentoring) if content and content.mentoring else None
+        ),
+        dictionary=(
+            json.loads(content.dictionary) if content and content.dictionary else None
+        ),
+        template_url=template_url,
     )
 
 
