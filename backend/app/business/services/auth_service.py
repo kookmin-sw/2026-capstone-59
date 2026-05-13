@@ -11,8 +11,11 @@ from app.core.auth.jwt import (
 )
 from app.core.config import settings
 from app.core.exceptions import UserNotFoundError
+from app.core.logging import get_logger
 from app.core.models.app_user import AppUser as AppUserModel
 from app.core.repositories import user as user_repo
+
+logger = get_logger(__name__)
 from app.core.schemas.auth import (
     AuthTokenResponse,
     OAuthTokens,
@@ -30,17 +33,32 @@ def handle_oauth_callback(
     db: Session, provider_name: str, code: str, state: str | None = None
 ) -> AuthTokenResponse:
     """OAuth 콜백 처리: code → 사용자 조회/생성 → JWT 발급."""
+    logger.debug("oauth: callback received", extra={"provider": provider_name})
     provider = get_provider(provider_name)
 
-    oauth_tokens = provider.exchange_code(code, state=state)
-    user_info = provider.get_user_info(oauth_tokens.access_token)
+    try:
+        oauth_tokens = provider.exchange_code(code, state=state)
+        user_info = provider.get_user_info(oauth_tokens.access_token)
+    except Exception:
+        logger.error(
+            "oauth: provider exchange failed",
+            extra={"provider": provider_name},
+            exc_info=True,
+        )
+        raise
 
     user = _get_or_create_user(db, provider_name, user_info, oauth_tokens)
-    return _issue_tokens(user)
+    tokens = _issue_tokens(user)
+    logger.info(
+        "auth: login completed",
+        extra={"user_id": str(user.id), "provider": provider_name},
+    )
+    return tokens
 
 
 def refresh_access_token(refresh_token: str) -> AuthTokenResponse:
     user_id = decode_token(refresh_token, expected_type=REFRESH_TOKEN_TYPE)
+    logger.info("auth: token refreshed", extra={"user_id": str(user_id)})
     return AuthTokenResponse(
         access_token=create_access_token(user_id),
         refresh_token=create_refresh_token(user_id),
@@ -86,6 +104,13 @@ def _get_or_create_user(
 
         user = user_repo.get_active_user(db, oauth.user_id)
         if not user:
+            logger.error(
+                "auth: linked user not found",
+                extra={
+                    "provider": provider_name,
+                    "oauth_user_id": str(oauth.user_id),
+                },
+            )
             raise UserNotFoundError()
         return user
 
@@ -102,6 +127,10 @@ def _get_or_create_user(
     )
     db.commit()
     db.refresh(user)
+    logger.info(
+        "auth: user signed up",
+        extra={"user_id": str(user.id), "provider": provider_name},
+    )
     return user
 
 
