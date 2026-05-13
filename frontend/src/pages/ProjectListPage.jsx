@@ -34,7 +34,7 @@ export default function ProjectListPage() {
   const [toast, setToast] = useState(null)
   
   useEffect(() => {
-    getProjects({ page, size, sort_by: sortBy }).then((data) => {
+    getProjects({ page, size, sort_by: sortBy, is_deleted: false }).then((data) => {
       setProjects(data.projects ?? [])
       setTotalCount(data.total_count ?? 0)
     })
@@ -92,7 +92,7 @@ export default function ProjectListPage() {
         constraint: editData.constraint || null,
       })
     } catch {
-      alert('수정에 실패했어요. 다시 시도해주세요.')
+      showToast('수정에 실패했어요. 다시 시도해주세요.')
       return
     }
 
@@ -110,12 +110,24 @@ export default function ProjectListPage() {
     try {
       await deleteProject(deleteModal.project_id)
     } catch {
-      alert('삭제에 실패했어요. 다시 시도해주세요.')
+      showToast('삭제에 실패했어요. 다시 시도해주세요.')
       return
     }
-    setProjects(projects.filter((p) => p.project_id !== deleteModal.project_id))
-    setTotalCount((prev) => prev - 1)
+
+    const newTotalCount = totalCount - 1
+    const newTotalPages = Math.max(1, Math.ceil(newTotalCount / size))
+
+    setProjects(prev =>
+      prev.filter((p) => p.project_id !== deleteModal.project_id)
+    )
+    setTotalCount(newTotalCount)
     setDeleteModal(null)
+
+    if (page > newTotalPages) {
+      setPage(newTotalPages)
+    }
+
+    showToast('1개의 프로젝트가 휴지통으로 이동했어요.')
   }
 
   return (
@@ -130,7 +142,8 @@ export default function ProjectListPage() {
             <button className={styles.navItemActive}>
               <HiOutlineFolder size={18} /> 모든 프로젝트
             </button>
-            <button className={styles.navItem}>
+            <button className={styles.navItem} onClick={() =>
+              navigate('/projects/trash')}>
               <HiOutlineTrash size={18} /> 휴지통
             </button>
           </nav>
@@ -358,6 +371,13 @@ export default function ProjectListPage() {
               <button className={styles.deleteBtn} onClick={handleDelete}>삭제</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 토스트 알림 */}
+      {toast && (
+        <div className={styles.bottomToast}>
+          {toast.message}
         </div>
       )}
     </div>
