@@ -649,11 +649,10 @@ Poco가 폭포수를 선택한 이유는 **"교육 도구로서의 명확성"** 
 
 **주요 문서**
 - [프로젝트 전체 레포](https://github.com/kookmin-sw/2026-capstone-59)
-<!-- TODO: 아래 경로들은 각 파트 README 작성 후 활성화 -->
-- `backend/README.md` — 백엔드 실행 방법
-- `ai/README.md` — AI 모듈 독립 검증 방법
-- `ai/data/README.md` — RAG 인덱싱 원본 가이드
-- `frontend/README.md` — 프론트엔드 실행 방법
+- [`backend/README.md`](./backend/README.md) — 백엔드 실행 방법
+- [`ai/README.md`](./ai/README.md) — AI 모듈 독립 검증 방법
+- [`ai/data/README.md`](./ai/data/README.md) — RAG 인덱싱 원본 가이드
+- [`frontend/README.md`](./frontend/README.md) — 프론트엔드 실행 방법
 
 &nbsp;
 
