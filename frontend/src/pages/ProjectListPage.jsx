@@ -31,6 +31,7 @@ export default function ProjectListPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({})
   const [deleteModal, setDeleteModal] = useState(null)
+  const [toast, setToast] = useState(null)
   
   useEffect(() => {
     getProjects({ page, size, sort_by: sortBy }).then((data) => {
@@ -71,6 +72,11 @@ export default function ProjectListPage() {
     e.stopPropagation()
     setOpenMenuId(null)
     setDeleteModal(project)
+  }
+
+  function showToast(message) {
+    setToast({ message })
+    setTimeout(() => setToast(null), 5500)
   }
 
   async function handleSaveInfo() {
