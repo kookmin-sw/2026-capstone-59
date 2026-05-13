@@ -67,6 +67,7 @@ export default function CanvasPage() {
   const enqueuedLenRef = useRef(0)
   const typingQueueRef = useRef('')
   const typingTimerRef = useRef(null)
+  const detailCacheRef = useRef({})
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -270,6 +271,7 @@ export default function CanvasPage() {
     autoOpenedStageRef.current = null
     streamBuffers.current.forEach((buf) => buf.stream?.abort())
     streamBuffers.current.clear()
+    detailCacheRef.current = {}
   }, [selectedStageId])
 
   const activeStage = getLatestActiveStage(stages)
@@ -289,23 +291,29 @@ export default function CanvasPage() {
     if (selectedStep?.id === node.id) return
     clearStreamCallbacks()
     setSelectedStep(node)
-    setStepDetail(null)
     setStreamingText(null)
+
+    if (detailCacheRef.current[node.id]) {
+      setStepDetail(detailCacheRef.current[node.id])
+    } else {
+      setStepDetail(null)
+    }
 
     const requestId = ++detailRequestRef.current
     const buf = streamBuffers.current.get(node.id)
 
     if (buf?.isDone) {
-      setIsStreamMode(false) 
+      setIsStreamMode(false)
       try {
         const detail = await getStepDetail(node.id)
         if (requestId !== detailRequestRef.current) return
         setStepDetail(detail)
+        detailCacheRef.current[node.id] = detail
       } catch {
         //
       }
     } else if (buf && !buf.isDone) {
-      setIsStreamMode(false) 
+      setIsStreamMode(false)
       clearTyping()
       const baseText = buf.text
       setStreamingText(baseText)
@@ -325,16 +333,18 @@ export default function CanvasPage() {
           if (requestId !== detailRequestRef.current) return
           setStepDetail(detail)
           setStreamingText(null)
+          detailCacheRef.current[node.id] = detail
         } catch {
           setStreamingText(null)
         }
       }
     } else {
-      setIsStreamMode(false) 
+      setIsStreamMode(false)
       try {
         const detail = await getStepDetail(node.id)
         if (requestId !== detailRequestRef.current) return
         setStepDetail(detail)
+        detailCacheRef.current[node.id] = detail
       } catch {
         //
       }
