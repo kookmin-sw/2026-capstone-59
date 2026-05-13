@@ -286,6 +286,7 @@ export default function CanvasPage() {
   }))
 
   async function handleNodeClick(event, node) {
+    if (selectedStep?.id === node.id) return
     clearStreamCallbacks()
     setSelectedStep(node)
     setStepDetail(null)
