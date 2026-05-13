@@ -42,6 +42,10 @@ def get_step_content(
     """DB에 저장된 StepContent를 그대로 반환 (read-only, AI 호출 없음)."""
     step = step_repo.get_step(db, step_id)
     if step is None or step.project_id != project_id:
+        logger.warning(
+            "step: shared content lookup failed — not found or project mismatch",
+            extra={"project_id": str(project_id), "step_id": str(step_id)},
+        )
         raise StepNotFoundError()
 
     content = step_repo.get_step_content(db, step_id)
@@ -66,12 +70,26 @@ def get_step_content(
 
 
 def rollback_step(db: Session, step_id: uuid.UUID) -> None:
+    logger.debug("step: rollback start", extra={"step_id": str(step_id)})
+
     step = step_repo.get_step(db, step_id)
     if step is None:
+        logger.warning(
+            "step: rollback rejected — not found",
+            extra={"step_id": str(step_id)},
+        )
         raise StepNotFoundError()
 
     # ① 자식 Step이 있으면 Rollback 불가
     if step_repo.has_children(db, step_id):
+        logger.warning(
+            "step: rollback rejected — has children",
+            extra={
+                "project_id": str(step.project_id),
+                "stage_id": str(step.stage_id),
+                "step_id": str(step_id),
+            },
+        )
         raise InvalidRollbackError()
 
     # ⓪ 롤백 대상이 현재 진행 Stage보다 낮은 Stage이면 윗 Stage 정리
@@ -114,6 +132,16 @@ def rollback_step(db: Session, step_id: uuid.UUID) -> None:
     _realign_required_step_fulfillment(db, step)
 
     db.commit()
+    logger.info(
+        "step: rollback completed",
+        extra={
+            "project_id": str(step.project_id),
+            "stage_id": str(step.stage_id),
+            "step_id": str(step.id),
+            "canceled_count": len(accepted_steps_in_stage),
+            "restored_ancestor_count": len(ancestor_ids),
+        },
+    )
 
 
 def _wipe_upper_stages_if_needed(db: Session, target_step: StepModel) -> None:
@@ -161,6 +189,17 @@ def _wipe_upper_stages_if_needed(db: Session, target_step: StepModel) -> None:
     project_repo.deactivate_project_stages(db, target_step.project_id, upper_stage_ids)
     project_repo.activate_project_stage(db, target_step.project_id, target_stage.id)
     db.flush()
+
+    logger.info(
+        "stage: rolled back to lower sequence",
+        extra={
+            "project_id": str(target_step.project_id),
+            "target_stage_id": str(target_stage.id),
+            "target_stage_sequence": target_seq,
+            "wiped_stage_count": len(upper_stage_ids),
+            "preserved_step_count": len(first_rs_step_ids),
+        },
+    )
 
 
 def _realign_required_step_fulfillment(db: Session, step: StepModel) -> None:

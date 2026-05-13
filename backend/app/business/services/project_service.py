@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
 from app.core.exceptions import DuplicateProjectNameError, ProjectNotFoundError
+from app.core.logging import get_logger
 from app.core.models.project import Project as ProjectModel
 from app.core.repositories import (
     project as project_repo,
@@ -22,6 +23,8 @@ from app.core.schemas.project import (
     ProjectUpdateRequest,
 )
 
+logger = get_logger(__name__)
+
 _ALLOWED_SORT_COLUMNS: frozenset[str] = frozenset({"created_at", "updated_at", "name"})
 
 
@@ -31,6 +34,10 @@ def create_project(
     if payload.name:
         existing = project_repo.get_active_project_by_name(db, payload.name)
         if existing:
+            logger.warning(
+                "project: create rejected — duplicate name",
+                extra={"user_id": str(user_id), "name": payload.name},
+            )
             raise DuplicateProjectNameError()
 
     project = project_repo.add_project(
@@ -60,6 +67,15 @@ def create_project(
 
     db.commit()
     db.refresh(project)
+    logger.info(
+        "project: created",
+        extra={
+            "project_id": str(project.id),
+            "user_id": str(user_id),
+            "stage_count": len(stages),
+            "required_step_count": len(required_steps),
+        },
+    )
     return to_project_response(db, project)
 
 
@@ -140,6 +156,10 @@ def update_project(
 ) -> ProjectResponse:
     project = project_repo.get_project_by_id(db, project_id)
     if not project:
+        logger.warning(
+            "project: update rejected — not found",
+            extra={"project_id": str(project_id)},
+        )
         raise ProjectNotFoundError()
 
     if payload.name is not None:
@@ -147,6 +167,10 @@ def update_project(
             db, payload.name, exclude_id=project_id
         )
         if existing:
+            logger.warning(
+                "project: update rejected — duplicate name",
+                extra={"project_id": str(project_id), "name": payload.name},
+            )
             raise DuplicateProjectNameError()
 
     project_repo.update_project_fields(
@@ -160,6 +184,15 @@ def update_project(
 
     db.commit()
     db.refresh(project)
+    logger.info(
+        "project: updated",
+        extra={
+            "project_id": str(project.id),
+            "updated_fields": [
+                k for k, v in payload.model_dump(exclude_none=True).items()
+            ],
+        },
+    )
     return to_project_response(db, project)
 
 
@@ -167,6 +200,7 @@ def delete_project(db: Session, project_id: UUID) -> None:
     project = get_project_or_raise(db, project_id)
     project_repo.soft_delete_project(project)
     db.commit()
+    logger.info("project: deleted", extra={"project_id": str(project_id)})
 
 
 def get_project_or_raise(db: Session, project_id: UUID) -> ProjectModel:
@@ -208,10 +242,15 @@ def _generate_default_name(db: Session) -> str:
 def create_share_token(db: Session, project_id: UUID) -> dict:
     """프로젝트 공유 토큰 생성."""
     project = get_project_or_raise(db, project_id)
-    if project.share_token is None:
+    newly_issued = project.share_token is None
+    if newly_issued:
         project.share_token = secrets.token_urlsafe(32)
     db.commit()
     db.refresh(project)
+    logger.info(
+        "project: share token issued",
+        extra={"project_id": str(project_id), "is_new_token": newly_issued},
+    )
     return {"share_token": project.share_token}
 
 
@@ -220,6 +259,7 @@ def delete_share_token(db: Session, project_id: UUID) -> None:
     project = get_project_or_raise(db, project_id)
     project.share_token = None
     db.commit()
+    logger.info("project: share token revoked", extra={"project_id": str(project_id)})
 
 
 def get_project_by_share_token(db: Session, share_token: str) -> ProjectModel:
@@ -233,5 +273,6 @@ def get_project_by_share_token(db: Session, share_token: str) -> ProjectModel:
         .first()
     )
     if not project:
+        logger.warning("project: share token lookup failed — not found")
         raise ProjectNotFoundError()
     return project
