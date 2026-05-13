@@ -94,6 +94,19 @@ function parseStreamingMentoring(text) {
   return result
 }
 
+function DotsLoading({ text = '템플릿을 불러오는 중이에요' }) {
+  return (
+    <p className={styles.templateHint}>
+      {text}
+      <span className={styles.bounceDots}>
+        <span></span>
+        <span></span>
+        <span></span>
+      </span>
+    </p>
+  )
+}
+
 function LoadingSpinner() {
   const [visible, setVisible] = useState(false)
 
@@ -425,7 +438,12 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
         {activeTab === 'dictionary' && (
           <div className={styles.dictionaryList}>
             {!detail
-              ? [...Array(4)].map((_, i) => <SectionSkeleton key={i} />)
+              ? [...Array(3)].map((_, i) => (
+                  <div key={i} className={styles.dictionaryItem}>
+                    <div className={styles.skeletonTitle} />
+                    <div className={styles.skeletonLine} />
+                  </div>
+                ))
               : dictionary.map((item, i) => (
                   <div key={i} className={styles.dictionaryItem}>
                     <p className={styles.dictionaryTerm}>{item.term}</p>
