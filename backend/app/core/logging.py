@@ -58,6 +58,34 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 
+class NoisyLoggerFilter(logging.Filter):
+    """외부 라이브러리의 DEBUG/INFO 로그를 핸들러 단에서 차단.
+
+    logger.setLevel(WARNING)만으로는 라이브러리가 자체적으로 레벨을 재설정하는
+    경우(httpcore 등) 우회될 수 있어, 출력 직전에 한 번 더 필터링한다.
+    WARNING 이상은 통과시킨다.
+    """
+
+    NOISY_PREFIXES = (
+        "httpcore",
+        "httpx",
+        "botocore",
+        "boto3",
+        "urllib3",
+        "s3transfer",
+        "uvicorn.access",
+        "asyncio",
+    )
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno >= logging.WARNING:
+            return True
+        for prefix in self.NOISY_PREFIXES:
+            if record.name == prefix or record.name.startswith(prefix + "."):
+                return False
+        return True
+
+
 class TextFormatter(logging.Formatter):
     """로컬 개발용 텍스트 포맷터. extra 필드를 메시지 뒤에 `key=value` 로 출력."""
 
@@ -89,6 +117,7 @@ def setup_logging() -> None:
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(level)
+    handler.addFilter(NoisyLoggerFilter())
 
     if settings.LOG_FORMAT.lower() == "json":
         handler.setFormatter(JsonFormatter())
@@ -97,18 +126,8 @@ def setup_logging() -> None:
 
     root.addHandler(handler)
 
-    # 외부 라이브러리 로그 레벨 조정 (노이즈 줄임)
-    for noisy in (
-        "uvicorn.access",
-        "botocore",
-        "boto3",
-        "urllib3",
-        "s3transfer",
-        "httpcore",
-        "httpcore.http11",
-        "httpcore.connection",
-        "httpx",
-    ):
+    # 1차 방어선: logger 단에서도 레벨 조정 (라이브러리가 재설정해도 핸들러 필터가 막음)
+    for noisy in NoisyLoggerFilter.NOISY_PREFIXES:
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
