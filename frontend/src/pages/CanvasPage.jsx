@@ -15,6 +15,8 @@ import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream } from '../api/step'
+import { createShare, deleteShare } from '../api/projects'
+import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
 import { STAGE_ENGLISH, flattenTree, getStageProgressFromTree, findRequiredStep, getLatestActiveStage } from '../utils/canvasUtils'
 
@@ -49,6 +51,10 @@ export default function CanvasPage() {
   const [isAccepting, setIsAccepting] = useState(false)
   const [toastPersistent, setToastPersistent] = useState(false)
   const [isStreamMode, setIsStreamMode] = useState(false)
+  const [shareModal, setShareModal] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
+  const [shareLoading, setShareLoading] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
 
   const lastCompletedRequiredStepRef = useRef(null)
   const timerRef = useRef(null)
@@ -541,6 +547,46 @@ export default function CanvasPage() {
     setStreamingText(null)
   }
 
+  async function handleShareOpen() {
+    setShareModal(true)
+    setShareLoading(true)
+    try {
+      const result = await createShare(projectId)
+      setShareUrl(`${window.location.origin}/shared/${result.share_token}`)
+    } catch {
+      alert('공유 링크 생성에 실패했어요.')
+      setShareModal(false)
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
+  function handleShareClose() {
+    setShareModal(false)
+    setShareUrl('')
+    setShareCopied(false)
+  }
+
+  async function handleCopyUrl() {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    } catch {
+      alert('복사에 실패했어요.')
+    }
+  }
+
+  async function handleShareRevoke() {
+    try {
+      await deleteShare(projectId)
+    } catch {
+      alert('공유 중지에 실패했어요.')
+      return
+    }
+    handleShareClose()
+  }
+
   const selectedHasChildren = edges.some((e) => e.source === selectedStep?.id)
 
   return (
@@ -551,10 +597,15 @@ export default function CanvasPage() {
           <span className={styles.projectName}>{projectName}</span>
         </div>
         <div className={styles.headerRight}>
-          <div className={styles.avatar}>
-            <HiOutlineUser size={20} />
-          </div>
+        <button
+          className={styles.shareBtn}
+          onClick={handleShareOpen}>
+            공유하기
+        </button>
+        <div className={styles.avatar}>
+          <HiOutlineUser size={20} />
         </div>
+      </div>
       </header>
 
       <div className={styles.body}>
@@ -660,6 +711,33 @@ export default function CanvasPage() {
                   롤백하기
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {shareModal && (
+          <div className={styles.overlay} onClick={handleShareClose}>
+            <div className={styles.shareModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.shareModalHeader}>
+                <p className={styles.shareModalTitle}>캔버스 공유하기</p>
+                <button className={styles.closeBtn} onClick={handleShareClose}>✕</button>
+              </div>
+              <p className={styles.shareModalDesc}>
+                링크를 통해 다른 사람들에게 프로젝트 캔버스를 공유할 수 있습니다.<br />
+                캔버스는 읽기전용으로 공유됩니다.
+              </p>
+              <div className={styles.shareLinkBox}>
+                {shareLoading
+                  ? <span className={styles.shareLinkPlaceholder}>링크를 생성하는 중이에요...</span>
+                  : <input className={styles.shareLinkInput} value={shareUrl} readOnly />
+                }
+                <button className={styles.copyBtn} onClick={handleCopyUrl} disabled={shareLoading}>
+                  {shareCopied ? <BsCheck size={18} /> : <BsLink45Deg size={18} />}
+                </button>
+              </div>
+              <button className={styles.revokeBtn} onClick={handleShareRevoke}>
+                공유 그만하기
+              </button>
             </div>
           </div>
         )}

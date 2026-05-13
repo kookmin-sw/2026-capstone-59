@@ -464,7 +464,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
       </div>
 
       <div className={styles.footer}>
-        {(status !== 'ACCEPTED' && !hasChildren) && (
+        {(status !== 'ACCEPTED' && !hasChildren && onAccept) && (
           <button className={styles.acceptBtn} onClick={onAccept} disabled={isAccepting}>
             <HiCheck size={15} />
             accept

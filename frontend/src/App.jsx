@@ -5,6 +5,7 @@ import ProjectListPage from './pages/ProjectListPage'
 import CreateProjectPage from './pages/CreateProjectPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import CanvasPage from './pages/CanvasPage'
+import SharedCanvasPage from './pages/SharedCanvasPage'
 import PrivateRoute from './components/PrivateRoute'
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/projects" element={<PrivateRoute><ProjectListPage /></PrivateRoute>} />
         <Route path="/projects/create" element={<PrivateRoute><CreateProjectPage /></PrivateRoute>} />
         <Route path="/canvas/:projectId" element={<PrivateRoute><CanvasPage /></PrivateRoute>} />
+        <Route path="/shared/:shareToken" element={<SharedCanvasPage />} />
       </Routes>
     </BrowserRouter>
   )
