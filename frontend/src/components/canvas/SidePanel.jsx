@@ -107,27 +107,6 @@ function DotsLoading({ text = '템플릿을 불러오는 중이에요' }) {
   )
 }
 
-function LoadingSpinner() {
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 1000)
-    return () => clearTimeout(timer)
-  }, [])
-
-  return (
-    <div className={styles.spinnerWrap} style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-      <svg className={styles.floatingIcon} width="26" height="23" viewBox="0 0 26 23" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M5.48038 9.06491C6.19361 10.6221 5.61325 12.4223 4.1841 13.0857C2.75495 13.7491 1.01822 13.0246 0.304985 11.4673C-0.408245 9.91013 0.172119 8.10994 1.60127 7.44653C3.03041 6.78311 4.76715 7.50769 5.48038 9.06491Z" fill="#4A35D0"/>
-        <path d="M20.5196 9.06491C19.8064 10.6221 20.3868 12.4223 21.8159 13.0857C23.245 13.7491 24.9818 13.0246 25.695 11.4673C26.4082 9.91013 25.8279 8.10994 24.3987 7.44653C22.9696 6.78311 21.2329 7.50769 20.5196 9.06491Z" fill="#4A35D0"/>
-        <path d="M13.7173 3.30832C13.3244 5.45563 14.5778 7.48791 16.517 7.84754C18.4562 8.20716 20.3467 6.75795 20.7396 4.61063C21.1325 2.46331 19.879 0.43103 17.9399 0.0714064C16.0007 -0.288217 14.1102 1.161 13.7173 3.30832Z" fill="#4A35D0"/>
-        <path d="M12.2447 3.29168C12.6376 5.439 11.3841 7.47128 9.44495 7.8309C7.50579 8.19052 5.61526 6.74131 5.22235 4.59399C4.82943 2.44667 6.08291 0.414392 8.02208 0.0547683C9.96125 -0.304855 11.8518 1.14436 12.2447 3.29168Z" fill="#4A35D0"/>
-        <path d="M20.029 22.0422C17.1938 24.3954 14.9862 21.6718 12.995 21.6718C11.0038 21.6718 8.92611 24.4608 5.85279 21.8679C1.74061 17.5319 7.82229 9.48651 12.9861 9.48651C18.1498 9.48651 24.2927 17.6845 20.029 22.0422Z" fill="#4A35D0"/>
-      </svg>
-    </div>
-  )
-}
-
 function MethodListTyping({ items }) {
   const [typingIndex, setTypingIndex] = useState(0)
   const [doneIndex, setDoneIndex] = useState(-1)
@@ -278,9 +257,9 @@ function AllSkeleton() {
   )
 }
 
-function MentoringContent({ raw, isLoading, streamingText, isRequired, isStreamMode }) {
+function MentoringContent({ raw, isLoading, streamingText, isRequired }) {
   if (isLoading && !streamingText) {
-    return isStreamMode ? <AllSkeleton /> : <LoadingSpinner />
+    return <AllSkeleton />
   }
 
   if (streamingText) {
@@ -371,7 +350,7 @@ function MentoringContent({ raw, isLoading, streamingText, isRequired, isStreamM
   )
 }
 
-export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting, isStreamMode }) {
+export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting }) {
   const [lastStep, setLastStep] = useState(step)
   const [activeTab, setActiveTab] = useState('mentoring')
   const [tabStepId, setTabStepId] = useState(step?.id)
@@ -432,7 +411,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
 
       <div className={styles.content}>
         {activeTab === 'mentoring' && (
-          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} isStreamMode={isStreamMode} />
+          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} />
         )}
 
         {activeTab === 'dictionary' && (
