@@ -460,7 +460,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
                 </p>
               </div>
             ) : (
-              <p className={styles.templateHint}>템플릿을 불러오는 중이에요.</p>
+              <DotsLoading />
             )}
           </div>
         )}
