@@ -1,16 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createProject } from '../api/projects'
 import styles from './CreateProjectPage.module.css'
 
-const currentYear = new Date().getFullYear()
-const years = Array.from({ length: 5 }, (_, i) => currentYear + i)
-const months = Array.from({ length: 12 }, (_, i) => i + 1)
-const members = Array.from({ length: 10 }, (_, i) => i + 1)
-
-function toMonthValue(year, month) {
-  return year * 12 + month
-}
+const durations = Array.from({ length: 12 }, (_, i) => i + 1)
+const members = Array.from({ length: 20 }, (_, i) => i + 1)
 
 export default function CreateProjectPage() {
   const navigate = useNavigate()
@@ -19,74 +13,12 @@ export default function CreateProjectPage() {
   const [name, setName] = useState('')
   const [memberCount, setMemberCount] = useState('')
   const [noDuration, setNoDuration] = useState(false)
-  const [startYear, setStartYear] = useState(currentYear)
-  const [startMonth, setStartMonth] = useState(new Date().getMonth() + 1)
-  const [endYear, setEndYear] = useState(currentYear)
-  const [endMonth, setEndMonth] = useState(new Date().getMonth() + 1)
   const [description, setDescription] = useState('')
   const [constraint, setConstraint] = useState('')
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
+  const [durationMonth, setDurationMonth] = useState('')
 
-  const startValue = toMonthValue(startYear, startMonth)
-  const endValue = toMonthValue(endYear, endMonth)
-
-  const availableStartYears = useMemo(() => {
-    if (noDuration) return years
-    return years.filter((year) => year <= endYear)
-  }, [endYear, noDuration])
-
-  const availableEndYears = useMemo(() => {
-    if (noDuration) return years
-    return years.filter((year) => year >= startYear)
-  }, [startYear, noDuration])
-
-  const availableStartMonths = useMemo(() => {
-    if (noDuration) return months
-    if (startYear !== endYear) return months
-    return months.filter((month) => month <= endMonth)
-  }, [startYear, endYear, endMonth, noDuration])
-
-  const availableEndMonths = useMemo(() => {
-    if (noDuration) return months
-    if (startYear !== endYear) return months
-    return months.filter((month) => month >= startMonth)
-  }, [startYear, endYear, startMonth, noDuration])
-
-  function calcDurationMonths() {
-    if (noDuration) return 0
-    return endValue - startValue + 1
-  }
-
-  function handleStartYearChange(e) {
-    const nextStartYear = Number(e.target.value)
-    setStartYear(nextStartYear)
-    if (nextStartYear > endYear) setEndYear(nextStartYear)
-    if (nextStartYear === endYear && startMonth > endMonth) setEndMonth(startMonth)
-  }
-
-  function handleStartMonthChange(e) {
-    const nextStartMonth = Number(e.target.value)
-    setStartMonth(nextStartMonth)
-    if (startYear === endYear && nextStartMonth > endMonth) setEndMonth(nextStartMonth)
-  }
-
-  function handleEndYearChange(e) {
-    const nextEndYear = Number(e.target.value)
-    setEndYear(nextEndYear)
-    if (nextEndYear < startYear) setStartYear(nextEndYear)
-    if (startYear === nextEndYear && endMonth < startMonth) setStartMonth(endMonth)
-  }
-
-  function handleEndMonthChange(e) {
-    const nextEndMonth = Number(e.target.value)
-    setEndMonth(nextEndMonth)
-    if (startYear === endYear && nextEndMonth < startMonth) setStartMonth(nextEndMonth)
-  }
-
-  function handleNoDurationChange(e) {
-    setNoDuration(e.target.checked)
-  }
 
   function handleNext(e) {
     e.preventDefault()
@@ -94,8 +26,8 @@ export default function CreateProjectPage() {
       alert('프로젝트 인원을 선택해주세요.')
       return
     }
-    if (!noDuration && endValue < startValue) {
-      alert('종료 시점은 시작 시점보다 빠를 수 없습니다.')
+    if (!noDuration && !durationMonth) {
+      alert('프로젝트 기간을 선택해주세요.')
       return
     }
     setStep(2)
@@ -106,13 +38,14 @@ export default function CreateProjectPage() {
     if (!prompt.trim()) {
       alert('현재 상황을 입력해주세요.')
       return
+      
     }
     setLoading(true)
     try {
       const project = await createProject({
         name: name.trim() || null,
         member_count: Number(memberCount),
-        duration_months: calcDurationMonths(),
+        duration_months: noDuration ? 0 : Number(durationMonth),
         description: description.trim() || null,
         constraint: constraint.trim() || null,
         prompt: prompt.trim(),
@@ -175,7 +108,9 @@ export default function CreateProjectPage() {
                   value={memberCount}
                   onChange={(e) => setMemberCount(e.target.value)}
                 >
-                  <option value="">1 ~ 10명</option>
+                  <option value="" disabled>
+                    1 ~ 20명
+                  </option>
                   {members.map((m) => (
                     <option key={m} value={m}>{m}명</option>
                   ))}
@@ -188,54 +123,26 @@ export default function CreateProjectPage() {
                 </label>
                 <div className={styles.durationRow}>
                   <select
-                    className={`${styles.selectSmall} ${styles.selectYear}`}
+                    className={styles.select}
                     disabled={noDuration}
-                    value={startYear}
-                    onChange={handleStartYearChange}
+                    value={durationMonth}
+                    onChange={(e) => setDurationMonth(e.target.value)}
                   >
-                    {availableStartYears.map((y) => (
-                      <option key={y} value={y}>{y}년</option>
+                    <option value="" disabled>
+                      1 ~ 12개월
+                    </option>
+                    {durations.map((d) => (
+                      <option key={d} value={d}>{d}개월</option>
                     ))}
                   </select>
-                  <select
-                    className={`${styles.selectSmall} ${styles.selectMonth}`}
-                    disabled={noDuration}
-                    value={startMonth}
-                    onChange={handleStartMonthChange}
-                  >
-                    {availableStartMonths.map((m) => (
-                      <option key={m} value={m}>{m}월</option>
-                    ))}
-                  </select>
-
-                  <span className={styles.separator}>~</span>
-
-                  <select
-                    className={`${styles.selectSmall} ${styles.selectYear}`}
-                    disabled={noDuration}
-                    value={endYear}
-                    onChange={handleEndYearChange}
-                  >
-                    {availableEndYears.map((y) => (
-                      <option key={y} value={y}>{y}년</option>
-                    ))}
-                  </select>
-                  <select
-                    className={`${styles.selectSmall} ${styles.selectMonth}`}
-                    disabled={noDuration}
-                    value={endMonth}
-                    onChange={handleEndMonthChange}
-                  >
-                    {availableEndMonths.map((m) => (
-                      <option key={m} value={m}>{m}월</option>
-                    ))}
-                  </select>
-
                   <label className={styles.checkboxLabel}>
                     <input
                       type="checkbox"
                       checked={noDuration}
-                      onChange={handleNoDurationChange}
+                      onChange={(e) => {
+                        setNoDuration(e.target.checked)
+                        if (e.target.checked) setDurationMonth('')
+                      }}
                     />
                     기간 없음
                   </label>
