@@ -359,8 +359,14 @@ function MentoringContent({ raw, isLoading, streamingText, isRequired, isStreamM
 }
 
 export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting, isStreamMode }) {
-  const [activeTab, setActiveTab] = useState('mentoring')
   const [lastStep, setLastStep] = useState(step)
+  const [activeTab, setActiveTab] = useState('mentoring')
+  const [tabStepId, setTabStepId] = useState(step?.id)
+
+  if (step?.id !== tabStepId) {
+    setTabStepId(step?.id)
+    setActiveTab('mentoring')
+  }
 
   useEffect(() => {
     if (step) setTimeout(() => setLastStep(step), 0)
