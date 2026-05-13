@@ -516,8 +516,6 @@ export default function CanvasPage() {
       setStreamingText(null)
 
       await fetchAndRenderTree(selectedStageId)
-      setSelectedStep(null)
-      setStepDetail(null)
     } finally {
       setIsAccepting(false)
     }
