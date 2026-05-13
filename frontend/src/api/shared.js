@@ -18,3 +18,6 @@ export const getSharedStages = (shareToken) =>
 
 export const getSharedStepTree = (shareToken, stageId) =>
   api.get(`/shared/${shareToken}/steps/tree`, { params: { stage_id: stageId } })
+
+export const getSharedStepDetail = (shareToken, stepId) =>
+  api.get(`/shared/${shareToken}/steps/${stepId}`)

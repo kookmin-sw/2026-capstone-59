@@ -11,7 +11,7 @@ import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 import SidePanel from '../components/canvas/SidePanel'
 
-import { getSharedProject, getSharedStages, getSharedStepTree } from '../api/shared'
+import { getSharedProject, getSharedStages, getSharedStepTree, getSharedStepDetail } from '../api/shared'
 import { STAGE_ENGLISH, flattenTree, getLatestActiveStage } from '../utils/canvasUtils'
 
 import styles from './CanvasPage.module.css'
@@ -33,15 +33,22 @@ export default function SharedCanvasPage() {
   const [rfInstance, setRfInstance] = useState(null)
   const [error, setError] = useState(false)
   const [selectedStep, setSelectedStep] = useState(null)
+  const [stepDetail, setStepDetail] = useState(null)
 
   const shouldFitViewRef = useRef(false)
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
-  // TODO: API 구현 후 추가
-  // function handleNodeClick(event, node) {
-  //   setSelectedStep(node)
-  // }
+  async function handleNodeClick(event, node) {
+    setSelectedStep(node)
+    setStepDetail(null)
+    try {
+      const detail = await getSharedStepDetail(shareToken, node.id)
+      setStepDetail(detail)
+    } catch {
+      //
+    }
+  }
 
   useEffect(() => {
     if (!shareToken) return
@@ -140,7 +147,7 @@ export default function SharedCanvasPage() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            // API 구현 후 추가 onNodeClick={handleNodeClick}
+            onNodeClick={handleNodeClick}
             nodeTypes={nodeTypes}
             nodesDraggable={false}
             nodesConnectable={false}
@@ -152,13 +159,16 @@ export default function SharedCanvasPage() {
 
           <SidePanel
             step={selectedStep}
-            detail={null}
+            detail={stepDetail}
             streamingText={null}
             isOpen={!!selectedStep}
             isAccepting={false}
             isStreamMode={false}
             hasChildren={false}
-            onClose={() => setSelectedStep(null)}
+            onClose={() => {
+              setSelectedStep(null)
+              setStepDetail(null)
+            }}
           />
             <Background variant="dots" gap={24} size={1.5} color="#C8C4E8" />
             <Controls position="bottom-center" showInteractive={false} />
