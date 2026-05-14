@@ -12,25 +12,40 @@ function NotionIcon({ size = 18 }) {
 }
 
 function TypewriterText({ text, className, speed = 12, onComplete }) {
-  const [displayed, setDisplayed] = useState('')
-  const indexRef = useRef(0)
+  const [displayedLen, setDisplayedLen] = useState(0)
+  const textRef = useRef(text)
   const onCompleteRef = useRef(onComplete)
+  const completedRef = useRef(false)
+
+  useEffect(() => {
+    textRef.current = text
+    completedRef.current = false
+  }, [text])
 
   useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
 
   useEffect(() => {
-    indexRef.current = 0
-    const interval = setInterval(() => {
-      indexRef.current++
-      setDisplayed(text.slice(0, indexRef.current))
-      if (indexRef.current >= text.length) {
-        clearInterval(interval)
-        onCompleteRef.current?.()
-      }
-    }, speed)
-    return () => clearInterval(interval)
-  }, [text, speed])
+    completedRef.current = false
 
+    const interval = setInterval(() => {
+      setDisplayedLen(prev => {
+        const chars = Array.from(textRef.current)
+        if (prev < chars.length) {
+          const next = prev + 1
+          if (next >= chars.length && !completedRef.current) {
+            completedRef.current = true
+            setTimeout(() => onCompleteRef.current?.(), 0)
+          }
+          return next
+        }
+        return prev
+      })
+    }, speed)
+
+    return () => clearInterval(interval)
+  }, [speed])
+
+  const displayed = Array.from(text).slice(0, displayedLen).join('')
   return <p className={className}>{displayed}</p>
 }
 
@@ -226,7 +241,7 @@ function StreamingStructuredView({ data }) {
       {data.description
     ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
         <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
-        <TypewriterText key={data.description} text={data.description} className={styles.mentoringDescription} />
+        <TypewriterText key="description" text={data.description} className={styles.mentoringDescription} />
       </section>
     : <TitledSkeleton title="📖 Step 설명" />}
 
@@ -247,7 +262,7 @@ function StreamingStructuredView({ data }) {
       {data.one_line_tip
         ? <div className={`${styles.tipBox} ${styles.fadeInSection}`}>
             <span className={styles.tipTitle}>💡 한 줄 팁</span>
-            <TypewriterText key={data.one_line_tip} text={data.one_line_tip} className={styles.tipText} />
+            <TypewriterText key="one_line_tip" text={data.one_line_tip} className={styles.tipText} />
           </div>
         : <TitledSkeleton title="💡 한 줄 팁" />}
     </div>
