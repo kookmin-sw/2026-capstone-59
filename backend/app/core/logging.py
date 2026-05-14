@@ -22,11 +22,12 @@ from typing import Any
 from app.core.config import settings
 
 # logging.LogRecord 의 표준 attribute 목록 — extra 식별용
+# (asctime 은 Formatter.format() 호출 시 동적으로 추가되므로 함께 포함)
 _RESERVED_LOGRECORD_ATTRS = {
     "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
     "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
     "created", "msecs", "relativeCreated", "thread", "threadName",
-    "processName", "process", "message", "taskName",
+    "processName", "process", "message", "taskName", "asctime",
 }
 
 
@@ -131,10 +132,30 @@ def setup_logging() -> None:
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
-def get_logger(name: str) -> logging.Logger:
+class _SafeLogger(logging.LoggerAdapter):
+    """`extra` 키가 LogRecord 표준 속성과 충돌하면 자동으로 prefix 를 붙여
+    `KeyError: "Attempt to overwrite ... in LogRecord"` 예외를 방지한다.
+
+    예: extra={"name": "foo"} → 실제로는 extra={"extra_name": "foo"} 로 전달.
+    """
+
+    def process(self, msg, kwargs):
+        extra = kwargs.get("extra")
+        if extra:
+            safe: dict[str, Any] = {}
+            for k, v in extra.items():
+                if k in _RESERVED_LOGRECORD_ATTRS:
+                    safe[f"extra_{k}"] = v
+                else:
+                    safe[k] = v
+            kwargs["extra"] = safe
+        return msg, kwargs
+
+
+def get_logger(name: str) -> logging.LoggerAdapter:
     """모듈별 로거 획득.
 
     Args:
         name: 일반적으로 `__name__` 전달.
     """
-    return logging.getLogger(name)
+    return _SafeLogger(logging.getLogger(name), {})
