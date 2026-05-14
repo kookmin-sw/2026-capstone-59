@@ -125,7 +125,8 @@ export default function SharedCanvasPage() {
     <div className={styles.layout}>
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <span className={styles.logo} onClick={() => navigate('/')}>poco</span>
+          <img src="/poco-logo-text.svg" alt="poco" height={25} onClick={() => navigate('/')} />
+          <span>|</span>
           <span className={styles.projectName}>{project?.name ?? ''}</span>
           <span className={styles.readOnlyBadge}>view only</span>
         </div>

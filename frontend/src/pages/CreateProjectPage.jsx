@@ -61,7 +61,7 @@ export default function CreateProjectPage() {
 
   const Logo = (
     <Link to="/projects">
-      <div className={styles.logo}><span>poco</span></div>
+      <img src="/poco-logo-text.svg" alt="poco" height={25} />
     </Link>
   )
 

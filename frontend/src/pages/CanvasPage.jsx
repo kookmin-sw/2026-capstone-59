@@ -677,7 +677,8 @@ export default function CanvasPage() {
     <div className={styles.layout}>
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <span className={styles.logo} onClick={() => navigate('/projects')}>poco</span>
+          <img src="/poco-logo-text.svg" alt="poco" height={25} onClick={() => navigate('/projects')}/>
+          <span>|</span>
           <span className={styles.projectName}>{projectName}</span>
         </div>
         <div className={styles.headerRight}>

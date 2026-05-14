@@ -26,7 +26,7 @@ export default function LandingPage() {
     <div className={styles.page}>
       <nav className={styles.nav}>
         <div className={styles.logo}>
-          <span>poco</span>
+          <img src="/poco-logo-text.svg" alt="poco" height={25}/>
         </div>
         {isLoggedIn ? (
           <button className={styles.loginBtn} onClick={handleLogout}>

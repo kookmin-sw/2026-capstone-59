@@ -12,7 +12,7 @@ export default function LoginPage() {
       {/* 네비바 */}
       <nav className={styles.nav}>
         <div className={styles.logo}>
-          <span>poco</span>
+          <img src="/poco-logo-text.svg" alt="poco" height={25} />
         </div>
       </nav>
 
