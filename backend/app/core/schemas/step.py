@@ -20,6 +20,7 @@ class StepTreeNode(BaseModel):
     name: str
     status: StepStatus
     is_required: bool
+    is_keep: bool = False
     parent_step_id: UUID | None
     children: list[StepTreeNode] = []
 
@@ -56,6 +57,16 @@ class StepDetailResponse(BaseModel):
     mentoring: list | dict | None = None
     dictionary: list | dict | None = None
     template_url: str | None = None
+    is_keep: bool = False
+
+
+class StepKeepUpdateRequest(BaseModel):
+    is_keep: bool
+
+
+class StepKeepResponse(BaseModel):
+    id: UUID
+    is_keep: bool
 
 
 class NotionTemplateResponse(BaseModel):

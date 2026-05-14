@@ -513,6 +513,7 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
                 else None
             ),
             template_url=rs.template_url if rs else None,
+            is_keep=step.is_keep,
         )
 
     # 일반 Step → DB 캐시 확인 후 없으면 AI 호출
@@ -527,6 +528,7 @@ def get_step_detail(db: Session, step_id: uuid.UUID) -> StepDetailResponse:
         dictionary=(
             json.loads(content.dictionary) if content and content.dictionary else None
         ),
+        is_keep=step.is_keep,
     )
 
 

@@ -8,7 +8,12 @@ from app.business.dependencies import get_owned_project, get_owned_step
 from app.core.api.route import EnvelopeRouter
 from app.core.models.project import Project as ProjectModel
 from app.core.models.step import Step as StepModel
-from app.core.schemas.step import RequiredStepListResponse, StepTreeResponse
+from app.core.schemas.step import (
+    RequiredStepListResponse,
+    StepKeepResponse,
+    StepKeepUpdateRequest,
+    StepTreeResponse,
+)
 from uuid import UUID
 
 router = EnvelopeRouter()
@@ -38,3 +43,13 @@ def rollback_step(
     step: StepModel = Depends(get_owned_step),
 ) -> None:
     return step_service.rollback_step(db, step.id)
+
+
+@router.post("/{step_id}/keep", status_code=http_status.HTTP_200_OK)
+def update_step_keep(
+    payload: StepKeepUpdateRequest,
+    db: Session = Depends(get_db),
+    step: StepModel = Depends(get_owned_step),
+) -> StepKeepResponse:
+    """Step.is_keep 값을 변경한다."""
+    return step_service.update_step_keep(db, step.id, payload.is_keep)
