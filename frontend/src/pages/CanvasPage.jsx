@@ -12,13 +12,16 @@ import ToastAlarm from '../components/canvas/ToastAlarm'
 import ContextMenu from '../components/canvas/onNodeContext'
 import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
+import GhostNode from '../components/canvas/GhostNode'
+import GhostEdge from '../components/canvas/GhostEdge'
+import NewEdge from '../components/canvas/NewEdge'
 
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream } from '../api/step'
 import { createShare, deleteShare } from '../api/projects'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
-import { STAGE_ENGLISH, flattenTree, getStageProgressFromTree, findRequiredStep, getLatestActiveStage } from '../utils/canvasUtils'
+import { STAGE_ENGLISH, X_GAP, Y_GAP, flattenTree, getStageProgressFromTree, findRequiredStep, getLatestActiveStage } from '../utils/canvasUtils'
 
 import styles from './CanvasPage.module.css'
 import { HiOutlineUser } from 'react-icons/hi'
@@ -26,6 +29,12 @@ import { HiOutlineUser } from 'react-icons/hi'
 const nodeTypes = {
   stepNode: StepNode,
   requiredStepNode: RequiredStepNode,
+  ghostNode: GhostNode,
+}
+
+const edgeTypes = {
+  newEdge: NewEdge,
+  ghostEdge: GhostEdge,
 }
 
 export default function CanvasPage() {
@@ -78,6 +87,43 @@ export default function CanvasPage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
+
+  function addGhostNodes(acceptedNode) {
+    const { id, position } = acceptedNode
+    const ghostX = position.x + X_GAP
+    const offsets = [-Y_GAP * 0.6, 0, Y_GAP * 0.6]
+
+    const ghostNodes = offsets.map((dy, i) => ({
+      id: `ghost-${i}`,
+      type: 'ghostNode',
+      position: { x: ghostX, y: position.y + dy + 3 },
+      data: {},
+      selectable: false,
+      draggable: false,
+    }))
+
+    const ghostEdges = offsets.map((_, i) => ({
+      id: `ghost-edge-${i}`,
+      source: id,
+      target: `ghost-${i}`,
+      type: 'ghostEdge',
+    }))
+
+    setNodes(nds => [...nds, ...ghostNodes])
+    setEdges(eds => [...eds, ...ghostEdges])
+  }
+
+  function removeGhostNodes() {
+    setNodes(nds => nds.map(n =>
+      n.type === 'ghostNode'
+        ? { ...n, data: { ...n.data, isExiting: true } }
+        : n
+    ))
+    setTimeout(() => {
+      setNodes(nds => nds.filter(n => n.type !== 'ghostNode'))
+      setEdges(eds => eds.filter(e => e.type !== 'ghostEdge'))
+    }, 300)
+  }
 
   function josa(word, form) {
     const code = word.charCodeAt(word.length - 1)
@@ -189,16 +235,37 @@ export default function CanvasPage() {
     })
   }, [projectId])
 
-  async function fetchAndRenderTree(stageId) {
+  async function fetchAndRenderTree(stageId, { animateNew = false } = {}) {
     const treeData = await getStepTree(projectId, stageId)
     const stage = stages.find((s) => s.stage_id === stageId)
+    
+    const existingIds = animateNew
+      ? new Set(nodes.filter(n => n.type !== 'ghostNode').map(n => n.id))
+      : null
+    
     const { nodes: n, edges: e } = flattenTree(treeData.steps ?? [], stage?.stage_sequence)
 
     const hasProgress = getStageProgressFromTree(n, e)
     stageHasProgressRef.current[stageId] = hasProgress
 
-    setNodes(n)
-    setEdges(e)
+    const processedNodes = animateNew
+      ? n.map(node => ({
+          ...node,
+          data: { ...node.data, isNew: !existingIds.has(node.id) }
+        }))
+      : n
+
+    setNodes(processedNodes)
+    const processedEdges = animateNew
+      ? e.map(edge =>
+          !existingIds.has(edge.target)
+            ? { ...edge, type: 'newEdge' }
+            : edge
+        )
+      : e
+
+    setEdges(processedEdges)
+
 
     const newNodeIds = new Set(n.map((node) => node.id))
     streamBuffers.current.forEach((buf, id) => {
@@ -325,6 +392,7 @@ export default function CanvasPage() {
   }))
 
   async function handleNodeClick(event, node) {
+    if (node.type === 'ghostNode') return
     if (selectedStep?.id === node.id) return
     clearStreamCallbacks()
     setSelectedStep(node)
@@ -500,103 +568,107 @@ export default function CanvasPage() {
         }
       }
 
+      addGhostNodes(selectedStep)
+
       let acceptResult
       try {
         acceptResult = await acceptStep(selectedStep.id)
       } catch (err) {
         if (err?.code !== 'STEP_ALREADY_ACCEPTED') {
+          removeGhostNodes()
           alert('Step 생성에 실패했어요. 다시 시도해주세요.')
           return
         }
       }
 
-        const isRSComplete = acceptResult?.is_current_required_step_completed
-        const isStageComplete = acceptResult?.is_current_stage_completed
 
-        const prevRSName = currentRequiredStepName.current
+      const isRSComplete = acceptResult?.is_current_required_step_completed
+      const isStageComplete = acceptResult?.is_current_stage_completed
 
-        if (selectedStep.type === 'requiredStepNode') {
-          const stepName = selectedStep.data.label
-          currentRequiredStepName.current = stepName
-          lastCompletedRequiredStepRef.current = null
+      const prevRSName = currentRequiredStepName.current
 
-          const key = `enter_${selectedStep.id}`
-          const overridePersistent = toastPersistent
-          if (!shownToastsRef.current.has(key) || overridePersistent) {
-            shownToastsRef.current.add(key)
-            if (justCompletedRSRef.current?.nextMsgTimer) {
-              clearTimeout(justCompletedRSRef.current.nextMsgTimer)
-              justCompletedRSRef.current = null
-            }
-            persistentMsgRef.current = `🤔 ${stepName}${josa(stepName, '을/를')} 진행 중이에요!`
+      if (selectedStep.type === 'requiredStepNode') {
+        const stepName = selectedStep.data.label
+        currentRequiredStepName.current = stepName
+        lastCompletedRequiredStepRef.current = null
 
-            showTimedToast(`📌 ${stepName}${josa(stepName, '이/가')} 시작됐어요!`, 5500)
+        const key = `enter_${selectedStep.id}`
+        const overridePersistent = toastPersistent
+        if (!shownToastsRef.current.has(key) || overridePersistent) {
+          shownToastsRef.current.add(key)
+          if (justCompletedRSRef.current?.nextMsgTimer) {
+            clearTimeout(justCompletedRSRef.current.nextMsgTimer)
+            justCompletedRSRef.current = null
           }
+          persistentMsgRef.current = `🤔 ${stepName}${josa(stepName, '을/를')} 진행 중이에요!`
+
+          showTimedToast(`📌 ${stepName}${josa(stepName, '이/가')} 시작됐어요!`, 5500)
         }
+      }
 
-        clearStreamCallbacks()
-        setStreamingText(null)
+      clearStreamCallbacks()
+      setStreamingText(null)
 
-        const { nextRequiredStepName } = await fetchAndRenderTree(selectedStageId)
+      const { nextRequiredStepName } = await fetchAndRenderTree(selectedStageId, { animateNew: true })
+      
+      if (isStageComplete) {
+        const key = `stage_complete_${selectedStageId}`
+        if (!shownToastsRef.current.has(key)) {
+          shownToastsRef.current.add(key)
+          persistentMsgRef.current = `이제 다음 Stage로 이동할 수 있어요!`
+          showPersistentToast(`🎉 Stage가 종료됐어요! 이제 다음 Stage로 이동할 수 있어요!`)
+        }
+        currentRequiredStepName.current = null
+        getStages(projectId).then((data) => {
+          const list = data.stages ?? []
+          setStages(list)
+          const latestActive = getLatestActiveStage(list)
+          if (latestActive) setCurrentStageSequence(latestActive.stage_sequence)
+        })
 
-        if (isStageComplete) {
-          const key = `stage_complete_${selectedStageId}`
+      } else if (isRSComplete) {
+        const name = (() => {
+          if (selectedStep.type === 'requiredStepNode') return selectedStep.data.label
+          const req = findRequiredStep(selectedStep.id, nodes, edges)
+          return req?.data?.label
+        })()
+
+        if (name && name !== lastCompletedRequiredStepRef.current) {
+          lastCompletedRequiredStepRef.current = name
+          const key = `complete_${name}`
           if (!shownToastsRef.current.has(key)) {
             shownToastsRef.current.add(key)
-            persistentMsgRef.current = `이제 다음 Stage로 이동할 수 있어요!`
-            showPersistentToast(`🎉 Stage가 종료됐어요! 이제 다음 Stage로 이동할 수 있어요!`)
-          }
-          currentRequiredStepName.current = null
-          getStages(projectId).then((data) => {
-            const list = data.stages ?? []
-            setStages(list)
-            const latestActive = getLatestActiveStage(list)
-            if (latestActive) setCurrentStageSequence(latestActive.stage_sequence)
-          })
+            const nextMsg = nextRequiredStepName
+              ? `다음 단계인 ${nextRequiredStepName}${josa(nextRequiredStepName, '(으)로')} 이동할 수 있어요!`
+              : `다음 필수 단계로 이동할 수 있어요!`
+            persistentMsgRef.current = nextMsg
 
-        } else if (isRSComplete) {
-          const name = (() => {
-            if (selectedStep.type === 'requiredStepNode') return selectedStep.data.label
-            const req = findRequiredStep(selectedStep.id, nodes, edges)
-            return req?.data?.label
-          })()
-
-          if (name && name !== lastCompletedRequiredStepRef.current) {
-            lastCompletedRequiredStepRef.current = name
-            const key = `complete_${name}`
-            if (!shownToastsRef.current.has(key)) {
-              shownToastsRef.current.add(key)
-              const nextMsg = nextRequiredStepName
-                ? `다음 단계인 ${nextRequiredStepName}${josa(nextRequiredStepName, '(으)로')} 이동할 수 있어요!`
-                : `다음 필수 단계로 이동할 수 있어요!`
-              persistentMsgRef.current = nextMsg
-
-              showTimedToast(`🎉 ${name}${josa(name, '이/가')} 종료됐어요!`, 3000)
-              const t = setTimeout(() => {
-                showPersistentToast(nextMsg)
-                justCompletedRSRef.current = null
-              }, 3000)
-              justCompletedRSRef.current = { name, nextMsgTimer: t }
-            }
-          }
-        }
-
-        if (skipRollback || needsRollback) {
-          if (!isStageComplete && !isRSComplete && selectedStep.type !== 'requiredStepNode') {
-            if (justCompletedRSRef.current?.nextMsgTimer) {
-              clearTimeout(justCompletedRSRef.current.nextMsgTimer)
+            showTimedToast(`🎉 ${name}${josa(name, '이/가')} 종료됐어요!`, 3000)
+            const t = setTimeout(() => {
+              showPersistentToast(nextMsg)
               justCompletedRSRef.current = null
-            }
-            lastCompletedRequiredStepRef.current = null
-
-            const newRSName = currentRequiredStepName.current
-            if (newRSName && newRSName !== prevRSName) {
-              persistentMsgRef.current = `🤔 ${newRSName}${josa(newRSName, '을/를')} 진행 중이에요!`
-              showTimedToast(`📌 ${newRSName}${josa(newRSName, '(으)로')} 돌아왔어요!`, 5500)
-            } else {
-              persistentMsgRef.current = null            }
+            }, 3000)
+            justCompletedRSRef.current = { name, nextMsgTimer: t }
           }
         }
+      }
+
+      if (skipRollback || needsRollback) {
+        if (!isStageComplete && !isRSComplete && selectedStep.type !== 'requiredStepNode') {
+          if (justCompletedRSRef.current?.nextMsgTimer) {
+            clearTimeout(justCompletedRSRef.current.nextMsgTimer)
+            justCompletedRSRef.current = null
+          }
+          lastCompletedRequiredStepRef.current = null
+
+          const newRSName = currentRequiredStepName.current
+          if (newRSName && newRSName !== prevRSName) {
+            persistentMsgRef.current = `🤔 ${newRSName}${josa(newRSName, '을/를')} 진행 중이에요!`
+            showTimedToast(`📌 ${newRSName}${josa(newRSName, '(으)로')} 돌아왔어요!`, 5500)
+          } else {
+            persistentMsgRef.current = null            }
+        }
+      }
 
       setSelectedStep(null)
       setStepDetail(null)
@@ -740,6 +812,7 @@ export default function CanvasPage() {
             onPaneClick={handlePaneClick}
             onNodeContextMenu={handleNodeContextMenu}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes} 
             nodesDraggable={false}
             onInit={setRfInstance}
             defaultViewport={{ x: -10, y: 0, zoom: 1 }}
