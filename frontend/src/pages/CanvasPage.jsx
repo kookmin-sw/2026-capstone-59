@@ -554,7 +554,6 @@ export default function CanvasPage() {
             if (latestActive) setCurrentStageSequence(latestActive.stage_sequence)
           })
 
-        // 필수 Step 완료
         } else if (isRSComplete) {
           const name = (() => {
             if (selectedStep.type === 'requiredStepNode') return selectedStep.data.label
@@ -582,12 +581,20 @@ export default function CanvasPage() {
           }
         }
 
-        // 롤백 후 RS 바뀐 경우 (skipRollback이거나 needsRollback이면서 RS가 바뀐 경우)
         if (skipRollback || needsRollback) {
-          const newRSName = currentRequiredStepName.current
-          if (newRSName && newRSName !== prevRSName && selectedStep.type !== 'requiredStepNode') {
-            persistentMsgRef.current = `🤔 ${newRSName} ${josa(newRSName, '을/를')} 진행 중이에요!`
-            showTimedToast(`📌 ${newRSName}${josa(newRSName, '(으)로')} 돌아왔어요!`, 5500)
+          if (!isStageComplete && !isRSComplete && selectedStep.type !== 'requiredStepNode') {
+            if (justCompletedRSRef.current?.nextMsgTimer) {
+              clearTimeout(justCompletedRSRef.current.nextMsgTimer)
+              justCompletedRSRef.current = null
+            }
+            lastCompletedRequiredStepRef.current = null
+
+            const newRSName = currentRequiredStepName.current
+            if (newRSName && newRSName !== prevRSName) {
+              persistentMsgRef.current = `🤔 ${newRSName} ${josa(newRSName, '을/를')} 진행 중이에요!`
+              showTimedToast(`📌 ${newRSName}${josa(newRSName, '(으)로')} 돌아왔어요!`, 5500)
+            } else {
+              persistentMsgRef.current = null            }
           }
         }
 
