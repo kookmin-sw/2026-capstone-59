@@ -32,6 +32,9 @@ export default function ProjectListPage() {
   const [editData, setEditData] = useState({})
   const [deleteModal, setDeleteModal] = useState(null)
   const [toast, setToast] = useState(null)
+
+  const [constraintInput, setConstraintInput] = useState('')
+  const [editConstraints, setEditConstraints] = useState([])
   
   useEffect(() => {
     getProjects({ page, size, sort_by: sortBy, is_deleted: false }).then((data) => {
@@ -59,12 +62,30 @@ export default function ProjectListPage() {
     setOpenMenuId(null)
     setInfoModal(project)
     setIsEditing(false)
+    setConstraintInput('')
+    setEditConstraints(project.constraints ?? [])
     setEditData({
       name: project.name ?? '',
-      member_count: project.member_count ?? '',
-      duration_month: project.duration_month ?? '',
       description: project.description ?? '',
-      constraint: project.constraint ?? '',
+    })
+  }
+
+  function handleAddModalConstraint() {
+    const trimmed = constraintInput.trim()
+    if (!trimmed || editConstraints.includes(trimmed)) return
+    if (trimmed.length > 50) { showToast('제약 사항은 50자 이하로 입력해주세요.'); return }
+    if (editConstraints.length >= 10) { showToast('제약 사항은 최대 10개까지 추가할 수 있어요.'); return }
+    setEditConstraints([...editConstraints, trimmed])
+    setConstraintInput('')
+  }
+
+  function handleCancelEdit() {
+    setIsEditing(false)
+    setConstraintInput('')
+    setEditConstraints(infoModal.constraints ?? [])
+    setEditData({
+      name: infoModal.name ?? '',
+      description: infoModal.description ?? '',
     })
   }
 
@@ -80,16 +101,14 @@ export default function ProjectListPage() {
   }
 
   async function handleSaveInfo() {
-    const memberCount = Number(editData.member_count)
-    const durationMonth = Number(editData.duration_month)
-
     try {
+      const existingConstraints = infoModal.constraints ?? []
+      const added = editConstraints.filter((c) => !existingConstraints.includes(c))
+
       await updateProject(infoModal.project_id, {
         name: editData.name || null,
-        member_count: editData.member_count ? memberCount : null,
-        duration_months: editData.duration_month ? durationMonth : null,
         description: editData.description || null,
-        constraint: editData.constraint || null,
+        new_constraints: added.length > 0 ? added : null,
       })
     } catch {
       showToast('수정에 실패했어요. 다시 시도해주세요.')
@@ -98,11 +117,10 @@ export default function ProjectListPage() {
 
     setProjects(projects.map((p) =>
       p.project_id === infoModal.project_id
-        ? { ...p, ...editData, name: editData.name || null }
+        ? { ...p, name: editData.name || null, description: editData.description || null, constraints: editConstraints }
         : p
     ))
-
-    setInfoModal((prev) => ({ ...prev, ...editData, name: editData.name || null }))
+    setInfoModal((prev) => ({ ...prev, name: editData.name || null, description: editData.description || null, constraints: editConstraints }))
     setIsEditing(false)
   }
 
@@ -296,63 +314,114 @@ export default function ProjectListPage() {
             </div>
 
             <div className={styles.infoTable}>
-              {[
-                { label: '프로젝트 이름', key: 'name', type: 'input', maxLength: 20 },
-                { label: '프로젝트 인원', key: 'member_count', type: 'select', suffix: '명',
-                  options: Array.from({ length: 20 }, (_, i) => i + 1) },
-                { label: '프로젝트 기간', key: 'duration_month', type: 'select', suffix: '개월',
-                  options: Array.from({ length: 12 }, (_, i) => i + 1) },
-                { label: '프로젝트 설명', key: 'description', type: 'textarea' },
-                { label: '프로젝트 제약 사항', key: 'constraint', type: 'textarea' },
-              ].map(({ label, key, type, inputType, suffix, maxLength, options }) => (
-                <div key={key} className={styles.infoRow}>
-                  <span className={styles.infoLabel}>{label}</span>
-                  {isEditing ? (
-                    type === 'textarea' ? (
-                      <textarea
-                        className={styles.infoTextarea}
-                        value={editData[key] ?? ''}
-                        onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
-                      />
-                    ) : type === 'select' ? (
-                      <select
-                        className={styles.infoInput}
-                        value={editData[key] ?? ''}
-                        onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
-                      >
-                        <option value="">-</option>
-                        {options.map((o) => (
-                          <option key={o} value={o}>{o}{suffix}</option>
-                        ))}
-                      </select>
-                    ) : (
+              {/* 이름 */}
+              <div className={`${styles.infoRow} ${styles.infoRowTop}`}>
+                <span className={styles.infoLabel}>프로젝트 이름</span>
+                {isEditing ? (
+                  <div className={styles.infoEditCol}>
+                    <input
+                      className={styles.infoInput}
+                      type="text"
+                      maxLength={20}
+                      value={editData.name ?? ''}
+                      onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                    />
+                    <span className={styles.infoCharCount}>{(editData.name ?? '').length} / 20자</span>
+                  </div>
+                ) : (
+                  <span className={styles.infoValue}>{infoModal.name || '-'}</span>
+                )}
+              </div>
+
+              {/* 설명 */}
+              <div className={`${styles.infoRow} ${styles.infoRowTop}`}>
+                <span className={styles.infoLabel}>프로젝트 설명</span>
+                {isEditing ? (
+                  <div className={styles.infoEditCol}>
+                    <input
+                      className={styles.infoInput}
+                      type="text"
+                      maxLength={100}
+                      value={editData.description ?? ''}
+                      onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                    />
+                    <span className={styles.infoCharCount}>{(editData.description ?? '').length} / 100자</span>
+                  </div>
+                ) : (
+                  <span className={styles.infoValue}>{infoModal.description || '-'}</span>
+                )}
+              </div>
+
+              {/* 인원 - 잠김 */}
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>프로젝트 인원</span>
+                <span className={`${styles.infoValue} ${isEditing ? styles.infoLocked : ''}`}>
+                  {infoModal.member_count ? `${infoModal.member_count}명` : '-'}
+                  {isEditing && <span className={styles.lockBadge}>🔒</span>}
+                </span>
+              </div>
+
+              {/* 기간 - 잠김 */}
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>프로젝트 기간</span>
+                <span className={`${styles.infoValue} ${isEditing ? styles.infoLocked : ''}`}>
+                  {infoModal.duration_month === 0
+                    ? '기간 없음'
+                    : infoModal.duration_month
+                    ? `${infoModal.duration_month}개월`
+                    : '-'}
+                  {isEditing && <span className={styles.lockBadge}>🔒</span>}
+                </span>
+              </div>
+
+              {/* 제약 사항 */}
+              <div className={`${styles.infoRow} ${styles.infoRowTop}`}>
+                <span className={styles.infoLabel}>제약 사항</span>
+                <div className={styles.infoConstraintCol}>
+                  {isEditing && (
+                    <div className={styles.chipInputRow}>
                       <input
                         className={styles.infoInput}
-                        type={inputType ?? 'text'}
-                        value={editData[key] ?? ''}
-                        maxLength={maxLength}
-                        onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}
+                        type="text"
+                        placeholder="제약 추가 후 Enter"
+                        value={constraintInput}
+                        onChange={(e) => setConstraintInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddModalConstraint() } }}
                       />
-                    )
-                  ) : (
-                    <span className={styles.infoValue}>
-                      {infoModal[key] ? `${infoModal[key]}${suffix ?? ''}` : '-'}
-                    </span>
+                      <button type="button" className={styles.addChipBtn} onClick={handleAddModalConstraint}>
+                        +
+                      </button>
+                    </div>
+                  )}
+                  {editConstraints.length > 0 && (
+                    <div className={styles.chipList}>
+                      {editConstraints.map((c, i) => (
+                        <span key={i} className={styles.chip}>{c}</span>
+                      ))}
+                    </div>
+                  )}
+                  {!isEditing && editConstraints.length === 0 && (
+                    <span className={styles.infoValue}>-</span>
                   )}
                 </div>
-              ))}
-            </div>
-
+              </div>
+            </div>     
             <div className={styles.promptSection}>
               <p className={styles.promptLabel}>프로젝트 프롬프트</p>
               <p className={styles.promptText}>{infoModal.prompt ?? '-'}</p>
             </div>
 
             {isEditing && (
-              <div className={styles.modalFooter}>
-                <button className={styles.cancelBtn} onClick={() => setIsEditing(false)}>취소</button>
-                <button className={styles.saveBtn} onClick={handleSaveInfo}>저장</button>
-              </div>
+              <>
+                <p className={styles.editInfoTip}>
+                  💡 수정한 내용은 즉시 반영돼서, 다음에 만들어지는 Step부터 새 정보를 기반으로 추천돼요.<br />
+                  이전에 진행한 결정들은 그대로 보존되니 걱정하지 않으셔도 돼요!
+                </p>
+                <div className={styles.modalFooter}>
+                  <button className={styles.cancelBtn} onClick={handleCancelEdit}>취소</button>
+                  <button className={styles.saveBtn} onClick={handleSaveInfo}>저장</button>
+                </div>
+              </>
             )}
           </div>
         </div>
