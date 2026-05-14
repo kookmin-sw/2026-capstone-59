@@ -31,13 +31,6 @@ export default function CreateProjectPage() {
     setConstraintError('')
   }
 
-  function handleConstraintKeyDown(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddConstraint()
-    }
-  }
-
   function handleNext(e) {
     e.preventDefault()
     if (!memberCount) { alert('프로젝트 인원을 선택해주세요.'); return }
@@ -102,7 +95,11 @@ export default function CreateProjectPage() {
                   maxLength={20}
                   placeholder="1 ~ 20자"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                  const value = e.target.value.slice(0, 20)
+                  e.target.value = value
+                  setName(value)
+                }}
                 />
               </div>
 
@@ -151,10 +148,12 @@ export default function CreateProjectPage() {
                   placeholder="예: 배달 라이더의 경로 비효율을 해결하는 AI 모바일 앱"
                   value={description}
                   onChange={(e) => {
-                    setDescription(e.target.value)
-                    e.target.style.height = 'auto'
-                    e.target.style.height = e.target.scrollHeight + 'px'
-                  }}
+                  const value = e.target.value.slice(0, 100)
+                  e.target.value = value
+                  setDescription(value)
+                  e.target.style.height = 'auto'
+                  e.target.style.height = e.target.scrollHeight + 'px'
+                }}
                   rows={1}
                 />
                 <p className={styles.hint}>💡 한 줄로 짧게! 외부에 이 프로젝트를 소개할 때 쓰는 부제 같은 거예요.</p>
@@ -170,7 +169,12 @@ export default function CreateProjectPage() {
                     placeholder="제약 사항 입력 후 추가"
                     value={constraintInput}
                     onChange={(e) => setConstraintInput(e.target.value)}
-                    onKeyDown={handleConstraintKeyDown}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                        e.preventDefault()
+                        handleAddConstraint()
+                      }
+                    }}
                   />
                   <button type="button" className={styles.addChipBtn} onClick={handleAddConstraint}>
                     +
@@ -234,7 +238,11 @@ export default function CreateProjectPage() {
               maxLength={500}
               placeholder="여기에 자유롭게 적어주세요."
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 500)
+                e.target.value = value
+                setPrompt(value)
+              }}
             />
             <div className={styles.promptActions}>
               <span className={styles.promptCounter}>{prompt.length} / 500자</span>
