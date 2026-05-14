@@ -24,6 +24,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch3 - Initiation",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980f48683e5405f780dda?source=copy_link",
         "default_mentoring": {
             "description": "프로젝트의 출발점이에요. 여기서는 프로젝트가 풀려는 문제 또는 포착한 기회를 또렷하게 정의해요. 중요한 건 '이런 서비스가 있으면 좋겠다'가 아니라 무엇이 문제이고, 누가 어떤 상황에서 불편을 겪으며, 왜 지금 중요한지를 분명히 하는 것이에요. 여기서 선명해진 문제가 이후 사용자 파악·컨셉 정의·요구사항 도출 내내 기준선이 되어요.",
             "perspectives": [
@@ -97,6 +98,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch3 - Stakeholder Analysis",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d19598039bcdbea8be98256e6?source=copy_link",
         "default_mentoring": {
             "description": "Stage 1의 방향 전환점이에요. '무엇'에서 '누구'로 초점이 돌아가며, 문제로 불편을 겪는 구체적인 한 명을 그려봐요. 막연한 '모두'가 아니라 한 사람의 상황·습관·맥락이 또렷해질 때, 컨셉 정의와 기능 설계 내내 '이 사람이라면 어떻게 느낄까'로 결정을 이어갈 수 있어요.",
             "perspectives": [
@@ -169,6 +171,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch4 - System Concept Development",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d1959801d9553dc77b604d587?source=copy_link",
         "default_mentoring": {
             "description": "아이디어를 컨셉으로 옮기는 자리예요. 문제와 사용자를 확인했다면, 둘을 이어줄 '해결 방식'을 한 단락으로 정리할 차례예요. 중요한 건 기능 나열이 아니라 '비슷한 서비스와 뭐가 다른가'를 한 줄로 설명할 수 있는 수준이에요. 여기서 확정된 컨셉이 실현 가능성 검토와 Stage 3의 요구사항 도출에서 내내 기준선으로 쓰여요.",
             "perspectives": [
@@ -237,6 +240,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch4 - Feasibility Study",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d1959808c86bcffa8df20f288?source=copy_link",
         "default_mentoring": {
             "description": "Stage 1의 마무리 지점이에요. '좋은 아이디어인가'보다 '지금 만들 수 있는가'를 판단하는 단계이고, 주어진 기간·인원·기술 수준 안에서 컨셉이 현실화될 수 있는지와 주요 리스크가 무엇인지를 미리 알아두는 게 목적이에요. 모든 불확실성을 없앨 필요는 없고, '알고 있는 상태'로 다음 단계들을 계속 진행해나가면 어느 순간 좌측 Stage Navigator에서 다음 Stage가 자연스럽게 열려 있을 거예요.",
             "perspectives": [
@@ -309,6 +313,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch5 - Schedule Planning",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980178a6de61e5676f5e3?source=copy_link",
         "default_mentoring": {
             "description": "Stage 2의 첫 걸음이에요. 정확한 일정표가 아니라 '틀'을 잡는 단계이고, 실제 개발은 거의 반드시 흔들리기 때문에 완벽을 노리기보다 큰 덩어리와 마일스톤을 뚜렷하게 두는 게 목적이에요. 여기서 잡은 시간 축이 Stage 2 전체에서 '어떻게 일할 것인가'의 기본 뼈대가 되어요.",
             "perspectives": [
@@ -381,6 +386,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch5 - Resource Planning",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980f08d36cfda6680c439?source=copy_link",
         "default_mentoring": {
             "description": "사람 축을 잡는 자리예요. 팀원 각자 어디까지가 본인 일인지 선을 긋는 단계이고, 선이 흐리면 협업 후반에 반드시 갈등이 생기기 때문에 지금 명시적으로 정해두는 것이 중요해요. 혼자 하는 프로젝트여도 본인이 쓰는 여러 역할(기획·개발·테스트)을 나눠 적어두면 일정 관리와 의사결정이 훨씬 수월해져요.",
             "perspectives": [
@@ -445,6 +451,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch5 - Risk Management",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d19598084981de6d981dc7836?source=copy_link",
         "default_mentoring": {
             "description": "계획의 점검 지점이에요. 일정과 역할처럼 '깨질 수 있는 계획' 뒤에 오는 자연스러운 자리이고, 리스크는 '없애는 것'이 아니라 '보이게 두는 것'이 목표예요. 여기서 적어둔 리스크가 Stage 2를 마무리하며 '무엇이 흔들릴 수 있는지' 팀이 공유해두는 자산이 되어요. 전부 해결하려 하지 말고 지금 눈에 보이는 것부터 적어봐요.",
             "perspectives": [
@@ -509,6 +516,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch5 - Tool Selection",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980b4bb89c31eb5fddf25?source=copy_link",
         "default_mentoring": {
             "description": "Stage 2의 마무리 지점이에요. 언어·프레임워크·협업 도구를 확정해 팀 모두가 같은 출발선에 서게 하는 단계이고, 정답 찾기가 아니라 '우리는 이걸로 간다'는 합의가 핵심이에요. 여기서 내린 결정이 Stage 5의 '개발 환경 구축'에서 실제 세팅으로 이어지니, 지금은 큰 줄기만 정해도 충분해요.",
             "perspectives": [
@@ -577,6 +585,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch6 - Requirements Elicitation",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980688afbd333dc4ae183?source=copy_link",
         "default_mentoring": {
             "description": "요구사항의 출발점이에요. 시스템이 해야 할 일을 사용자·팀 관점에서 자유롭게 펼쳐내는 단계이고, 지금은 정리가 아니라 '수집'이라 중복되거나 크기가 달라도 괜찮아요. 여기서 모은 후보들이 다음 Step(기능 요구사항 정의)과 Stage 3의 마무리(요구사항 검토)에서 골라 다듬어져요.",
             "perspectives": [
@@ -645,6 +654,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch6 - Functional Requirements",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d1959809e9720ef6b61eb3b28?source=copy_link",
         "default_mentoring": {
             "description": "모은 아이디어를 '검증할 수 있는 문장'으로 바꾸는 자리예요. '무엇을 입력하면 무엇이 나와야 하는가'가 한 줄로 보이면, Stage 6에서 테스트 케이스를 만들 때 자연스럽게 기준이 따라와요. 기능은 많이 쓰기보다 선명하게 쓰는 것이 핵심이에요.",
             "perspectives": [
@@ -713,6 +723,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch6 - Non-Functional Requirements",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980beb8cbd9020c5abd5a?source=copy_link",
         "default_mentoring": {
             "description": "품질 기준을 세우는 자리예요. 기능이 '무엇을 하는가'라면, 비기능은 '얼마나 잘 하는가'예요. 성능·보안·사용성·확장성처럼 기능 외적으로 시스템이 갖춰야 할 속성을 정의해요. 전부 완벽히 정할 필요는 없고, 프로젝트 규모에 맞춰 '지금 꼭 지켜야 하는 선'만 숫자로 적어두면 Stage 6 테스트 기준으로 그대로 쓸 수 있어요.",
             "perspectives": [
@@ -785,6 +796,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch6 - Requirements Review",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980538815c17843e4dfe9?source=copy_link",
         "default_mentoring": {
             "description": "Stage 3의 마무리 지점이에요. 많이 적은 요구사항을 선명하게 정리하는 단계이고, 중복·충돌을 걸러내고 우선순위를 정하면 Stage 4의 설계가 훨씬 가벼워져요. 여기서 남긴 '요구사항 기준표'는 설계·개발·테스트 내내 참조되는 자산이 되어요.",
             "perspectives": [
@@ -854,6 +866,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch7 - System Architecture",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d1959802f9d0afaec4f4e98e6?source=copy_link",
         "default_mentoring": {
             "description": "설계의 첫 걸음이에요. 상세 설계가 아니라 '시스템 전체 모양'을 그리는 단계이고, 한 장짜리 다이어그램이어도 좋아요. 여기서 그려진 큰 그림이 데이터 모델·인터페이스·개발·테스트 전반에서 팀이 같은 구조를 떠올리게 해주는 지도 역할을 해요. 세부는 다음 Step에서 채우면 돼요.",
             "perspectives": [
@@ -928,6 +941,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch7 - Data Design",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d1959801b9ec5ccaaca273002?source=copy_link",
         "default_mentoring": {
             "description": "데이터의 기준선을 세우는 자리예요. 시스템이 저장할 데이터 종류(엔티티)와 데이터들 사이의 관계를 정리하는 단계이고, 여기서 잡아둔 데이터 모델이 이후 Stage 내내 '진실의 기준선'으로 쓰여요. 처음부터 완벽할 필요는 없어도 주요 엔티티 5~10개와 그 관계는 또렷해야 해요.",
             "perspectives": [
@@ -1000,6 +1014,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch7 - Interface Design",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980eea311ede63cb86ce1?source=copy_link",
         "default_mentoring": {
             "description": "외부 계약을 그리는 자리예요. 외부(UI·API)와 내부(컴포넌트 간)의 주요 인터페이스를 정의하는 단계이고, 인터페이스는 '외부에서 보이는 계약'이기 때문에 세부 명세까지 가지 않더라도 '모양'만 잡혀 있으면 개발 중에도 프론트·백엔드가 중심을 잃지 않아요.",
             "perspectives": [
@@ -1069,6 +1084,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch7 - Design Review",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980ed82e6c00fb7178a5c?source=copy_link",
         "default_mentoring": {
             "description": "Stage 4의 마무리 지점이에요. 리뷰의 목적은 '결함 찾기'가 아니라 '팀이 같은 그림을 보고 있는지 맞추는' 시간이에요. Stage 4에서 만든 아키텍처·데이터 모델·인터페이스 세 문서가 요구사항을 제대로 실현할 수 있는지 함께 점검하고, 수정 방향을 합의해요. 발견된 수정사항은 가볍게 기록하고 Stage 5(개발)에 반영하면 돼요.",
             "perspectives": [
@@ -1135,6 +1151,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch8 - Development Environment",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d1959802c9d57e4f8f92a62d1?source=copy_link",
         "default_mentoring": {
             "description": "개발의 출발선을 세팅하는 자리예요. 팀원 모두가 0에서 같은 환경으로 시작할 수 있게 준비하는 단계이고, Stage 2에서 결정한 기술 스택과 Stage 4 설계를 실제 폴더·스크립트·저장소로 구현하는 첫 작업이에요. 여기서 준비한 내용이 그대로 프로젝트 README의 첫 장이 되어요.",
             "perspectives": [
@@ -1203,6 +1220,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch8 - Core Implementation",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980abbe60dc0947053f5c?source=copy_link",
         "default_mentoring": {
             "description": "Stage 5의 가장 긴 구간이에요. 앞서 만든 설계를 실제 동작하는 코드로 바꾸는 단계이고, 완성도보다 '무엇이 돌아가고 무엇이 남았는지'를 한눈에 보이게 하는 것이 중요해요. 여기서는 작업 상태를 팀이 공유할 수 있는 기록을 함께 남겨두는 것이 핵심이에요.",
             "perspectives": [
@@ -1271,6 +1289,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch8 - Integration",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980148092e7ebe298e534?source=copy_link",
         "default_mentoring": {
             "description": "조각을 하나로 합치는 자리예요. 따로 잘 돌던 모듈들이 한 시스템으로 움직이는지 확인하는 단계이고, 통합에서 발견되는 문제는 기록만 잘 해둬도 이후 디버깅 시간이 크게 줄어요. 이 단계가 잘 되어 있어야 Stage 6의 테스트가 '기능 개별 테스트'가 아니라 '실제 사용 시나리오 테스트'로 올라갈 수 있어요.",
             "perspectives": [
@@ -1339,6 +1358,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch8 - Code Review",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d19598042b443dc51d22b0e1c?source=copy_link",
         "default_mentoring": {
             "description": "Stage 5의 마무리 지점이에요. 작성된 코드를 팀원이나 본인이 다시 읽으며 결함과 나쁜 패턴을 찾고 개선하는 단계이고, 목적은 '잘못 잡기'가 아니라 '팀이 코드를 이해할 수 있게 만들기'에 가까워요. 혼자 하는 프로젝트여도 '나중의 나를 위한 리뷰'로 같은 효과를 낼 수 있어요.",
             "perspectives": [
@@ -1408,6 +1428,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch9 - Test Planning",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d1959808ea370c2f2433237f7?source=copy_link",
         "default_mentoring": {
             "description": "검증의 출발점이에요. Stage 3에서 약속한 요구사항을 어떻게 검증할지 전략을 정하는 단계이고, '모두 테스트하겠다'보다 '어디까지 이번에 검증할지'를 분명히 하는 게 핵심이에요. 여기서 정한 범위·유형·시나리오가 Stage 6 전체의 기준이 되어요.",
             "perspectives": [
@@ -1478,6 +1499,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch9 - Test Execution",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980cfadd7cf5b6275bc91?source=copy_link",
         "default_mentoring": {
             "description": "검증 실행 구간이에요. 계획한 테스트를 실제로 돌려 결과를 수집하는 단계이고, 한 번에 모두 통과시키려 하지 말고 '돌린 결과를 깔끔히 기록하는 것'을 목표로 해요. 여기서의 기록이 다음 Step(결과 분석 및 결함 기록)의 분석 재료가 되어요.",
             "perspectives": [
@@ -1546,6 +1568,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch9 - Defect Analysis",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980bdb7edf39a9280dc12?source=copy_link",
         "default_mentoring": {
             "description": "발견을 정리하는 자리예요. 테스트 중 발견된 결함을 구조화된 형태로 남기고, 원인·심각도·수정 계획을 정리하는 단계예요. 기록되지 않은 결함은 해결되지 않는다는 원칙이 핵심이고, 여기서 남긴 결함 리스트가 프로젝트 종료 판단의 객관적 근거가 되어요.",
             "perspectives": [
@@ -1614,6 +1637,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         ],
         "minimum_fulfillment_count": 2,
         "doj_reference": "DOJ SDLC Ch9 - Acceptance & Final Review",
+        "template_url": "https://pentagonal-berry-490.notion.site/35cc611d195980ca83f8da49dece6f22?source=copy_link",
         "default_mentoring": {
             "description": "프로젝트의 마지막 관문이에요. Stage 1에서 정의한 문제·기회와 Stage 3의 핵심 요구사항이 실제로 해결되었는지 확인하고, 프로젝트 종료 판단과 회고를 남기는 단계예요. 과하게 힘주지 말고 솔직하게 써두면 다음 프로젝트의 가장 든든한 출발점이 되어요.",
             "perspectives": [
