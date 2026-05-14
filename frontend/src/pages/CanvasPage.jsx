@@ -65,6 +65,7 @@ export default function CanvasPage() {
   const enqueuedLenRef = useRef(0)
   const typingQueueRef = useRef('')
   const typingTimerRef = useRef(null)
+  const typingDrainCallbackRef = useRef(null)
   const detailCacheRef = useRef({})
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
@@ -101,6 +102,7 @@ export default function CanvasPage() {
     }
     typingQueueRef.current = ''
     enqueuedLenRef.current = 0
+    typingDrainCallbackRef.current = null
   }
 
   function showTimedToast(message, duration = 5500) {
@@ -128,6 +130,10 @@ export default function CanvasPage() {
       if (!typingQueueRef.current) {
         clearInterval(typingTimerRef.current)
         typingTimerRef.current = null
+        // 큐 소진 → drain 콜백 실행
+        const cb = typingDrainCallbackRef.current
+        typingDrainCallbackRef.current = null
+        cb?.()
         return
       }
       const step = Math.min(2, typingQueueRef.current.length)
@@ -364,7 +370,7 @@ export default function CanvasPage() {
         }
       }
       buf.onComplete = async () => {
-        clearTyping()
+        const proceed = async () => {
         try {
           const detail = await getStepDetail(node.id)
           if (requestId !== detailRequestRef.current) return
@@ -374,16 +380,12 @@ export default function CanvasPage() {
         } catch {
           setStreamingText(null)
         }
-      }
-    } else {
-      setIsStreamMode(false)
-      try {
-        const detail = await getStepDetail(node.id)
-        if (requestId !== detailRequestRef.current) return
-        setStepDetail(detail)
-        detailCacheRef.current[node.id] = detail
-      } catch {
-        //
+        }
+        if (!typingQueueRef.current && !typingTimerRef.current) {
+          await proceed()
+        } else {
+          typingDrainCallbackRef.current = proceed
+        }
       }
     }
   }
