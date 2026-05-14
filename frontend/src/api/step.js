@@ -48,6 +48,9 @@ export const getStepDetail = (stepId) =>
 export const rollbackStep = (stepId) =>
   api.post(`/steps/${stepId}/rollback`)
 
+export const keepStep = (stepId, isKeep) =>
+  api.post(`/steps/${stepId}/keep`, { is_keep: isKeep })
+
 export function createSidePanelStream(stepId) {
   let abortController = null
 
