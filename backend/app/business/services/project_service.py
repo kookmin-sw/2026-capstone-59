@@ -41,7 +41,7 @@ def create_project(
         if existing:
             logger.warning(
                 "project: create rejected — duplicate name",
-                extra={"user_id": str(user_id), "name": payload.name},
+                extra={"user_id": str(user_id), "project_name": payload.name},
             )
             raise DuplicateProjectNameError()
 
@@ -174,7 +174,7 @@ def update_project(
         if existing:
             logger.warning(
                 "project: update rejected — duplicate name",
-                extra={"project_id": str(project_id), "name": payload.name},
+                extra={"project_id": str(project_id), "project_name": payload.name},
             )
             raise DuplicateProjectNameError()
 
