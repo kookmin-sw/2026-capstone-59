@@ -118,6 +118,7 @@ export default function CreateProjectPage() {
                 <div className={styles.durationRow}>
                   <select
                     className={styles.select}
+                    required
                     disabled={noDuration}
                     value={durationMonth}
                     onChange={(e) => setDurationMonth(e.target.value)}
@@ -166,7 +167,7 @@ export default function CreateProjectPage() {
                   <input
                     className={styles.input}
                     type="text"
-                    placeholder="제약 사항 입력 후 추가"
+                    placeholder={`예: "AWS ElastiCache 금지", "React로 제한", "AWS 크레딧 활용 가능"`}
                     value={constraintInput}
                     onChange={(e) => setConstraintInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -197,7 +198,6 @@ export default function CreateProjectPage() {
                 {constraintError && <p className={styles.errorMsg}>{constraintError}</p>}
                 <p className={styles.hint}>
                   💡 이 프로젝트의 한계나 제약을 적어주세요. 시작 후엔 추가만 가능해요!<br />
-                  예: "AWS ElastiCache 금지", "React로 제한", "AWS 크레딧 활용 가능"
                 </p>
               </div>
 
@@ -236,7 +236,9 @@ export default function CreateProjectPage() {
               className={styles.promptTextarea}
               required
               maxLength={500}
-              placeholder="여기에 자유롭게 적어주세요."
+              placeholder= {`예시 1) 배달 라이더의 경로 비효율 문제를 AI로 해결하는 앱을 만들고 싶어요. 아직 어떤 기술을 쓸지는 모르지만, 라이더의 시간 절약이 핵심이에요.
+예시 2) 뭘 만들지 정하지 못했어요. 평소에 일정 관리가 어려워서 뭔가 도와주는 서비스가 있으면 좋겠다 정도? 친구들 4명이서 졸업작품으로 시작해보려고요.`}
+              
               value={prompt}
               onChange={(e) => {
                 const value = e.target.value.slice(0, 500)
@@ -253,17 +255,8 @@ export default function CreateProjectPage() {
           </div>
 
           <div className={styles.promptExamples}>
-            <p className={styles.promptExampleItem}>
-              예 1) 배달 라이더의 경로 비효율 문제를 AI로 해결하는 앱을 만들고 싶어요. 아직 어떤 기술을 쓸지는 모르지만, 라이더의 시간 절약이 핵심이에요.<br />
-             
-            </p>
-            <p className={styles.promptExampleItem}>
-              예 2) 뭘 만들지 정하지 못했어요. 평소에 일정 관리가 어려워서 뭔가 도와주는 서비스가 있으면 좋겠다 정도? 친구들 4명이서 졸업작품으로 시작해보려고요.<br />
-              
-            </p>
             <p className={styles.promptTip}>
-              💡 친구한테 "이런 거 만들어보려고…" 하고 얘기한다 생각하고 풀어보세요. 디테일은 poco와 진행하면서 단계별로 정리해 나가요!<br />
-              
+              💡 친구한테 "이런 거 만들어보려고…" 하고 얘기한다 생각하고 풀어보세요. 디테일은 poco와 진행하면서 단계별로 정리해 나가요!<br />             
             </p>
           </div>
         </form>
