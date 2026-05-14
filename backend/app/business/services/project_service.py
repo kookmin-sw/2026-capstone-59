@@ -6,7 +6,12 @@ import secrets
 from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
-from app.core.exceptions import DuplicateProjectNameError, ProjectNotFoundError
+from app.core.exceptions import (
+    DuplicateProjectNameError, 
+    ProjectNotFoundError,
+    ConstraintTooLongError,
+    ConstraintsLimitError,
+)
 from app.core.logging import get_logger
 from app.core.models.project import Project as ProjectModel
 from app.core.repositories import (
@@ -50,7 +55,7 @@ def create_project(
             duration_month=payload.duration_months,
             member_count=payload.member_count,
             description=payload.description,
-            constraint_text=payload.constraint,
+            constraints=payload.constraints, 
             prompt=payload.prompt,
         ),
     )
@@ -138,7 +143,7 @@ def list_projects(
                 member_count=p.member_count,
                 duration_month=p.duration_month,
                 description=p.description,
-                constraint=p.constraint_text,
+                constraints=p.constraints,
                 prompt=p.prompt,
                 created_at=p.created_at,
                 updated_at=p.updated_at,
@@ -173,14 +178,21 @@ def update_project(
             )
             raise DuplicateProjectNameError()
 
+    if payload.new_constraints is not None:
+        existing = project.constraints or []
+        if any(len(c) > 50 for c in payload.new_constraints):
+            raise ConstraintTooLongError()
+        if len(existing) + len(payload.new_constraints) > 10:
+            raise ConstraintsLimitError()
+        merged = existing + payload.new_constraints  # 기존에 그냥 append
+    else:
+        merged = None
     project_repo.update_project_fields(
         project,
         name=payload.name,
         description=payload.description,
-        duration_month=payload.duration_months,
-        member_count=payload.member_count,
+        constraints=merged,
         is_deleted=payload.is_deleted,
-        constraint_text=payload.constraint,
     )
 
     db.commit()

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ProjectCreateRequest(BaseModel):
@@ -9,20 +9,17 @@ class ProjectCreateRequest(BaseModel):
     duration_months: int
     member_count: int
     description: str | None = None
-    constraint: str | None = None
+    constraints: list[str] | None = None
     prompt: str
 
 
 class ProjectUpdateRequest(BaseModel):
     name: str | None = None
-    description: str | None = None
-    duration_months: int | None = None
-    member_count: int | None = None
+    description: str | None = Field(default=None, max_length=100)
+    new_constraints: list[str] | None = None  
     is_deleted: bool | None = None
-    constraint: str | None = None
     
     
-
 
 class ProjectResponse(BaseModel):
     project_id: UUID
@@ -41,7 +38,7 @@ class ProjectListItemResponse(BaseModel):
     member_count: int | None = None
     duration_month: int | None = None
     description: str | None = None
-    constraint: str | None = None
+    constraints: list[str] | None = None
     prompt: str | None = None
     created_at: datetime
     updated_at: datetime
