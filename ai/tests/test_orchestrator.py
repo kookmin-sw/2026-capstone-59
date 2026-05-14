@@ -47,7 +47,7 @@ def _project() -> ProjectInfo:
         duration_months=3,
         member_count=4,
         description="설명",
-        constraints="React + FastAPI",
+        constraints=["React + FastAPI"],
         initial_prompt="초기 아이디어",
     )
 
