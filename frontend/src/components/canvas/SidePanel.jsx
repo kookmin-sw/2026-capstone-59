@@ -115,7 +115,7 @@ function parseStreamingMentoring(text) {
 
 function DotsLoading({ text = '템플릿을 불러오는 중이에요' }) {
   return (
-    <p className={styles.templateHint}>
+    <p className={styles.templateLoading}>
       {text}
       <span className={styles.bounceDots}>
         <span></span>
@@ -470,7 +470,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
                   rel="noopener noreferrer"
                   className={styles.notionBtn}
                 >
-                  <NotionIcon size={16} />
+                  <NotionIcon size={18} />
                   Notion에서 템플릿 열기
                 </a>
                 <p className={styles.templateHint}>
