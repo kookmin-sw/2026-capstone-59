@@ -16,7 +16,7 @@ class ProjectInfo(BaseModel):
     duration_months: int
     member_count: int
     description: Optional[str] = None
-    constraints: Optional[str] = None
+    constraints: Optional[list[str]] = None
     initial_prompt: str
 
 

@@ -36,6 +36,13 @@ def _coerce(value: Any, default: str = "") -> str:
     return str(value)
 
 
+def _format_constraints(constraints: Optional[list[str]]) -> str:
+    """list[str] 제약사항을 프롬프트용 들여쓰기 리스트로 포맷팅."""
+    if not constraints:
+        return _NONE_LABEL
+    return "\n".join(f"  - {c}" for c in constraints)
+
+
 class StepGenerator:
     """generate 시나리오 — 일반 Step 3개 동적 생성."""
 
@@ -88,7 +95,7 @@ class StepGenerator:
             duration_months=str(project.duration_months),
             member_count=str(project.member_count),
             description=_coerce(project.description, _NONE_LABEL),
-            constraints=_coerce(project.constraints, _NONE_LABEL),
+            constraints=_format_constraints(project.constraints),
             initial_prompt=project.initial_prompt,
             stage_sequence=str(stage.stage_sequence),
             stage_name=stage.name,

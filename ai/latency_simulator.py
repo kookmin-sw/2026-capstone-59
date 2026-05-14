@@ -70,7 +70,7 @@ def _build_fixture_project() -> ProjectInfo:
         duration_months=3,
         member_count=4,
         description="레이턴시 측정용 고정 프로젝트",
-        constraints="기술 스택은 React + FastAPI로 제한",
+        constraints=["기술 스택은 React + FastAPI로 제한"],
         initial_prompt=(
             "배달 라이더들이 경로를 비효율적으로 다니는 문제를 AI로 해결하고 싶어요"
         ),
