@@ -181,6 +181,11 @@ def set_status_bulk(steps: Iterable[Step], status: str) -> None:
         s.status = status
 
 
+def update_step_is_keep(step: Step, is_keep: bool) -> Step:
+    step.is_keep = is_keep
+    return step
+
+
 # ── StepContent ────────────────────────────────────────────────────────
 
 
