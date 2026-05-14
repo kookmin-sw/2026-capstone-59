@@ -11,17 +11,6 @@ function NotionIcon({ size = 18 }) {
   )
 }
 
-function SectionSkeleton() {
-  return (
-    <div className={styles.mentoringSection}>
-      <div className={styles.skeletonTitle} />
-      <div className={styles.skeletonLine} />
-      <div className={styles.skeletonLine} />
-      <div className={styles.skeletonLineShort} />
-    </div>
-  )
-}
-
 function TypewriterText({ text, className, speed = 12, onComplete }) {
   const [displayed, setDisplayed] = useState('')
   const indexRef = useRef(0)
@@ -82,7 +71,37 @@ function parseStreamingMentoring(text) {
       }
       i++
     }
-    return undefined
+    const items = []
+    let j = start + 1  // '[' 다음부터
+    while (j < text.length) {
+      while (j < text.length && /\s/.test(text[j])) j++
+      if (text[j] !== '{') break
+      let objDepth = 0, inStr = false, k = j
+      while (k < text.length) {
+        const ch = text[k]
+        if (inStr) {
+          if (ch === '\\') { k += 2; continue }
+          if (ch === '"') inStr = false
+        } else {
+          if (ch === '"') inStr = true
+          else if (ch === '{') objDepth++
+          else if (ch === '}') {
+            objDepth--
+            if (objDepth === 0) {
+              try {
+                items.push(JSON.parse(text.slice(j, k + 1)))
+                j = k + 1
+                while (j < text.length && /[\s,]/.test(text[j])) j++
+              } catch { return items.length > 0 ? items : undefined }
+              break
+            }
+          }
+        }
+        k++
+      }
+      if (objDepth > 0) break
+    }
+    return items.length > 0 ? items : undefined
   }
 
   result.description = extractString('description')
@@ -94,24 +113,16 @@ function parseStreamingMentoring(text) {
   return result
 }
 
-function LoadingSpinner() {
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 1000)
-    return () => clearTimeout(timer)
-  }, [])
-
+function DotsLoading({ text = '템플릿을 불러오는 중이에요' }) {
   return (
-    <div className={styles.spinnerWrap} style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-      <svg className={styles.floatingIcon} width="26" height="23" viewBox="0 0 26 23" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M5.48038 9.06491C6.19361 10.6221 5.61325 12.4223 4.1841 13.0857C2.75495 13.7491 1.01822 13.0246 0.304985 11.4673C-0.408245 9.91013 0.172119 8.10994 1.60127 7.44653C3.03041 6.78311 4.76715 7.50769 5.48038 9.06491Z" fill="#4A35D0"/>
-        <path d="M20.5196 9.06491C19.8064 10.6221 20.3868 12.4223 21.8159 13.0857C23.245 13.7491 24.9818 13.0246 25.695 11.4673C26.4082 9.91013 25.8279 8.10994 24.3987 7.44653C22.9696 6.78311 21.2329 7.50769 20.5196 9.06491Z" fill="#4A35D0"/>
-        <path d="M13.7173 3.30832C13.3244 5.45563 14.5778 7.48791 16.517 7.84754C18.4562 8.20716 20.3467 6.75795 20.7396 4.61063C21.1325 2.46331 19.879 0.43103 17.9399 0.0714064C16.0007 -0.288217 14.1102 1.161 13.7173 3.30832Z" fill="#4A35D0"/>
-        <path d="M12.2447 3.29168C12.6376 5.439 11.3841 7.47128 9.44495 7.8309C7.50579 8.19052 5.61526 6.74131 5.22235 4.59399C4.82943 2.44667 6.08291 0.414392 8.02208 0.0547683C9.96125 -0.304855 11.8518 1.14436 12.2447 3.29168Z" fill="#4A35D0"/>
-        <path d="M20.029 22.0422C17.1938 24.3954 14.9862 21.6718 12.995 21.6718C11.0038 21.6718 8.92611 24.4608 5.85279 21.8679C1.74061 17.5319 7.82229 9.48651 12.9861 9.48651C18.1498 9.48651 24.2927 17.6845 20.029 22.0422Z" fill="#4A35D0"/>
-      </svg>
-    </div>
+    <p className={styles.templateLoading}>
+      {text}
+      <span className={styles.bounceDots}>
+        <span></span>
+        <span></span>
+        <span></span>
+      </span>
+    </p>
   )
 }
 
@@ -265,9 +276,9 @@ function AllSkeleton() {
   )
 }
 
-function MentoringContent({ raw, isLoading, streamingText, isRequired, isStreamMode }) {
+function MentoringContent({ raw, isLoading, streamingText, isRequired }) {
   if (isLoading && !streamingText) {
-    return isStreamMode ? <AllSkeleton /> : <LoadingSpinner />
+    return <AllSkeleton />
   }
 
   if (streamingText) {
@@ -358,9 +369,15 @@ function MentoringContent({ raw, isLoading, streamingText, isRequired, isStreamM
   )
 }
 
-export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting, isStreamMode }) {
-  const [activeTab, setActiveTab] = useState('mentoring')
+export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting }) {
   const [lastStep, setLastStep] = useState(step)
+  const [activeTab, setActiveTab] = useState('mentoring')
+  const [tabStepId, setTabStepId] = useState(step?.id)
+
+  if (step?.id !== tabStepId) {
+    setTabStepId(step?.id)
+    setActiveTab('mentoring')
+  }
 
   useEffect(() => {
     if (step) setTimeout(() => setLastStep(step), 0)
@@ -410,16 +427,21 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
           </button>
         ))}
       </div>
-
+      
       <div className={styles.content}>
-        {activeTab === 'mentoring' && (
-          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} isStreamMode={isStreamMode} />
-        )}
+        <div style={{ display: activeTab === 'mentoring' ? 'block' : 'none' }}>
+          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} />
+        </div>
 
-        {activeTab === 'dictionary' && (
+        <div style={{ display: activeTab === 'dictionary' ? 'block' : 'none' }}>
           <div className={styles.dictionaryList}>
             {!detail
-              ? [...Array(4)].map((_, i) => <SectionSkeleton key={i} />)
+              ? [...Array(3)].map((_, i) => (
+                  <div key={i} className={styles.dictionaryItem}>
+                    <div className={styles.skeletonTitle} />
+                    <div className={styles.skeletonLine} />
+                  </div>
+                ))
               : dictionary.map((item, i) => (
                   <div key={i} className={styles.dictionaryItem}>
                     <p className={styles.dictionaryTerm}>{item.term}</p>
@@ -428,9 +450,9 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
                 ))
             }
           </div>
-        )}
+        </div>
 
-        {activeTab === 'template' && (
+        <div style={{ display: activeTab === 'template' ? 'block' : 'none' }}>
           <div className={styles.templateTab}>
             <p className={styles.templateIntro}>
               이 단계의 산출물인 템플릿이 준비되어 있어요.<br />
@@ -448,7 +470,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
                   rel="noopener noreferrer"
                   className={styles.notionBtn}
                 >
-                  <NotionIcon size={16} />
+                  <NotionIcon size={18} />
                   Notion에서 템플릿 열기
                 </a>
                 <p className={styles.templateHint}>
@@ -457,10 +479,10 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
                 </p>
               </div>
             ) : (
-              <p className={styles.templateHint}>템플릿을 불러오는 중이에요.</p>
+              <DotsLoading />
             )}
           </div>
-        )}
+        </div>
       </div>
 
       <div className={styles.footer}>
