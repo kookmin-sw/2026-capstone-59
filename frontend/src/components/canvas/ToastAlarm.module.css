@@ -10,7 +10,7 @@
   background: #fff;
   border-radius: 0 0 20px 20px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  padding: 3px 16px;
+  padding: 4px 16px 4px 10px;
   overflow: hidden;
   white-space: nowrap;
   transition: box-shadow 0.1s ease, opacity 0.1s ease;
@@ -19,11 +19,12 @@
 .pillOpen {
   top: 61px;
   border-radius: 20px;
-  padding: 9px 16px;
+  padding: 9px 16px 9px 13px;
   transform: translateX(-50%) translateY(0);
   opacity: 1;
   pointer-events: auto;
 }
+
 
 .pillContent {
   display: flex;
