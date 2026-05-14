@@ -16,15 +16,6 @@
   transition: box-shadow 0.1s ease, opacity 0.1s ease;
 }
 
-/* .pillOpen {
-  top: 61px;
-  border-radius: 20px;
-  padding: 9px 16px;
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-  pointer-events: auto;
-} */
-
 .pillOpen {
   top: 61px;
   border-radius: 20px;
