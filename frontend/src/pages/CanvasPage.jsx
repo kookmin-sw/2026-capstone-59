@@ -44,12 +44,10 @@ export default function CanvasPage() {
   const [stepDetail, setStepDetail] = useState(null)
   const [streamingText, setStreamingText] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
-  const [toast, setToast] = useState(null)
-  const [toastVisible, setToastVisible] = useState(false)
   const [rfInstance, setRfInstance] = useState(null)
   const [rollbackModal, setRollbackModal] = useState(false)
   const [isAccepting, setIsAccepting] = useState(false)
-  const [toastPersistent, setToastPersistent] = useState(false)
+  
   const [isStreamMode, setIsStreamMode] = useState(false)
   const [shareModal, setShareModal] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
@@ -68,6 +66,13 @@ export default function CanvasPage() {
   const typingQueueRef = useRef('')
   const typingTimerRef = useRef(null)
   const detailCacheRef = useRef({})
+  const [toast, setToast] = useState(null)
+  const [toastVisible, setToastVisible] = useState(false)
+  const [toastPersistent, setToastPersistent] = useState(false)
+  const [toastDuration, setToastDuration] = useState(5500)
+  const shownToastsRef = useRef(new Set())
+  const persistentMsgRef = useRef(null)
+  const justCompletedRSRef = useRef(null)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -75,17 +80,9 @@ export default function CanvasPage() {
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
   function clearStreamCallbacks() {
-    if (timerRef.current) clearTimeout(timerRef.current)
-
     streamBuffers.current.forEach((buf) => {
       buf.onUpdate = null
       buf.onComplete = null
-
-    setToastVisible(false)
-    setToastPersistent(false)
-
-    currentRequiredStepName.current = null
-    lastCompletedRequiredStepRef.current = null
     })
   }
 
@@ -96,6 +93,23 @@ export default function CanvasPage() {
     }
     typingQueueRef.current = ''
     enqueuedLenRef.current = 0
+  }
+
+  function showTimedToast(message, duration = 5500) {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setToast(message)
+    setToastDuration(duration)
+    setToastPersistent(false)
+    setToastVisible(true)
+    timerRef.current = setTimeout(() => setToastVisible(false), duration)
+  }
+
+  function showPersistentToast(message) {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setToast(message)
+    setToastPersistent(true)
+    setToastVisible(true)
+    persistentMsgRef.current = message
   }
 
   function enqueueTyping(newChars) {
@@ -238,6 +252,10 @@ export default function CanvasPage() {
         }
       }
     }
+      const nextRequiredNode = n.find(
+        (node) => node.type === 'requiredStepNode' && node.data.status === 'READY'
+      )
+      return { nextRequiredStepName: nextRequiredNode?.data?.label ?? null }
   }
 
   useEffect(() => {
@@ -272,6 +290,17 @@ export default function CanvasPage() {
     streamBuffers.current.forEach((buf) => buf.stream?.abort())
     streamBuffers.current.clear()
     detailCacheRef.current = {}
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (justCompletedRSRef.current?.nextMsgTimer) {
+      clearTimeout(justCompletedRSRef.current.nextMsgTimer)
+      justCompletedRSRef.current = null
+    }
+    setToastVisible(false)
+    setToastPersistent(false)
+    persistentMsgRef.current = null
+    currentRequiredStepName.current = null
+    lastCompletedRequiredStepRef.current = null
+    shownToastsRef.current.clear()
   }, [selectedStageId])
 
   const activeStage = getLatestActiveStage(stages)
@@ -473,59 +502,89 @@ export default function CanvasPage() {
         }
       }
 
-      if (acceptResult?.is_current_required_step_completed) {
-        const requiredNode =
-          selectedStep.type === 'requiredStepNode'
-            ? selectedStep
-            : findRequiredStep(selectedStep.id, nodes, edges)
+      // acceptResult 처리 부분
+        const isRSComplete = acceptResult?.is_current_required_step_completed
+        const isStageComplete = acceptResult?.is_current_stage_completed
 
-        const name = requiredNode?.data?.label
-        if (name && name !== lastCompletedRequiredStepRef.current) {
-          lastCompletedRequiredStepRef.current = name
-          const isStageComplete = acceptResult?.is_current_stage_completed
-          const message = isStageComplete
-            ? `🎉 전체 단계가 종료됐어요. 이제 다음 스테이지로 이동할 수 있어요!`
-            : `✅ ${name}이(가) 종료됐어요!`
+        const prevRSName = currentRequiredStepName.current
 
-          if (timerRef.current) clearTimeout(timerRef.current)
-          setToast(message)
-          setToastPersistent(isStageComplete)
-          setToastVisible(true)
+        // 다이아몬드 진입 토스트
+        if (selectedStep.type === 'requiredStepNode') {
+          const stepName = selectedStep.data.label
+          currentRequiredStepName.current = stepName
+          lastCompletedRequiredStepRef.current = null
 
-          if (!isStageComplete) {
-            timerRef.current = setTimeout(() => setToastVisible(false), 3000)
-          }
-
-          if (isStageComplete) {
-            currentRequiredStepName.current = null
-            getStages(projectId).then((data) => {
-              const list = data.stages ?? []
-              setStages(list)
-              const latestActive = getLatestActiveStage(list)
-              if (latestActive) setCurrentStageSequence(latestActive.stage_sequence)
-            })
+          const key = `enter_${selectedStep.id}`
+          const overridePersistent = toastPersistent // 완료 토스트 떠있는 상태에서 진입
+          if (!shownToastsRef.current.has(key) || overridePersistent) {
+            shownToastsRef.current.add(key)
+            if (justCompletedRSRef.current?.nextMsgTimer) {
+              clearTimeout(justCompletedRSRef.current.nextMsgTimer)
+              justCompletedRSRef.current = null
+            }
+            persistentMsgRef.current = `📌 ${stepName} 진행 중이에요`
+            showTimedToast(`📌 ${stepName}이(가) 시작됐어요!`, 5500)
           }
         }
-      }
 
-      if (selectedStep.type === 'requiredStepNode') {
-        const stepName = selectedStep.data.label
-        currentRequiredStepName.current = stepName
-        lastCompletedRequiredStepRef.current = null
-        if (timerRef.current) clearTimeout(timerRef.current)
-        setToast(`📌 ${stepName}이(가) 시작됐어요!`)
-        setToastPersistent(false)
-        setToastVisible(true)
-        timerRef.current = setTimeout(() => {
-          setToastVisible(false)
-          setToast(`📌 ${stepName} 진행 중이에요`)
-        }, 3000)
-      }
+        clearStreamCallbacks()
+        setStreamingText(null)
 
-      clearStreamCallbacks()
-      setStreamingText(null)
+        const { nextRequiredStepName } = await fetchAndRenderTree(selectedStageId)
 
-      await fetchAndRenderTree(selectedStageId)
+        // Stage 완료
+        if (isStageComplete) {
+          const key = `stage_complete_${selectedStageId}`
+          if (!shownToastsRef.current.has(key)) {
+            shownToastsRef.current.add(key)
+            persistentMsgRef.current = `이제 다음 Stage로 이동할 수 있어요!`
+            showPersistentToast(`🎉 Stage가 종료됐어요! 이제 다음 Stage로 이동할 수 있어요!`)
+          }
+          currentRequiredStepName.current = null
+          getStages(projectId).then((data) => {
+            const list = data.stages ?? []
+            setStages(list)
+            const latestActive = getLatestActiveStage(list)
+            if (latestActive) setCurrentStageSequence(latestActive.stage_sequence)
+          })
+
+        // 필수 Step 완료
+        } else if (isRSComplete) {
+          const name = (() => {
+            if (selectedStep.type === 'requiredStepNode') return selectedStep.data.label
+            const req = findRequiredStep(selectedStep.id, nodes, edges)
+            return req?.data?.label
+          })()
+
+          if (name && name !== lastCompletedRequiredStepRef.current) {
+            lastCompletedRequiredStepRef.current = name
+            const key = `complete_${name}`
+            if (!shownToastsRef.current.has(key)) {
+              shownToastsRef.current.add(key)
+              const nextMsg = nextRequiredStepName
+                ? `다음 핵심 단계인 ${nextRequiredStepName}로 이동할 수 있어요!`
+                : `다음 필수 Step으로 이동할 수 있어요!`
+              persistentMsgRef.current = nextMsg
+
+              showTimedToast(`🎉 ${name}이(가) 종료됐어요!`, 3000)
+              const t = setTimeout(() => {
+                showPersistentToast(nextMsg)
+                justCompletedRSRef.current = null
+              }, 3000)
+              justCompletedRSRef.current = { name, nextMsgTimer: t }
+            }
+          }
+        }
+
+        // 롤백 후 RS 바뀐 경우 (skipRollback이거나 needsRollback이면서 RS가 바뀐 경우)
+        if (skipRollback || needsRollback) {
+          const newRSName = currentRequiredStepName.current
+          if (newRSName && newRSName !== prevRSName && selectedStep.type !== 'requiredStepNode') {
+            persistentMsgRef.current = `📌 ${newRSName} 진행 중이에요`
+            showTimedToast(`↩️ ${newRSName} 단계로 돌아왔어요!`, 5500)
+          }
+        }
+
     } finally {
       setIsAccepting(false)
     }
@@ -639,14 +698,13 @@ export default function CanvasPage() {
             message={toast}
             visible={toastVisible}
             showProgress={!toastPersistent}
-            duration={3000}
+            duration={toastDuration}
             onToggle={() => {
-              const next = !toastVisible
-              setToastVisible(next)
-              if (next && !toastPersistent && currentRequiredStepName.current) {
-                setToast(`📌 ${currentRequiredStepName.current} 진행 중이에요`)
+              if (toastVisible) {
+                setToastVisible(false)
                 if (timerRef.current) clearTimeout(timerRef.current)
-                timerRef.current = setTimeout(() => setToastVisible(false), 3000)
+              } else if (persistentMsgRef.current) {
+                showPersistentToast(persistentMsgRef.current)
               }
             }}
             onClose={() => {
