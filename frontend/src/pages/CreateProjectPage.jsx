@@ -51,7 +51,7 @@ export default function CreateProjectPage() {
         constraints: constraints.length > 0 ? constraints : null,
         prompt: prompt.trim(),
       })
-      navigate(`/canvas/${project.project_id}`, { state: { projectName: name.trim() || 'Project' } })
+      navigate(`/canvas/${project.project_id}`, { state: { projectName: project.name } })
     } catch (err) {
       alert('생성 실패: ' + (err.message ?? '알 수 없는 오류'))
     } finally {
