@@ -48,7 +48,7 @@ export default function CreateProjectPage() {
         member_count: Number(memberCount),
         duration_months: noDuration ? 0 : Number(durationMonth),
         description: description.trim() || null,
-        constraint: constraints.length > 0 ? constraints : null,
+        constraints: constraints.length > 0 ? constraints : null,
         prompt: prompt.trim(),
       })
       navigate(`/canvas/${project.project_id}`, { state: { projectName: name.trim() || 'Project' } })
