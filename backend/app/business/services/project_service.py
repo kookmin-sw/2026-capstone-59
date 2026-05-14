@@ -180,6 +180,7 @@ def update_project(
         duration_month=payload.duration_months,
         member_count=payload.member_count,
         is_deleted=payload.is_deleted,
+        constraint_text=payload.constraint,
     )
 
     db.commit()
