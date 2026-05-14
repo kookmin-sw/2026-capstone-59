@@ -258,14 +258,6 @@
 }
 
 /* ── 버튼 ── */
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-primary);
-}
 
 .btnBack {
   background: none;
@@ -337,9 +329,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-primary);
   cursor: default;
 }
 
