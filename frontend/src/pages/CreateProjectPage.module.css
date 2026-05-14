@@ -81,7 +81,7 @@
   background: #fff;
   color: var(--color-text);
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 12px;
   outline: none;
   box-sizing: border-box;
   transition: border-color 0.2s;
@@ -106,7 +106,7 @@
   appearance: none;
   color: #B5B0D8;
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
   cursor: pointer;
   box-sizing: border-box;
@@ -115,6 +115,11 @@
 
 .select:valid {
   color: var(--color-text);
+}
+
+.select:disabled {
+  color: #B5B0D8;
+  background-color: #EEEDF8;
 }
 
 .select option {
@@ -131,6 +136,7 @@
   align-items: center;
   gap: 6px;
 }
+
 
 .selectSmall {
   padding: 10px 28px 10px 10px;
@@ -191,7 +197,7 @@
   background: #fff;
   color: var(--color-text);
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
   resize: none;
   min-height: 100px;
@@ -239,9 +245,9 @@
   resize: none;
   min-height: 180px;
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text);
-  line-height: 1.8;
+  line-height: 1.9;
   background: transparent;
 }
 
@@ -357,9 +363,9 @@
 }
 
 .hint {
-  font-size: 12px;
-  font-weight: 450;
-  color: var(--color-text-disabled);
+  font-size: 13px;
+  font-weight: 500;
+  color: #5c5a6c;
   line-height: 1.8;
   margin-top: 4px;
 }
@@ -446,9 +452,11 @@
 }
 
 .promptTip {
-  font-size: 12px;
-  color: var(--color-text-disabled);
+  font-size: 13px;
+  font-weight: 500;
+  color: #5c5a6c;
   line-height: 1.8;
+  margin-top: 4px;
 }
 
 .errorMsg {
