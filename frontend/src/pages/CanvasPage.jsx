@@ -79,6 +79,14 @@ export default function CanvasPage() {
 
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
+  function josa(word, form) {
+    const code = word.charCodeAt(word.length - 1)
+    const hasBatchim = (code - 0xAC00) % 28 !== 0
+    const map = { '을/를': ['을', '를'], '이/가': ['이', '가'], '은/는': ['은', '는'], '(으)로': ['으로', '로'] }
+    return hasBatchim ? map[form][0] : map[form][1]
+  }
+
+
   function clearStreamCallbacks() {
     streamBuffers.current.forEach((buf) => {
       buf.onUpdate = null
@@ -502,28 +510,27 @@ export default function CanvasPage() {
         }
       }
 
-      // acceptResult 처리 부분
         const isRSComplete = acceptResult?.is_current_required_step_completed
         const isStageComplete = acceptResult?.is_current_stage_completed
 
         const prevRSName = currentRequiredStepName.current
 
-        // 다이아몬드 진입 토스트
         if (selectedStep.type === 'requiredStepNode') {
           const stepName = selectedStep.data.label
           currentRequiredStepName.current = stepName
           lastCompletedRequiredStepRef.current = null
 
           const key = `enter_${selectedStep.id}`
-          const overridePersistent = toastPersistent // 완료 토스트 떠있는 상태에서 진입
+          const overridePersistent = toastPersistent
           if (!shownToastsRef.current.has(key) || overridePersistent) {
             shownToastsRef.current.add(key)
             if (justCompletedRSRef.current?.nextMsgTimer) {
               clearTimeout(justCompletedRSRef.current.nextMsgTimer)
               justCompletedRSRef.current = null
             }
-            persistentMsgRef.current = `📌 ${stepName} 진행 중이에요`
-            showTimedToast(`📌 ${stepName}이(가) 시작됐어요!`, 5500)
+            persistentMsgRef.current = `🤔 ${stepName} ${josa(stepName, '을/를')} 진행 중이에요!`
+
+            showTimedToast(`📌 ${stepName}${josa(stepName, '이/가')} 시작됐어요!`, 5500)
           }
         }
 
@@ -532,7 +539,6 @@ export default function CanvasPage() {
 
         const { nextRequiredStepName } = await fetchAndRenderTree(selectedStageId)
 
-        // Stage 완료
         if (isStageComplete) {
           const key = `stage_complete_${selectedStageId}`
           if (!shownToastsRef.current.has(key)) {
@@ -562,11 +568,11 @@ export default function CanvasPage() {
             if (!shownToastsRef.current.has(key)) {
               shownToastsRef.current.add(key)
               const nextMsg = nextRequiredStepName
-                ? `다음 핵심 단계인 ${nextRequiredStepName}로 이동할 수 있어요!`
-                : `다음 필수 Step으로 이동할 수 있어요!`
+                ? `다음 단계인 ${nextRequiredStepName}${josa(nextRequiredStepName, '(으)로')} 이동할 수 있어요!`
+                : `다음 필수 단계로 이동할 수 있어요!`
               persistentMsgRef.current = nextMsg
 
-              showTimedToast(`🎉 ${name}이(가) 종료됐어요!`, 3000)
+              showTimedToast(`🎉 ${name}${josa(name, '이/가')} 종료됐어요!`, 3000)
               const t = setTimeout(() => {
                 showPersistentToast(nextMsg)
                 justCompletedRSRef.current = null
@@ -580,8 +586,8 @@ export default function CanvasPage() {
         if (skipRollback || needsRollback) {
           const newRSName = currentRequiredStepName.current
           if (newRSName && newRSName !== prevRSName && selectedStep.type !== 'requiredStepNode') {
-            persistentMsgRef.current = `📌 ${newRSName} 진행 중이에요`
-            showTimedToast(`↩️ ${newRSName} 단계로 돌아왔어요!`, 5500)
+            persistentMsgRef.current = `🤔 ${newRSName} ${josa(newRSName, '을/를')} 진행 중이에요!`
+            showTimedToast(`📌 ${newRSName}${josa(newRSName, '(으)로')} 돌아왔어요!`, 5500)
           }
         }
 
