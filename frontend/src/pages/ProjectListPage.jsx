@@ -324,7 +324,11 @@ export default function ProjectListPage() {
                       type="text"
                       maxLength={20}
                       value={editData.name ?? ''}
-                      onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.slice(0, 20)
+                        e.target.value = value
+                        setEditData({ ...editData, name: value })
+                      }}
                     />
                     <span className={styles.infoCharCount}>{(editData.name ?? '').length} / 20자</span>
                   </div>
@@ -343,7 +347,11 @@ export default function ProjectListPage() {
                       type="text"
                       maxLength={100}
                       value={editData.description ?? ''}
-                      onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.slice(0, 100)
+                        e.target.value = value
+                        setEditData({ ...editData, description: value })
+                      }}
                     />
                     <span className={styles.infoCharCount}>{(editData.description ?? '').length} / 100자</span>
                   </div>
@@ -386,7 +394,12 @@ export default function ProjectListPage() {
                         placeholder="제약 추가 후 Enter"
                         value={constraintInput}
                         onChange={(e) => setConstraintInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddModalConstraint() } }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                            e.preventDefault()
+                            handleAddModalConstraint()
+                          }
+                        }}
                       />
                       <button type="button" className={styles.addChipBtn} onClick={handleAddModalConstraint}>
                         +
