@@ -35,7 +35,7 @@ def _project() -> ProjectInfo:
         duration_months=3,
         member_count=4,
         description="배달 라이더 경로 비효율 문제 해결",
-        constraints="React + FastAPI",
+        constraints=["React + FastAPI"],
         initial_prompt="배달 라이더 경로 최적화 서비스를 만들고 싶음",
     )
 
