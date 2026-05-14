@@ -66,9 +66,7 @@ export default function TrashPage() {
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
-        <div className={styles.logo} onClick={() => navigate('/projects')} style={{ cursor: 'pointer' }}>
-          <span>poco</span>
-        </div>
+        <img src="/poco-logo-text.svg" alt="poco" height={25} onClick={() => navigate('/projects')}/>
       </header>
 
       <div className={styles.body}>
