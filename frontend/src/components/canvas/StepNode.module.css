@@ -9,6 +9,7 @@
   color: #9092B8;
   font-weight: 450;
   padding-left: 9px;
+  transition: color 0.3s ease;
 }
 
 .node {
@@ -22,6 +23,7 @@
   align-items: center;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(92, 69, 232, 0.06);
+  transition: background 0.3s ease, border-color 0.3s ease, border-left-color 0.3s ease;
 }
 
 .label {
@@ -31,6 +33,7 @@
   margin: 0;
   line-height: 1.4;
   word-break: keep-all;
+  transition: color 0.3s ease;
 }
 
 /* READY */
