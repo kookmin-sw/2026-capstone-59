@@ -10,22 +10,23 @@
 
 .diamondWrap {
   transform: scaleX(1.75);
-  filter: drop-shadow(0px 4px 14px rgba(92, 69, 232, 0.22));
 }
 
 .diamond {
   width: 83px;
   height: 83px;
-  background: linear-gradient(40deg, #bcb6ff 0%, #968eff 100%);
+  background: linear-gradient(40deg, #c9c4ff 0%, #b8b3ff 100%);
   transform: rotate(45deg);
   border-radius: 5px 14px 5px 14px;
-  border: 1.5px solid #aea5ff;
-  box-shadow: 0 2px 4px rgba(92, 69, 232, 0.06);
+  border: 1.5px solid #d3cfff;
+  
 }
 
 .accepted {
-  background: linear-gradient(135deg, #A19AFF 0%, #6F60FF 100%);
+  background: linear-gradient(135deg, #948dff 0%, #6655ff 100%);
   border: 1.5px solid #7768fe;
+  box-shadow: 0 2px 4px rgba(92, 69, 232, 0.06);
+
 }
 
 .node {
@@ -44,7 +45,7 @@
 .label {
   position: absolute;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   text-align: center;
   word-break: keep-all;
