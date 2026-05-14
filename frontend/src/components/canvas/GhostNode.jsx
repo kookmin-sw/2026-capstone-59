@@ -10,7 +10,7 @@ export default function GhostNode({ data }) {
       className={styles.wrapper}
       initial={{ opacity: 0 }}
       animate={isExiting ? { opacity: 0 } : { opacity: 1 }}
-      transition={{ duration: 0.25, delay: 0.5 }}
+      transition={{ duration: 0.25, delay: 0.6 }}
     >
       <div className={styles.stageRow}>
         <div className={styles.stageSkeletonLine} />
