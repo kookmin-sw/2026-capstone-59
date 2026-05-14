@@ -5,9 +5,18 @@ Revises: 6bd360bbd9f0
 Create Date: 2026-05-14 20:05:06.159899
 
 """
+from typing import Sequence, Union
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+# revision identifiers, used by Alembic.
+revision: str = '78ca25cfab60'
+down_revision: Union[str, Sequence[str], None] = '6bd360bbd9f0'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
 
 def upgrade():
     op.add_column('project', sa.Column('constraints', postgresql.JSONB(), nullable=True))
