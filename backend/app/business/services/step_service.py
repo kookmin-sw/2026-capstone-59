@@ -16,6 +16,7 @@ from app.core.schemas.step import (
     RequiredStepItem,
     RequiredStepListResponse,
     StepDetailResponse,
+    StepKeepResponse,
     StepTreeNode,
     StepTreeResponse,
 )
@@ -66,7 +67,35 @@ def get_step_content(
             json.loads(content.dictionary) if content and content.dictionary else None
         ),
         template_url=template_url,
+        is_keep=step.is_keep,
     )
+
+
+def update_step_keep(
+    db: Session, step_id: uuid.UUID, is_keep: bool
+) -> StepKeepResponse:
+    """Step.is_keep 값을 갱신한다."""
+    step = step_repo.get_step(db, step_id)
+    if step is None:
+        logger.warning(
+            "step: keep update rejected — not found",
+            extra={"step_id": str(step_id)},
+        )
+        raise StepNotFoundError()
+
+    step_repo.update_step_is_keep(step, is_keep)
+    db.commit()
+    db.refresh(step)
+
+    logger.info(
+        "step: keep updated",
+        extra={
+            "project_id": str(step.project_id),
+            "step_id": str(step.id),
+            "is_keep": is_keep,
+        },
+    )
+    return StepKeepResponse(id=step.id, is_keep=step.is_keep)
 
 
 def rollback_step(db: Session, step_id: uuid.UUID) -> None:
@@ -278,6 +307,7 @@ def _build_tree(steps: list[StepModel]) -> list[StepTreeNode]:
             name=s.name,
             status=s.status,
             is_required=s.required_step_id is not None,
+            is_keep=s.is_keep,
             parent_step_id=s.parent_step_id,
         )
         for s in steps
