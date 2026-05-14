@@ -380,15 +380,27 @@
   background: #191919;
   color: #fff;
   font-size: 13px;
-  font-weight: 700;
-  padding: 10px 16px;
-  border-radius: 8px;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 10px;
   text-decoration: none;
   transition: opacity 0.15s;
 }
 
 .notionBtn:hover {
   opacity: 0.85;
+}
+
+.templateLoading {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #707097;
+  letter-spacing: 0.4px;
+  text-align: center;
+  gap: 6px;
 }
 
 .templateHint {
@@ -400,6 +412,43 @@
   margin: 0;
 }
 
+.bounceDots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.bounceDots span {
+  width: 6px;
+  height: 6px;
+  background-color:#9b9bc4;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.bounceDots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.bounceDots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.bounceDots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+/* 하단 */
 .footer {
   padding: 14px 20px;
   border-top: 1px solid #EEEDF8;
