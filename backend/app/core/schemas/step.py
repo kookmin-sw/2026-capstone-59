@@ -69,7 +69,7 @@ class ProjectInfo(BaseModel):
     duration_months: int | None
     member_count: int | None
     description: str | None
-    constraints: str | None
+    constraints: list[str] | None = None
     initial_prompt: str
 
 
