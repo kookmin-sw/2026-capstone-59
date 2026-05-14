@@ -14,7 +14,7 @@ import StepNode from '../components/canvas/StepNode'
 import RequiredStepNode from '../components/canvas/RequiredStepNode'
 
 import { getStages } from '../api/stage'
-import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep } from '../api/step'
 import { createShare, deleteShare } from '../api/projects'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
@@ -610,17 +610,33 @@ export default function CanvasPage() {
   function handleNodeContextMenu(event, node) {
     event.preventDefault()
     if (node.data?.status !== 'ACCEPTED') return
+    if (node.type === 'requiredStepNode') return
     setContextMenu({ x: event.clientX, y: event.clientY, node })
   }
 
-  function handleKeepToggle(nodeId) {
+  async function handleKeepToggle(nodeId) {
+    const node = nodes.find(n => n.id === nodeId)
+    const newKeep = !node?.data?.keep
+
     setNodes((nds) =>
       nds.map((n) =>
         n.id === nodeId
-          ? { ...n, data: { ...n.data, keep: !n.data.keep } }
+          ? { ...n, data: { ...n.data, keep: newKeep } }
           : n
       )
     )
+
+    try {
+      await keepStep(nodeId, newKeep)
+    } catch {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === nodeId
+            ? { ...n, data: { ...n.data, keep: !newKeep } }
+            : n
+        )
+      )
+    }
   }
 
   function handlePaneClick() {
