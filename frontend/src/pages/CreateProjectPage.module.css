@@ -241,7 +241,7 @@
   font-family: var(--font-family);
   font-size: 14px;
   color: var(--color-text);
-  line-height: 1.7;
+  line-height: 1.8;
   background: transparent;
 }
 
@@ -341,4 +341,129 @@
   font-weight: 700;
   color: var(--color-primary);
   cursor: default;
+}
+
+.subtitleWarn {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.inputAutoResize {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.6;
+  min-height: 100px;
+}
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.charCount {
+  font-size: 12px;
+  color: var(--color-text-disabled);
+}
+
+.hint {
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--color-text-disabled);
+  line-height: 1.8;
+  margin-top: 4px;
+}
+
+.chipInputRow {
+  display: flex;
+  gap: 8px;
+}
+
+.chipInputRow .input {
+  flex: 1;
+}
+
+.addChipBtn {
+  padding: 5px 10px;
+  background: var(--color-primary-light);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font-family);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.addChipBtn:hover {
+  background: var(--color-primary-hover);
+}
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #e6e4ff;
+  color: var(--color-text);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.chipRemove {
+  background: none;
+  border: none;
+  color: #B5B0D8;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.chipRemove:hover {
+  color: var(--color-error);
+}
+
+.promptCounter {
+  font-size: 12px;
+  color: var(--color-text-disabled);
+  margin-right: 4px;
+}
+
+.promptExamples {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 660px;
+  width: 100%;
+}
+
+.promptExampleItem {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+}
+
+.promptTip {
+  font-size: 12px;
+  color: var(--color-text-disabled);
+  line-height: 1.8;
+}
+
+.errorMsg {
+  font-size: 12px;
+  color: var(--color-error);
+  margin-top: 4px;
 }
