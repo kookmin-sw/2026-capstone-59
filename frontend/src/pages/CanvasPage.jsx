@@ -585,6 +585,9 @@ export default function CanvasPage() {
           }
         }
 
+      setSelectedStep(null)
+      setStepDetail(null)
+
     } finally {
       setIsAccepting(false)
     }
