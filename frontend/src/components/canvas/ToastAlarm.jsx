@@ -8,7 +8,7 @@ export default function ToastAlarm({
   onToggle,
   onClose,
   showProgress = false,
-  duration = 3000,
+  duration = 5500,
 }) {
   const [show, setShow] = useState(false)
   const [fading, setFading] = useState(false)
