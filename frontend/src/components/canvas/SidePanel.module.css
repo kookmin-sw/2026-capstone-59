@@ -380,9 +380,10 @@
   background: #191919;
   color: #fff;
   font-size: 13px;
-  font-weight: 700;
-  padding: 10px 16px;
-  border-radius: 8px;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 10px;
   text-decoration: none;
   transition: opacity 0.15s;
 }
@@ -391,10 +392,24 @@
   opacity: 0.85;
 }
 
-.templateHint {
+.templateLoading {
   display: inline-flex;
   align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #707097;
+  letter-spacing: 0.4px;
+  text-align: center;
   gap: 6px;
+}
+
+.templateHint {
+  font-size: 12px;
+  color: #9E99C0;
+  text-align: center;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+  margin: 0;
 }
 
 .bounceDots {
@@ -405,7 +420,7 @@
 .bounceDots span {
   width: 6px;
   height: 6px;
-  background-color: var(--color-primary);
+  background-color:#9b9bc4;
   border-radius: 50%;
   animation: bounce 1.4s infinite ease-in-out both;
 }
@@ -428,7 +443,7 @@
     opacity: 0.6;
   }
   40% {
-    transform: translateY(-6px);
+    transform: translateY(-3px);
     opacity: 1;
   }
 }
