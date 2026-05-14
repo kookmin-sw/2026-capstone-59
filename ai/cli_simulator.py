@@ -135,7 +135,12 @@ def _build_project_info() -> ProjectInfo:
     member_count = _input_int("프로젝트 인원 (명): ", minimum=1)
     name = _input_optional("프로젝트 이름 (선택, 엔터=스킵): ")
     description = _input_optional("프로젝트 설명 (선택, 엔터=스킵): ")
-    constraints = _input_optional("제약사항 (선택, 엔터=스킵): ")
+    _constraints_raw = _input_optional("제약사항 (선택, 콤마 구분 또는 엔터=스킵): ")
+    constraints = (
+        [c.strip() for c in _constraints_raw.split(",") if c.strip()]
+        if _constraints_raw
+        else None
+    )
 
     return ProjectInfo(
         project_id=str(uuid.uuid4()),

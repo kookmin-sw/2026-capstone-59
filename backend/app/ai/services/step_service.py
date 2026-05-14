@@ -46,7 +46,7 @@ def _build_project_info(step: StepModel) -> ProjectInfo:
         duration_months=project.duration_month,
         member_count=project.member_count,
         description=project.description,
-        constraints=project.constraint_text,
+        constraints=project.constraints,
         initial_prompt=project.prompt,
     )
 

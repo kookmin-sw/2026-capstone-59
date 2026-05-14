@@ -158,3 +158,19 @@ class InvalidRollbackError(PocoError):
             message=message,
             status_code=http_status.HTTP_400_BAD_REQUEST,
         )
+
+class ConstraintTooLongError(PocoError):
+    def __init__(self, message: str = "제약사항 항목은 50자를 초과할 수 없습니다."):
+        super().__init__(
+            code="PROJECT_CONSTRAINT_TOO_LONG",
+            message=message,
+            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )
+
+class ConstraintsLimitError(PocoError):
+    def __init__(self, message: str = "제약사항은 최대 10개까지 등록할 수 있습니다."):
+        super().__init__(
+            code="PROJECT_CONSTRAINTS_LIMIT",
+            message=message,
+            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )

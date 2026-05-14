@@ -65,7 +65,7 @@ class TestProjectInfo:
         assert m.name is None
 
     def test_optional_fields_accepted(self):
-        m = ProjectInfo(**PROJECT_INFO, name="Poco", description="설명", constraints="제약")
+        m = ProjectInfo(**PROJECT_INFO, name="Poco", description="설명", constraints=["제약"])
         assert m.name == "Poco"
 
     @pytest.mark.parametrize("missing", ["project_id", "duration_months", "member_count", "initial_prompt"])

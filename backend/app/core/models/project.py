@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String,Text, func
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+
 
 
 class Project(Base):
@@ -22,7 +24,7 @@ class Project(Base):
     duration_month: Mapped[int | None] = mapped_column(Integer, nullable=True)
     member_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    constraint_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    constraints: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     share_token: Mapped[str | None] = mapped_column(
         String, nullable=True, unique=True, index=True

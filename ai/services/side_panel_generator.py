@@ -52,6 +52,18 @@ def _coerce(value: Any, default: str = _NONE_LABEL) -> str:
     return str(value)
 
 
+def _format_constraints(constraints: Optional[list[str]]) -> str:
+    """list[str] 제약사항을 프롬프트용 들여쓰기 리스트로 포맷팅.
+
+    선두에 줄바꿈을 두어 템플릿의 라벨(`- 제약사항: {constraints}`) 뒤에
+    첫 항목이 한 줄로 붙는 것을 방지한다. 모든 항목이 동일하게
+    `  - {item}` 형태로 들여쓰기되어 시각적·LLM 인식 일관성을 갖는다.
+    """
+    if not constraints:
+        return _NONE_LABEL
+    return "\n" + "\n".join(f"  - {c}" for c in constraints)
+
+
 class SidePanelGenerator:
     """side_panel 시나리오 — 일반 Step 사이드패널 콘텐츠 동적 생성."""
 
@@ -98,7 +110,7 @@ class SidePanelGenerator:
             duration_months=str(project.duration_months),
             member_count=str(project.member_count),
             description=_coerce(project.description),
-            constraints=_coerce(project.constraints),
+            constraints=_format_constraints(project.constraints),
             initial_prompt=project.initial_prompt,
             stage_sequence=str(stage.stage_sequence),
             stage_name=stage.name,
