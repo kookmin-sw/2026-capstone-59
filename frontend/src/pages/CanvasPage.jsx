@@ -528,7 +528,7 @@ export default function CanvasPage() {
               clearTimeout(justCompletedRSRef.current.nextMsgTimer)
               justCompletedRSRef.current = null
             }
-            persistentMsgRef.current = `🤔 ${stepName} ${josa(stepName, '을/를')} 진행 중이에요!`
+            persistentMsgRef.current = `🤔 ${stepName}${josa(stepName, '을/를')} 진행 중이에요!`
 
             showTimedToast(`📌 ${stepName}${josa(stepName, '이/가')} 시작됐어요!`, 5500)
           }
@@ -591,7 +591,7 @@ export default function CanvasPage() {
 
             const newRSName = currentRequiredStepName.current
             if (newRSName && newRSName !== prevRSName) {
-              persistentMsgRef.current = `🤔 ${newRSName} ${josa(newRSName, '을/를')} 진행 중이에요!`
+              persistentMsgRef.current = `🤔 ${newRSName}${josa(newRSName, '을/를')} 진행 중이에요!`
               showTimedToast(`📌 ${newRSName}${josa(newRSName, '(으)로')} 돌아왔어요!`, 5500)
             } else {
               persistentMsgRef.current = null            }
