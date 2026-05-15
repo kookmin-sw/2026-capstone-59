@@ -144,6 +144,7 @@ function parseStreamingMentoring(text) {
   result.recommended_methods = extractArray('recommended_methods')
   result.common_mistakes = extractArray('common_mistakes')
   result.one_line_tip = extractString('one_line_tip')
+  result.dictionary = extractArray('dictionary')
 
   Object.keys(result).forEach(k => { if (result[k] === undefined) delete result[k] })
   return result
