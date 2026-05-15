@@ -275,7 +275,7 @@ function StreamingStructuredView({ data, streamingText }) {
           </section>
         : <TitledSkeleton title="📖 Step 설명" />}
 
-      {visibleSection >= 1 && (data.recommended_methods?.length > 0
+      {visibleSection >= 1 && data.recommended_methods?.length > 0
         ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
             <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
             <div className={styles.methodList}>
@@ -289,9 +289,9 @@ function StreamingStructuredView({ data, streamingText }) {
               ))}
             </div>
           </section>
-        : <TitledSkeleton title="🔥 추천 방법" />)}
+        : <TitledSkeleton title="🔥 추천 방법" />}
 
-      {visibleSection >= 2 && (data.common_mistakes?.length > 0
+      {visibleSection >= 2 && data.common_mistakes?.length > 0
         ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
             <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
             <div className={styles.mistakeList}>
@@ -309,14 +309,14 @@ function StreamingStructuredView({ data, streamingText }) {
               ))}
             </div>
           </section>
-        : <TitledSkeleton title="⚠️ 자주 하는 실수" />)}
+        : <TitledSkeleton title="⚠️ 자주 하는 실수" />}
 
-      {visibleSection >= 3 && (data.one_line_tip
+      {visibleSection >= 3 && data.one_line_tip
         ? <div className={`${styles.tipBox} ${styles.fadeInSection}`}>
             <span className={styles.tipTitle}>💡 한 줄 팁</span>
             <p className={styles.tipText}>{data.one_line_tip}</p>
           </div>
-        : <TitledSkeleton title="💡 한 줄 팁" />)}
+        : <TitledSkeleton title="💡 한 줄 팁" />}
     </div>
   )
 }
@@ -436,7 +436,7 @@ function MentoringContent({ raw, isLoading, streamingText, isRequired }) {
   )
 }
 
-export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting, forceTab }) {
+export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting }) {
   const [lastStep, setLastStep] = useState(step)
   const [activeTab, setActiveTab] = useState('mentoring')
   const [tabStepId, setTabStepId] = useState(step?.id)
@@ -445,11 +445,6 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
     setTabStepId(step?.id)
     setActiveTab('mentoring')
   }
-
-  // 외부에서 특정 탭으로 강제 전환 (온보딩 투어용)
-  useEffect(() => {
-    if (forceTab) setActiveTab(forceTab)
-  }, [forceTab])
 
   useEffect(() => {
     if (step) setTimeout(() => setLastStep(step), 0)
@@ -492,7 +487,6 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
         {tabs.map((tab) => (
           <button
             key={tab}
-            data-tour={`sidepanel-tab-${tab}`}
             className={`${styles.tab} ${activeTab === tab ? styles.activeTab : ''}`}
             onClick={() => setActiveTab(tab)}
           >
@@ -502,11 +496,11 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
       </div>
       
       <div className={styles.content}>
-        <div data-tour="sidepanel-content" style={{ display: activeTab === 'mentoring' ? 'block' : 'none' }}>
+        <div style={{ display: activeTab === 'mentoring' ? 'block' : 'none' }}>
           <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} />
         </div>
 
-        <div data-tour="sidepanel-dictionary-content" style={{ display: activeTab === 'dictionary' ? 'block' : 'none' }}>
+        <div style={{ display: activeTab === 'dictionary' ? 'block' : 'none' }}>
           <div className={styles.dictionaryList}>
             {!detail
               ? [...Array(3)].map((_, i) => (
@@ -560,7 +554,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
 
       <div className={styles.footer}>
         {(status !== 'ACCEPTED' && !hasChildren && onAccept) && (
-          <button data-tour="sidepanel-accept" className={styles.acceptBtn} onClick={onAccept} disabled={isAccepting}>
+          <button className={styles.acceptBtn} onClick={onAccept} disabled={isAccepting}>
             <HiCheck size={15} />
             accept
           </button>
