@@ -29,6 +29,12 @@ content/
 # Personal work context (not for public repo)
 CLAUDE.md
 
+# Presentation working files (local only — not for public repo)
+presentation/
+
+# zip build staging (local only)
+.build/
+
 # Jekyll / GitHub Pages
 _site/
 .jekyll-cache/
