@@ -894,7 +894,7 @@ export default function CanvasPage() {
       </header>
 
       <div className={styles.body}>
-        <div data-tour="canvas-stage-nav">
+        <div data-tour="canvas-stage-nav" style={{ display: 'flex', flexShrink: 0 }}>
           <StageNavigator
             stages={uiStages}
             currentStageId={currentStageId}
