@@ -17,7 +17,7 @@ import GhostEdge from '../components/canvas/GhostEdge'
 import NewEdge from '../components/canvas/NewEdge'
 
 import { getStages } from '../api/stage'
-import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep } from '../api/step'
 import { createShare, deleteShare } from '../api/projects'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
@@ -74,6 +74,7 @@ export default function CanvasPage() {
   const enqueuedLenRef = useRef(0)
   const typingQueueRef = useRef('')
   const typingTimerRef = useRef(null)
+  const typingDrainCallbackRef = useRef(null)
   const detailCacheRef = useRef({})
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
@@ -147,6 +148,7 @@ export default function CanvasPage() {
     }
     typingQueueRef.current = ''
     enqueuedLenRef.current = 0
+    typingDrainCallbackRef.current = null
   }
 
   function showTimedToast(message, duration = 5500) {
@@ -174,6 +176,10 @@ export default function CanvasPage() {
       if (!typingQueueRef.current) {
         clearInterval(typingTimerRef.current)
         typingTimerRef.current = null
+        // 큐 소진 → drain 콜백 실행
+        const cb = typingDrainCallbackRef.current
+        typingDrainCallbackRef.current = null
+        cb?.()
         return
       }
       const step = Math.min(2, typingQueueRef.current.length)
@@ -432,7 +438,7 @@ export default function CanvasPage() {
         }
       }
       buf.onComplete = async () => {
-        clearTyping()
+        const proceed = async () => {
         try {
           const detail = await getStepDetail(node.id)
           if (requestId !== detailRequestRef.current) return
@@ -442,8 +448,15 @@ export default function CanvasPage() {
         } catch {
           setStreamingText(null)
         }
+        }
+        if (!typingQueueRef.current && !typingTimerRef.current) {
+          await proceed()
+        } else {
+          typingDrainCallbackRef.current = proceed
+        }
       }
     } else {
+      // ACCEPTED 노드 등 버퍼 없는 경우
       setIsStreamMode(false)
       try {
         const detail = await getStepDetail(node.id)
@@ -682,17 +695,33 @@ export default function CanvasPage() {
   function handleNodeContextMenu(event, node) {
     event.preventDefault()
     if (node.data?.status !== 'ACCEPTED') return
+    if (node.type === 'requiredStepNode') return
     setContextMenu({ x: event.clientX, y: event.clientY, node })
   }
 
-  function handleKeepToggle(nodeId) {
+  async function handleKeepToggle(nodeId) {
+    const node = nodes.find(n => n.id === nodeId)
+    const newKeep = !node?.data?.keep
+
     setNodes((nds) =>
       nds.map((n) =>
         n.id === nodeId
-          ? { ...n, data: { ...n.data, keep: !n.data.keep } }
+          ? { ...n, data: { ...n.data, keep: newKeep } }
           : n
       )
     )
+
+    try {
+      await keepStep(nodeId, newKeep)
+    } catch {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === nodeId
+            ? { ...n, data: { ...n.data, keep: !newKeep } }
+            : n
+        )
+      )
+    }
   }
 
   function handlePaneClick() {

@@ -45,6 +45,7 @@ export function flattenTree(steps, stageSequence) {
         is_required: node.is_required,
         stageNumber: stageSequence,
         step_id: node.step_id,
+        keep: node.is_keep ?? false,
       },
     })
 

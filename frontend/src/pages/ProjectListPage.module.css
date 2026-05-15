@@ -760,3 +760,73 @@
   border-radius: 8px;
   margin: 0 0 4px;
 }
+
+.userWrapper {
+  position: relative;
+  padding: 4px 0;
+}
+
+.userBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  /* width: 100% 삭제 */
+}
+
+.userBtn:hover {
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.userBtn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userDropdown {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 8px;
+  right: 8px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 100;
+}
+
+.userEmail {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  padding: 4px 8px 8px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 8px;
+  font-size: 12px;
+  color: #e53935;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.logoutBtn:hover {
+  background: rgba(229, 57, 53, 0.06);
+}
