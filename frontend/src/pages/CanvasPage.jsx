@@ -292,6 +292,17 @@ export default function CanvasPage() {
         b.onUpdate = null
         b.onComplete = null
         await complete?.()
+        if (!detailCacheRef.current[nodeId]) {
+          try {
+            const full = JSON.parse(b.text)
+            detailCacheRef.current[nodeId] = {
+              mentoring: full.mentoring ?? {},
+              dictionary: full.dictionary ?? [],
+            }
+          } catch {
+            //
+          }
+        }
       },
       onError: async () => {
         const b = streamBuffers.current.get(nodeId)
@@ -512,26 +523,6 @@ export default function CanvasPage() {
     setSelectedStep(node)
     setStreamingText(null)
 
-    // 클릭한 노드를 캔버스 중앙(SidePanel 너비 보정)으로 부드럽게 이동
-    if (rfInstance) {
-      const NODE_W = 180
-      const NODE_H = 60
-      const SIDE_PANEL_W = 380 /* SidePanel slide-in 후 가려지는 우측 폭 */
-      const wrap = canvasWrapperRef.current
-      const wrapW = wrap?.getBoundingClientRect().width ?? window.innerWidth
-      // SidePanel이 열린 뒤 노드가 우측에 가리지 않도록 보정한 시각적 중심
-      const visibleCenterX = (wrapW - SIDE_PANEL_W) / 2
-      const offsetFromCenterX = wrapW / 2 - visibleCenterX
-      const cx = (node.position?.x ?? 0) + NODE_W / 2
-      const cy = (node.position?.y ?? 0) + NODE_H / 2
-      const { zoom } = rfInstance.getViewport()
-      // setCenter는 실제 중심으로 이동 → SidePanel 보정을 위해 살짝 좌측으로
-      rfInstance.setCenter(cx + offsetFromCenterX / zoom, cy, {
-        zoom,
-        duration: 500,
-      })
-    }
-
     if (detailCacheRef.current[node.id]) {
       setStepDetail(detailCacheRef.current[node.id])
     } else {
@@ -543,6 +534,7 @@ export default function CanvasPage() {
 
     if (buf?.isDone) {
       setIsStreamMode(false)
+      if (detailCacheRef.current[node.id]) return
       try {
         const detail = await getStepDetail(node.id)
         if (requestId !== detailRequestRef.current) return
@@ -568,11 +560,16 @@ export default function CanvasPage() {
       buf.onComplete = async () => {
         const proceed = async () => {
         try {
-          const detail = await getStepDetail(node.id)
+          const b = streamBuffers.current.get(node.id)
+          const full = JSON.parse(b?.text ?? '{}')
+          const detail = {
+            mentoring: full.mentoring ?? {},
+            dictionary: full.dictionary ?? [],
+          }
+          detailCacheRef.current[node.id] = detail
           if (requestId !== detailRequestRef.current) return
           setStepDetail(detail)
           setStreamingText(null)
-          detailCacheRef.current[node.id] = detail
         } catch {
           setStreamingText(null)
         }
@@ -586,6 +583,7 @@ export default function CanvasPage() {
     } else {
       // ACCEPTED 노드 등 버퍼 없는 경우
       setIsStreamMode(false)
+      if (detailCacheRef.current[node.id]) return
       try {
         const detail = await getStepDetail(node.id)
         if (requestId !== detailRequestRef.current) return
