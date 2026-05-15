@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { HiOutlineFolder, HiOutlineTrash } from 'react-icons/hi'
 import { HiOutlineUser } from 'react-icons/hi'
 import styles from './ProjectListPage.module.css'
-import { BsGrid, BsList, BsThreeDotsVertical, BsPencil, BsPlus } from 'react-icons/bs'
+import { BsGrid, BsList, BsThreeDotsVertical, BsPencil, BsPlus, BsSearch, BsX } from 'react-icons/bs'
 import { getProjects, deleteProject, updateProject } from '../api/projects'
 import { getMe, logout } from '../api/auth'
 import StepTreeThumbnail from '../components/StepTreeThumbnail'
@@ -44,7 +44,12 @@ export default function ProjectListPage() {
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [sortBy, setSortBy] = useState('updated_at')
+  const [keyword, setKeyword] = useState('')
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
   const size = 8
+
+  // 가장 최근 요청만 반영하기 위한 ID (stale 응답 차단)
+  const requestIdRef = useRef(0)
 
   const [openMenuId, setOpenMenuId] = useState(null)
   const [infoModal, setInfoModal] = useState(null)
@@ -59,12 +64,33 @@ export default function ProjectListPage() {
   const [user, setUser] = useState(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   
+  // 검색어 디바운싱 (300ms)
   useEffect(() => {
-    getProjects({ page, size, sort_by: sortBy, is_deleted: false }).then((data) => {
-      setProjects(data.projects ?? [])
-      setTotalCount(data.total_count ?? 0)
-    })
-  }, [page, sortBy])
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword.trim())
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [keyword])
+
+  // 검색어가 바뀌면 첫 페이지로
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedKeyword])
+
+  useEffect(() => {
+    const params = { page, size, sort_by: sortBy, is_deleted: false }
+    if (debouncedKeyword) params.keyword = debouncedKeyword
+
+    const reqId = ++requestIdRef.current
+    getProjects(params)
+      .then((data) => {
+        // 더 늦게 발사된 요청이 이미 응답에 반영됐다면 이 응답은 무시
+        if (reqId !== requestIdRef.current) return
+        setProjects(data.projects ?? [])
+        setTotalCount(data.total_count ?? 0)
+      })
+      .catch(() => {})
+  }, [page, sortBy, debouncedKeyword])
 
   useEffect(() => {
     getMe().then(setUser).catch(() => {})
@@ -221,6 +247,26 @@ export default function ProjectListPage() {
           <div className={styles.subHeader}>
             <h2 className={styles.title}>모든 프로젝트</h2>
             <div className={styles.controls}>
+              <div className={styles.searchBox}>
+                <BsSearch className={styles.searchIcon} size={14} />
+                <input
+                  className={styles.searchInput}
+                  type="text"
+                  placeholder="프로젝트 검색"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+                {keyword && (
+                  <button
+                    type="button"
+                    className={styles.searchClearBtn}
+                    onClick={() => setKeyword('')}
+                    aria-label="검색어 지우기"
+                  >
+                    <BsX size={16} />
+                  </button>
+                )}
+              </div>
               <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                 <option value="updated_at">최근 사용일</option>
                 <option value="created_at">생성일</option>
@@ -243,7 +289,15 @@ export default function ProjectListPage() {
             </div>
           </div>
 
-          {viewMode === 'grid' ? (
+          {projects.length === 0 && debouncedKeyword ? (
+            <div className={styles.emptyState}>
+              <BsSearch size={28} className={styles.emptyIcon} />
+              <p className={styles.emptyTitle}>검색 결과가 없어요</p>
+              <p className={styles.emptyDesc}>
+                <strong>"{debouncedKeyword}"</strong>와 일치하는 프로젝트가 없습니다.
+              </p>
+            </div>
+          ) : viewMode === 'grid' ? (
             <div className={styles.grid}>
                 {projects.length === 0 && (
                   <div className={styles.createCard} onClick={() => navigate('/projects/create')}>
