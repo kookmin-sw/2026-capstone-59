@@ -64,6 +64,14 @@ def delete_project(
     return None
 
 
+@router.get("/{project_id}/share", status_code=http_status.HTTP_200_OK)
+def get_share_status(
+    project: ProjectModel = Depends(get_owned_project),
+) -> dict:
+    """프로젝트의 현재 공유 상태(토큰 보유 여부) 조회."""
+    return {"share_token": project.share_token}
+
+
 @router.post("/{project_id}/share", status_code=http_status.HTTP_200_OK)
 def create_share_link(
     db: Session = Depends(get_db),

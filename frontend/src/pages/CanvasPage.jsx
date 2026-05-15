@@ -18,7 +18,7 @@ import NewEdge from '../components/canvas/NewEdge'
 
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep } from '../api/step'
-import { createShare, deleteShare } from '../api/projects'
+import { createShare, deleteShare, getShareStatus } from '../api/projects'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
 import { STAGE_ENGLISH, X_GAP, Y_GAP, flattenTree, getStageProgressFromTree, findRequiredStep, getLatestActiveStage } from '../utils/canvasUtils'
@@ -59,8 +59,10 @@ export default function CanvasPage() {
   
   const [isStreamMode, setIsStreamMode] = useState(false)
   const [shareModal, setShareModal] = useState(false)
+  // 'loading' | 'idle'(공유 시작 전) | 'active'(공유 중) | 'error'
+  const [shareStatus, setShareStatus] = useState('loading')
   const [shareUrl, setShareUrl] = useState('')
-  const [shareLoading, setShareLoading] = useState(false)
+  const [shareBusy, setShareBusy] = useState(false) // 공유 / 그만하기 버튼 클릭 중복 방지
   const [shareCopied, setShareCopied] = useState(false)
 
   const lastCompletedRequiredStepRef = useRef(null)
@@ -732,17 +734,22 @@ export default function CanvasPage() {
     setStreamingText(null)
   }
 
+  // 공유 모달 진입 — 모달을 즉시 열고 공유 상태를 조회
   async function handleShareOpen() {
     setShareModal(true)
-    setShareLoading(true)
+    setShareStatus('loading')
+    setShareCopied(false)
     try {
-      const result = await createShare(projectId)
-      setShareUrl(`${window.location.origin}/shared/${result.share_token}`)
+      const result = await getShareStatus(projectId)
+      if (result?.share_token) {
+        setShareUrl(`${window.location.origin}/shared/${result.share_token}`)
+        setShareStatus('active')
+      } else {
+        setShareUrl('')
+        setShareStatus('idle')
+      }
     } catch {
-      alert('공유 링크 생성에 실패했어요.')
-      setShareModal(false)
-    } finally {
-      setShareLoading(false)
+      setShareStatus('error')
     }
   }
 
@@ -750,6 +757,38 @@ export default function CanvasPage() {
     setShareModal(false)
     setShareUrl('')
     setShareCopied(false)
+    setShareStatus('loading')
+  }
+
+  // idle 상태에서 "공유" 버튼 클릭 → 토큰 생성 → active 로 전환
+  async function handleShareCreate() {
+    if (shareBusy) return
+    setShareBusy(true)
+    try {
+      const result = await createShare(projectId)
+      setShareUrl(`${window.location.origin}/shared/${result.share_token}`)
+      setShareStatus('active')
+    } catch {
+      alert('공유 링크 생성에 실패했어요.')
+    } finally {
+      setShareBusy(false)
+    }
+  }
+
+  // active 상태에서 "공유 그만하기" 클릭 → 토큰 삭제 → idle 로 전환
+  async function handleShareRevoke() {
+    if (shareBusy) return
+    setShareBusy(true)
+    try {
+      await deleteShare(projectId)
+      setShareUrl('')
+      setShareCopied(false)
+      setShareStatus('idle')
+    } catch {
+      alert('공유 중지에 실패했어요.')
+    } finally {
+      setShareBusy(false)
+    }
   }
 
   async function handleCopyUrl() {
@@ -760,16 +799,6 @@ export default function CanvasPage() {
     } catch {
       alert('복사에 실패했어요.')
     }
-  }
-
-  async function handleShareRevoke() {
-    try {
-      await deleteShare(projectId)
-    } catch {
-      alert('공유 중지에 실패했어요.')
-      return
-    }
-    handleShareClose()
   }
 
   const selectedHasChildren = edges.some((e) => e.source === selectedStep?.id)
@@ -904,26 +933,77 @@ export default function CanvasPage() {
         {shareModal && (
           <div className={styles.overlay} onClick={handleShareClose}>
             <div className={styles.shareModal} onClick={(e) => e.stopPropagation()}>
+              {/* 헤더 — 상태마다 타이틀이 달라짐 */}
               <div className={styles.shareModalHeader}>
-                <p className={styles.shareModalTitle}>캔버스 공유하기</p>
+                <p className={styles.shareModalTitle}>
+                  {shareStatus === 'active' ? '캔버스 공유하기' : '공유하기'}
+                  {shareStatus === 'active' && (
+                    <span className={styles.shareActiveBadge}>공유 중</span>
+                  )}
+                </p>
                 <button className={styles.closeBtn} onClick={handleShareClose}>✕</button>
               </div>
-              <p className={styles.shareModalDesc}>
-                링크를 통해 다른 사람들에게 프로젝트 캔버스를 공유할 수 있습니다.<br />
-                캔버스는 읽기전용으로 공유됩니다.
-              </p>
-              <div className={styles.shareLinkBox}>
-                {shareLoading
-                  ? <span className={styles.shareLinkPlaceholder}>링크를 생성하는 중이에요...</span>
-                  : <input className={styles.shareLinkInput} value={shareUrl} readOnly />
-                }
-                <button className={styles.copyBtn} onClick={handleCopyUrl} disabled={shareLoading}>
-                  {shareCopied ? <BsCheck size={18} /> : <BsLink45Deg size={18} />}
-                </button>
-              </div>
-              <button className={styles.revokeBtn} onClick={handleShareRevoke}>
-                공유 그만하기
-              </button>
+
+              {/* 로딩 */}
+              {shareStatus === 'loading' && (
+                <p className={styles.shareModalDesc}>공유 상태를 확인하는 중이에요...</p>
+              )}
+
+              {/* 에러 */}
+              {shareStatus === 'error' && (
+                <p className={styles.shareModalDesc}>
+                  공유 상태를 불러오지 못했어요.<br />
+                  잠시 후 다시 시도해주세요.
+                </p>
+              )}
+
+              {/* idle — 아직 공유되지 않은 상태 */}
+              {shareStatus === 'idle' && (
+                <>
+                  <div className={styles.shareLinkIcon}>
+                    <BsLink45Deg size={28} />
+                  </div>
+                  <p className={styles.shareModalDesc}>
+                    링크를 통해 다른 사람들과 프로젝트를 공유할 수 있어요.
+                  </p>
+                  <button
+                    className={styles.sharePrimaryBtn}
+                    onClick={handleShareCreate}
+                    disabled={shareBusy}
+                  >
+                    {shareBusy ? '공유 링크 생성 중...' : '공유'}
+                  </button>
+                </>
+              )}
+
+              {/* active — 공유 중 */}
+              {shareStatus === 'active' && (
+                <>
+                  <p className={styles.shareModalDesc}>
+                    링크가 있는 사람은 누구나 캔버스를 열어볼 수 있어요.<br />
+                    캔버스는 읽기 전용으로 공유됩니다.
+                  </p>
+                  <div className={styles.shareLinkBox}>
+                    <input className={styles.shareLinkInput} value={shareUrl} readOnly />
+                    <button
+                      className={styles.copyBtn}
+                      onClick={handleCopyUrl}
+                    >
+                      {shareCopied ? <BsCheck size={18} /> : <BsLink45Deg size={18} />}
+                    </button>
+                  </div>
+                  <p className={styles.shareReadonlyHint}>
+                    👁  방문자는 <strong>읽기 전용</strong>으로 캔버스를 봐요
+                  </p>
+                  <button
+                    className={styles.revokeBtn}
+                    onClick={handleShareRevoke}
+                    disabled={shareBusy}
+                  >
+                    {shareBusy ? '공유 중단 중...' : '공유 그만하기'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
