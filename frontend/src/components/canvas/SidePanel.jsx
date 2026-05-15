@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { HiX, HiCheck } from 'react-icons/hi'
 import styles from './SidePanel.module.css'
@@ -60,7 +60,13 @@ function parseStreamingMentoring(text) {
   function extractString(key) {
     const re = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`)
     const m = text.match(re)
-    return m ? m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : undefined
+    if (m) return m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+
+    const rePartial = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)`)
+    const mp = text.match(rePartial)
+    if (mp) return mp[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+
+    return undefined
   }
 
   function extractArray(key) {
@@ -80,14 +86,14 @@ function parseStreamingMentoring(text) {
         else if (c === ']') {
           depth--
           if (depth === 0) {
-            try { return JSON.parse(text.slice(start, i + 1)) } catch { return undefined }
+            try { return JSON.parse(text.slice(start, i + 1)) } catch { break }
           }
         }
       }
       i++
     }
     const items = []
-    let j = start + 1  // '[' 다음부터
+    let j = start + 1
     while (j < text.length) {
       while (j < text.length && /\s/.test(text[j])) j++
       if (text[j] !== '{') break
@@ -114,7 +120,22 @@ function parseStreamingMentoring(text) {
         }
         k++
       }
-      if (objDepth > 0) break
+      if (objDepth > 0) {
+        // 아직 닫히지 않은 마지막 객체 → 필드별 부분 추출
+        const partialText = text.slice(j)
+        const partial = {}
+        const fields = ['title', 'content', 'mistake', 'bad_example', 'good_example', 'explanation']
+        for (const field of fields) {
+          const reFull = new RegExp(`"${field}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`)
+          const rePart = new RegExp(`"${field}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)`)
+          const mf = partialText.match(reFull)
+          const mp = partialText.match(rePart)
+          if (mf) partial[field] = mf[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+          else if (mp) partial[field] = mp[1].replace(/\\n/g, '\n').replace(/\\"/g, '"')
+        }
+        if (Object.keys(partial).length > 0) items.push(partial)
+        break
+      }
     }
     return items.length > 0 ? items : undefined
   }
@@ -235,7 +256,16 @@ function MistakeListTyping({ items }) {
   )
 }
 
-function StreamingStructuredView({ data }) {
+function StreamingStructuredView({ data, streamingText }) {
+  const visibleSection = useMemo(() => {
+    if (!streamingText) return 0
+    let v = 0
+    if (streamingText.includes('"recommended_methods"')) v = Math.max(v, 1)
+    if (streamingText.includes('"common_mistakes"'))     v = Math.max(v, 2)
+    if (streamingText.includes('"one_line_tip"'))        v = Math.max(v, 3)
+    return v
+  }, [streamingText])
+
   return (
     <div className={styles.mentoringJson}>
       {data.description
@@ -245,29 +275,29 @@ function StreamingStructuredView({ data }) {
           </section>
         : <TitledSkeleton title="📖 Step 설명" />}
 
-      {data.recommended_methods?.length > 0
+      {visibleSection >= 1 && (data.recommended_methods?.length > 0
         ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
             <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
             <div className={styles.methodList}>
               {data.recommended_methods.map((m, i) => (
                 <div key={i} className={styles.methodItem}>
-                  <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
-                  {m.content.split('\n').filter(Boolean).map((line, j) => (
+                  {m.title != null && <p className={styles.methodTitle}>{i + 1}. {m.title}</p>}
+                  {m.content?.split('\n').filter(Boolean).map((line, j) => (
                     <p key={j} className={styles.methodContent}>{line}</p>
                   ))}
                 </div>
               ))}
             </div>
           </section>
-        : <TitledSkeleton title="🔥 추천 방법" />}
+        : <TitledSkeleton title="🔥 추천 방법" />)}
 
-      {data.common_mistakes?.length > 0
+      {visibleSection >= 2 && (data.common_mistakes?.length > 0
         ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
             <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
             <div className={styles.mistakeList}>
               {data.common_mistakes.map((m, i) => (
                 <div key={i} className={styles.mistakeItem}>
-                  <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>
+                  {m.mistake != null && <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>}
                   {(m.bad_example || m.good_example) && (
                     <div className={styles.mistakeExamples}>
                       {m.bad_example && <p className={styles.mistakeBad}>❌ "{m.bad_example}"</p>}
@@ -279,14 +309,14 @@ function StreamingStructuredView({ data }) {
               ))}
             </div>
           </section>
-        : <TitledSkeleton title="⚠️ 자주 하는 실수" />}
+        : <TitledSkeleton title="⚠️ 자주 하는 실수" />)}
 
-      {data.one_line_tip
+      {visibleSection >= 3 && (data.one_line_tip
         ? <div className={`${styles.tipBox} ${styles.fadeInSection}`}>
             <span className={styles.tipTitle}>💡 한 줄 팁</span>
             <p className={styles.tipText}>{data.one_line_tip}</p>
           </div>
-        : <TitledSkeleton title="💡 한 줄 팁" />}
+        : <TitledSkeleton title="💡 한 줄 팁" />)}
     </div>
   )
 }
@@ -320,7 +350,7 @@ function MentoringContent({ raw, isLoading, streamingText, isRequired }) {
 
   if (streamingText) {
     const partialData = parseStreamingMentoring(streamingText)
-    return <StreamingStructuredView data={partialData} />
+    return <StreamingStructuredView data={partialData} streamingText={streamingText} />
   }
 
   let data = null
