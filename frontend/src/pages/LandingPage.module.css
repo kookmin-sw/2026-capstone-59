@@ -19,6 +19,15 @@
   0%, 100% { transform: scale(1);   opacity: 0.2; }
   50%      { transform: scale(1.6); opacity: 0;   }
 }
+/* 발자국이 "탁" 찍히는 효과 — 처음엔 살짝 위에서 떨어지며 fade-in,
+   잠시 머문 뒤 천천히 사라지고, 사이클 끝까지 비활성 유지 */
+:global(@keyframes pocoPawStamp) {
+  0%   { opacity: 0; transform: translate(-50%, calc(-50% - 10px)) scale(0.6); }
+  6%   { opacity: 0.7; transform: translate(-50%, -50%) scale(1.04); }
+  10%  { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
+  85%  { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1); }
+}
 
 /* ====== Snap section ====== */
 .snapSection {
@@ -32,6 +41,13 @@
   box-sizing: border-box;
   padding: 80px 56px;
   position: relative;
+}
+
+/* Hero 는 sticky nav 와 겹치지 않도록 top 정렬 + 충분한 padding-top */
+.heroSection {
+  justify-content: flex-start;
+  padding-top: 120px;
+  padding-bottom: 60px;
 }
 .hasFooter {
   justify-content: space-between;
@@ -47,14 +63,12 @@
 }
 
 /* ====== Sticky nav ====== */
-/* 배경색을 깔지 않고 backdrop-filter 만 두어, Hero 의 그라데이션과 자연스럽게 이어지도록 한다.
-   다른 섹션을 스크롤할 때는 backdrop blur 로 가독성만 약간 보강. */
 .navSticky {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: transparent;
-  backdrop-filter: saturate(140%) blur(8px);
+  background: #FFFFFF;
+  border-bottom: 1px solid #ECECF2;
 }
 
 /* ====== Reveal on scroll ====== */
@@ -78,6 +92,13 @@
 .card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 8px rgba(20, 18, 40, 0.04), 0 28px 56px -28px rgba(124, 92, 255, 0.35);
+}
+
+/* ====== Source card (다크 테마) hover ====== */
+.sourceCard:hover {
+  transform: translateY(-4px);
+  border-color: rgba(124, 92, 255, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 32px 64px -16px rgba(124, 92, 255, 0.3);
 }
 
 /* ====== Hero entrance animations (scoped) ====== */
@@ -106,6 +127,165 @@
 /* ====== Stage number hover ====== */
 .stageNumber:hover {
   transform: translateY(-3px);
+}
+
+/* ====== Gallery chip hover ====== */
+.galleryChip {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  cursor: default;
+}
+.galleryChip:hover {
+  transform: translateY(-2px) scale(1.03);
+  background: #F4F1FF !important;
+  box-shadow: 0 6px 16px -8px rgba(124, 92, 255, 0.4);
+}
+
+/* ====== 비교 표 ====== */
+.comparisonTable {
+  background: #fff;
+  border: 1px solid #ECECF2;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(20, 18, 40, 0.03);
+}
+
+.comparisonTable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: inherit;
+}
+
+.comparisonTable thead th {
+  background: #FAFAFD;
+  padding: 16px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3C3C48;
+  text-align: center;
+  border-bottom: 1px solid #ECECF2;
+  letter-spacing: -0.01em;
+  vertical-align: middle;
+}
+
+.comparisonTable thead th.pocoCol {
+  background: #F4F1FF;
+  color: #7C5CFF;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.comparisonTable .colSub {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #7A7A88;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: 0.04em;
+}
+
+.comparisonTable tbody tr {
+  border-bottom: 1px solid #F0EEF7;
+}
+.comparisonTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.comparisonTable tbody th.tableLabelCol {
+  text-align: left;
+  padding: 16px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #11121A;
+  background: #FAFAFD;
+  width: 18%;
+  letter-spacing: -0.01em;
+}
+
+.comparisonTable tbody td {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #3C3C48;
+  vertical-align: middle;
+  letter-spacing: -0.01em;
+}
+
+.comparisonTable tbody td.pocoCol {
+  background: #FBFAFF;
+}
+
+.comparisonTable .cellText {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #7A7A88;
+  line-height: 1.4;
+}
+
+.comparisonTable tbody td.pocoCol .cellText {
+  color: #3C3C48;
+  font-weight: 500;
+}
+
+/* ====== Marquee — 갤러리 무한 가로 스크롤 ====== */
+.marqueeWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 6%,
+    black 94%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 6%,
+    black 94%,
+    transparent
+  );
+}
+
+.marqueeRow {
+  display: flex;
+  overflow: hidden;
+}
+
+.marqueeTrack {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+  width: max-content;
+  will-change: transform;
+}
+
+/* 동일한 콘텐츠가 2배 길이로 들어있으므로 -50% 만큼 이동하면 seamless loop */
+@keyframes pocoMarqueeLeft {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes pocoMarqueeRight {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+/* 4배 반복 시 -25% 만큼 이동하면 seamless loop */
+@keyframes pocoMarqueeLeft4x {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-25%); }
+}
+@keyframes pocoMarqueeRight4x {
+  from { transform: translateX(-25%); }
+  to   { transform: translateX(0); }
+}
+
+/* hover 시 일시 정지 — 사용자가 칩을 읽고 싶을 때 유용 */
+.marqueeWrap:hover .marqueeTrack {
+  animation-play-state: paused;
 }
 
 /* ====== Reduced motion ====== */

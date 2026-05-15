@@ -10,8 +10,7 @@ const tokens = {
   primarySoft: '#F4F1FF',
   primarySoftBorder: '#E2DBFF',
   bg: '#FAF8FF',
-  bgGradient:
-    'radial-gradient(60% 60% at 50% 0%, #EEEAFF 0%, #FAF8FF 60%, #FFFFFF 100%)',
+  bgGradient: 'radial-gradient(60% 60% at 50% 0%, #EEEAFF 0%, #FAF8FF 60%, #FFFFFF 100%)',
   ink: '#11121A',
   body: '#3C3C48',
   sub: '#7A7A88',
@@ -19,10 +18,11 @@ const tokens = {
   hairline: '#F0EEF7',
   green: '#22A06B',
   greenSoft: '#E8F6EE',
+  amber: '#F59E0B',
+  amberSoft: '#FEF3C7',
 }
 
-const fontStack =
-  "'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+const fontStack = "'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
 const monoStack = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
 
 // ===== Hooks =====
@@ -61,25 +61,21 @@ function Reveal({ children, delay = 0, y = 28, style = {} }) {
   )
 }
 
-function Pill({ children }) {
+function Pill({ children, color = 'lavender' }) {
+  const palettes = {
+    lavender: { bg: tokens.primarySoft, fg: tokens.primary, dot: tokens.primary },
+    green: { bg: tokens.greenSoft, fg: '#1E8A5A', dot: tokens.green },
+    amber: { bg: tokens.amberSoft, fg: '#92400E', dot: tokens.amber },
+  }
+  const p = palettes[color] ?? palettes.lavender
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-        padding: '5px 12px',
-        background: tokens.primarySoft,
-        color: tokens.primary,
-        fontSize: 12,
-        fontWeight: 600,
-        borderRadius: 99,
-        letterSpacing: '-0.01em',
-        whiteSpace: 'nowrap',
-        fontFamily: fontStack,
-      }}
-    >
-      <span style={{ width: 6, height: 6, borderRadius: 99, background: tokens.primary }} />
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 7,
+      padding: '5px 12px', background: p.bg, color: p.fg,
+      fontSize: 12, fontWeight: 600, borderRadius: 99,
+      letterSpacing: '-0.01em', whiteSpace: 'nowrap', fontFamily: fontStack,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: 99, background: p.dot }} />
       {children}
     </span>
   )
@@ -97,20 +93,12 @@ function PrimaryCTA({ children, size = 'md', onClick, glow = false }) {
       onClick={onClick}
       className={glow ? styles.ctaGlow : ''}
       style={{
-        height: s.h,
-        padding: `0 ${s.px}px`,
-        background: tokens.primary,
-        color: '#fff',
-        border: 'none',
-        borderRadius: 99,
-        fontSize: s.fs,
-        fontWeight: 600,
-        letterSpacing: '-0.01em',
-        cursor: 'pointer',
-        fontFamily: fontStack,
-        whiteSpace: 'nowrap',
-        boxShadow:
-          '0 1px 2px rgba(124,92,255,0.3), 0 8px 24px -8px rgba(124,92,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.06)',
+        height: s.h, padding: `0 ${s.px}px`,
+        background: tokens.primary, color: '#fff',
+        border: 'none', borderRadius: 99,
+        fontSize: s.fs, fontWeight: 600, letterSpacing: '-0.01em',
+        cursor: 'pointer', fontFamily: fontStack, whiteSpace: 'nowrap',
+        boxShadow: '0 1px 2px rgba(124,92,255,0.3), 0 8px 24px -8px rgba(124,92,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.06)',
       }}
     >
       {children}
@@ -129,20 +117,12 @@ function GhostCTA({ children, size = 'md', onClick }) {
     <button
       onClick={onClick}
       style={{
-        height: s.h,
-        padding: `0 ${s.px}px`,
-        background: 'transparent',
-        color: tokens.ink,
-        border: `1px solid ${tokens.border}`,
-        borderRadius: 99,
-        fontSize: s.fs,
-        fontWeight: 500,
-        cursor: 'pointer',
-        fontFamily: fontStack,
-        whiteSpace: 'nowrap',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
+        height: s.h, padding: `0 ${s.px}px`,
+        background: 'transparent', color: tokens.ink,
+        border: `1px solid ${tokens.border}`, borderRadius: 99,
+        fontSize: s.fs, fontWeight: 500, cursor: 'pointer',
+        fontFamily: fontStack, whiteSpace: 'nowrap',
+        display: 'inline-flex', alignItems: 'center', gap: 8,
       }}
     >
       {children}
@@ -152,23 +132,17 @@ function GhostCTA({ children, size = 'md', onClick }) {
 
 function Eyebrow({ children, align = 'left' }) {
   return (
-    <div
-      style={{
-        fontSize: 12.5,
-        color: tokens.primary,
-        fontWeight: 600,
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        fontFamily: monoStack,
-        textAlign: align,
-      }}
-    >
+    <div style={{
+      fontSize: 12.5, color: tokens.primary, fontWeight: 600,
+      letterSpacing: '0.12em', textTransform: 'uppercase',
+      fontFamily: monoStack, textAlign: align,
+    }}>
       {children}
     </div>
   )
 }
 
-// 고양이 발바닥 SVG (사용자 제공 아트워크)
+// 고양이 발바닥 (사용자 제공 아트워크)
 function CatPawIcon({ size = 64 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 324 335" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -183,33 +157,39 @@ function CatPawIcon({ size = 64 }) {
   )
 }
 
+// 발자국이 왼쪽 → 오른쪽으로 순차적으로 탁탁탁 찍히는 trail 애니메이션
 function FloatingDots() {
-  // x, y: 위치(%), s: 크기(px), o: 추가 투명도, r: 회전(deg), d: 애니메이션 지연(s)
-  // 크기를 다양화(28~96)하고 화면 전체에 풍성하게 배치
-  const paws = [
-    // 네 모서리 — 큰 악센트
-    { x: 5,  y: 10, s: 130, r: -20, d: 0 },
-    { x: 93, y: 14, s: 140, r: 25,  d: 1.2 },
-    { x: 6,  y: 78, s: 124, r: 40,  d: 2.4 },
-    { x: 92, y: 80, s: 136, r: -35, d: 0.6 },
+  // 두 줄(상단·하단)로 발자국 trail 배치. 같은 줄 안에서 좌우발이 살짝 엇갈리며 진행.
+  // x: 가로 위치(%), y: 세로 위치(%), tilt: 발 회전(좌발은 음수, 우발은 양수), s: 크기(px), d: 시작 지연(s)
+  const TOTAL = 6 /* 한 사이클 전체 시간(s). 한 줄에 8개 발자국이 있을 때 마지막 발자국은 약 5.6s 지연 */
+  const STAGGER = 0.7 /* 발자국 사이 간격(s) */
+  const STEPS_PER_ROW = 8
 
-    // 좌우 가장자리 중간 — 중간 크기
-    { x: 12, y: 44, s: 82,  r: -10, d: 1.5 },
-    { x: 88, y: 50, s: 86,  r: 15,  d: 2.7 },
+  function buildRow(yPercent, baseTilt, hueShift = 0) {
+    return Array.from({ length: STEPS_PER_ROW }).map((_, i) => {
+      const isLeftFoot = i % 2 === 0
+      const x = 4 + i * (92 / (STEPS_PER_ROW - 1)) /* 좌측 4% → 우측 96% 까지 */
+      const yOffset = isLeftFoot ? -3 : 3 /* 좌우발 살짝 엇갈리게 */
+      // 진행 방향(우측)을 기준으로 좌발은 약간 왼쪽으로, 우발은 오른쪽으로 기울임
+      const tilt = baseTilt + (isLeftFoot ? -10 : 10)
+      return {
+        x,
+        y: yPercent + yOffset,
+        s: 56 + (i % 3) * 6, /* 56 / 62 / 68 px 약간 변주 */
+        tilt,
+        delay: i * STAGGER,
+        hueShift,
+      }
+    })
+  }
 
-    // 상하 가장자리 — 보조
-    { x: 38, y: 6,  s: 64,  r: 90,  d: 0.9 },
-    { x: 64, y: 92, s: 70,  r: -80, d: 2.0 },
-  ]
+  const rowTop = buildRow(28, -2)
+  const rowBottom = buildRow(76, 4)
+  const all = [...rowTop, ...rowBottom]
+
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      {paws.map((p, i) => (
-        // 3-layer 구조:
-        //   바깥: position + 중심 보정 (translate -50%, -50%)
-        //   중간: 정적 회전
-        //   안쪽: 애니메이션 (translateY 만)
-        // 한 요소에 transform 을 정적·애니메이션 양쪽으로 쓰면 키프레임이 transform 전체를
-        // 덮어써 애니메이션 시작 순간 점프가 발생하므로 책임을 분리한다.
+      {all.map((p, i) => (
         <span
           key={i}
           style={{
@@ -218,17 +198,12 @@ function FloatingDots() {
             top: `${p.y}%`,
             transform: 'translate(-50%, -50%)',
             pointerEvents: 'none',
+            opacity: 0,
+            animation: `pocoPawStamp ${TOTAL}s ease-out ${p.delay}s infinite`,
           }}
         >
-          <span style={{ display: 'inline-block', transform: `rotate(${p.r}deg)` }}>
-            <span
-              style={{
-                display: 'inline-block',
-                animation: `pocoFloat ${6 + (i % 5)}s ease-in-out ${p.d}s infinite`,
-              }}
-            >
-              <CatPawIcon size={p.s} />
-            </span>
+          <span style={{ display: 'inline-block', transform: `rotate(${p.tilt}deg)` }}>
+            <CatPawIcon size={p.s} />
           </span>
         </span>
       ))}
@@ -247,13 +222,9 @@ function InlineTree({ width = 240, height = 90 }) {
   return (
     <svg width={width} height={height} viewBox="0 0 320 200" fill="none">
       {edges.map(([a, b], i) => (
-        <path
-          key={i}
+        <path key={i}
           d={`M${nodes[a].x} ${nodes[a].y} C${(nodes[a].x + nodes[b].x) / 2} ${nodes[a].y}, ${(nodes[a].x + nodes[b].x) / 2} ${nodes[b].y}, ${nodes[b].x} ${nodes[b].y}`}
-          stroke="#D7CCFF"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
+          stroke="#D7CCFF" strokeWidth="1.5" strokeLinecap="round" />
       ))}
       {nodes.map((n, i) =>
         n.required ? (
@@ -263,18 +234,13 @@ function InlineTree({ width = 240, height = 90 }) {
         ) : (
           <g key={i}>
             {i === accentNode && (
-              <circle
-                cx={n.x} cy={n.y} r={13} fill="#7C5CFF"
-                style={{ transformOrigin: `${n.x}px ${n.y}px`, animation: 'pocoPulse 2.4s ease-out infinite' }}
-              />
+              <circle cx={n.x} cy={n.y} r={13} fill="#7C5CFF"
+                style={{ transformOrigin: `${n.x}px ${n.y}px`, animation: 'pocoPulse 2.4s ease-out infinite' }} />
             )}
-            <circle
-              cx={n.x} cy={n.y}
-              r={i === accentNode ? 13 : 10}
+            <circle cx={n.x} cy={n.y} r={i === accentNode ? 13 : 10}
               fill={i === accentNode ? '#7C5CFF' : '#fff'}
               stroke={i === accentNode ? '#fff' : '#C7BBFF'}
-              strokeWidth={i === accentNode ? 3 : 2}
-            />
+              strokeWidth={i === accentNode ? 3 : 2} />
           </g>
         )
       )}
@@ -294,41 +260,27 @@ function StageStrip() {
   const [ref, inView] = useInView({ threshold: 0.25 })
   return (
     <div ref={ref} style={{ position: 'relative', padding: '0 20px' }}>
-      <svg
-        style={{ position: 'absolute', left: 50, right: 50, top: 30, width: 'calc(100% - 100px)', height: 2, pointerEvents: 'none' }}
-        viewBox="0 0 1000 2" preserveAspectRatio="none"
-      >
-        <line
-          x1="0" y1="1" x2="1000" y2="1"
+      <svg style={{ position: 'absolute', left: 50, right: 50, top: 30, width: 'calc(100% - 100px)', height: 2, pointerEvents: 'none' }}
+        viewBox="0 0 1000 2" preserveAspectRatio="none">
+        <line x1="0" y1="1" x2="1000" y2="1"
           stroke={tokens.primarySoftBorder} strokeWidth="2" strokeDasharray="6 6"
-          style={{ strokeDasharray: '1000 1000', strokeDashoffset: inView ? 0 : 1000, transition: 'stroke-dashoffset 1.8s ease-out 0.3s' }}
-        />
+          style={{ strokeDasharray: '1000 1000', strokeDashoffset: inView ? 0 : 1000, transition: 'stroke-dashoffset 1.8s ease-out 0.3s' }} />
       </svg>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16, position: 'relative' }}>
         {stages.map((s, i) => (
-          <div
-            key={s.n}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              opacity: inView ? 1 : 0,
-              transform: inView ? 'translateY(0)' : 'translateY(16px)',
-              transition: `opacity 0.6s ease ${0.5 + i * 0.12}s, transform 0.6s ease ${0.5 + i * 0.12}s`,
-            }}
-          >
-            <div
-              className={styles.stageNumber}
-              style={{
-                width: 60, height: 60, borderRadius: 99,
-                background: '#fff',
-                border: `2px solid ${tokens.primarySoftBorder}`,
-                color: tokens.primary,
-                display: 'grid', placeItems: 'center',
-                fontFamily: monoStack, fontSize: 14, fontWeight: 700,
-                boxShadow: '0 2px 4px rgba(20,18,40,0.04)',
-              }}
-            >
-              {s.n}
-            </div>
+          <div key={s.n} style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            opacity: inView ? 1 : 0,
+            transform: inView ? 'translateY(0)' : 'translateY(16px)',
+            transition: `opacity 0.6s ease ${0.5 + i * 0.12}s, transform 0.6s ease ${0.5 + i * 0.12}s`,
+          }}>
+            <div className={styles.stageNumber} style={{
+              width: 60, height: 60, borderRadius: 99,
+              background: '#fff', border: `2px solid ${tokens.primarySoftBorder}`,
+              color: tokens.primary, display: 'grid', placeItems: 'center',
+              fontFamily: monoStack, fontSize: 14, fontWeight: 700,
+              boxShadow: '0 2px 4px rgba(20,18,40,0.04)',
+            }}>{s.n}</div>
             <div style={{ fontSize: 14, fontWeight: 600, marginTop: 14, color: tokens.ink, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>{s.ko}</div>
             <div style={{ fontSize: 11, color: tokens.sub, marginTop: 4, fontFamily: monoStack, letterSpacing: '0.04em' }}>{s.en}</div>
           </div>
@@ -338,24 +290,113 @@ function StageStrip() {
   )
 }
 
-// ===== Feature data =====
-const FEATURES = [
-  { n: '01', title: 'AI 기반 Step Flow 생성', en: 'Step Flow',
-    body: '프로젝트 맥락에 맞춰 AI가 다음 한 걸음의 선택지 3개를 제시합니다. 검증된 6단계 프로세스 위에서 캔버스가 자랍니다.',
-    quote: '막연함을 "다음 한 걸음"으로', icon: 'compass' },
-  { n: '02', title: 'Step별 클릭 어시스턴트', en: 'Side Panel Guide',
-    body: '노드를 클릭하면 멘토링·용어사전·노션 템플릿이 펼쳐집니다. 딱딱한 방법론 문서 대신 맥락에 맞는 가이드.',
-    quote: '곁에 있는 시니어 멘토', icon: 'book' },
-  { n: '03', title: 'Footprint — 의사결정 궤적', en: 'Decision Tree',
-    body: '분기점으로 자유롭게 돌아가 AI 추천을 다시 받을 수 있습니다. 끝날 때쯤엔 "무엇을 왜 만들었는지" 스스로 설명할 수 있습니다.',
-    quote: '되돌아갈 수 있는 선택', icon: 'tree', highlight: true },
-]
-const PREVIEW_NOTES = [
-  ['다음 한 걸음, 선택지 3개', '사용자는 가장 공감되는 것을 클릭만'],
-  ['사이드패널 멘토링·용어', '맥락에 맞는 가이드가 자동으로'],
-  ['분기·롤백 가능', '이전 결정으로 돌아가 다시 추천'],
-]
+// ===== Section icon helpers =====
+function SourceCard({ title, badge, year, subtitle, publisher, description, tag, href }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={styles.sourceCard}
+      style={{
+        position: 'relative',
+        display: 'flex', flexDirection: 'column',
+        padding: 28,
+        background: 'linear-gradient(180deg, rgba(38, 33, 70, 0.7) 0%, rgba(28, 24, 55, 0.7) 100%)',
+        border: '1px solid rgba(124, 92, 255, 0.18)',
+        borderRadius: 18,
+        textDecoration: 'none',
+        color: '#fff',
+        height: '100%',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+        transition: 'transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease',
+      }}
+    >
+      {/* 우측 상단 연도 */}
+      <span style={{
+        position: 'absolute', top: 22, right: 24,
+        fontSize: 12, color: '#5C5680',
+        fontFamily: monoStack, letterSpacing: '0.06em',
+      }}>
+        {year}
+      </span>
 
+      {/* 타이틀 + 배지 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span style={{
+          fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', color: '#fff',
+        }}>
+          {title}
+        </span>
+        <span style={{
+          padding: '3px 9px',
+          background: 'rgba(124, 92, 255, 0.22)',
+          color: '#C5B4FF',
+          fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
+          borderRadius: 6,
+          fontFamily: monoStack,
+        }}>
+          {badge}
+        </span>
+      </div>
+
+      {/* 영문 부제 */}
+      <div style={{
+        fontSize: 13.5, color: '#9890BC', marginTop: 8,
+        fontStyle: 'italic', letterSpacing: '-0.005em',
+      }}>
+        {subtitle}
+      </div>
+
+      {/* 발행기관 칩 */}
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        marginTop: 18, padding: '6px 12px',
+        background: 'rgba(255, 255, 255, 0.04)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: 8,
+        fontSize: 12.5, color: '#C8C4DC', fontWeight: 500,
+        alignSelf: 'flex-start',
+      }}>
+        <span style={{
+          width: 6, height: 6, borderRadius: 99,
+          background: '#22A06B', display: 'inline-block',
+        }} />
+        {publisher}
+      </span>
+
+      {/* 본문 */}
+      <p style={{
+        fontSize: 14, color: '#C8C4DC', marginTop: 20,
+        lineHeight: 1.75, letterSpacing: '-0.005em', flex: 1,
+      }}>
+        {description}
+      </p>
+
+      {/* 하단: 키워드 + 원문 확인 */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginTop: 24, paddingTop: 20,
+        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+      }}>
+        <span style={{
+          fontSize: 13, color: '#9D87FF', fontWeight: 700, letterSpacing: '-0.005em',
+        }}>
+          {tag}
+        </span>
+        <span style={{
+          fontSize: 12.5, color: '#9890BC', fontWeight: 500, letterSpacing: '-0.005em',
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+        }}>
+          원문 확인 <span style={{ fontSize: 11 }}>↗</span>
+        </span>
+      </div>
+    </a>
+  )
+}
+
+// ===== Section icon helpers =====
 function FeatureIcon({ kind }) {
   if (kind === 'tree') return <InlineTree width={240} height={90} />
   if (kind === 'compass') return (
@@ -375,6 +416,125 @@ function FeatureIcon({ kind }) {
     </svg>
   )
   return null
+}
+
+// 비교 표 셀의 상태 마크 — yes(체크) / mid(부분) / no(엑스)
+function CompareMark({ kind }) {
+  const map = {
+    yes: { color: tokens.primary, bg: tokens.primarySoft,
+      icon: <path d="M4 8.5L7 11.5L12 5.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /> },
+    mid: { color: '#D97706', bg: tokens.amberSoft,
+      icon: <path d="M3 8H13" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /> },
+    no:  { color: '#9CA3AF', bg: '#F3F4F6',
+      icon: <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /> },
+  }
+  const m = map[kind] ?? map.no
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      width: 26, height: 26, borderRadius: 999,
+      background: m.bg, color: m.color,
+    }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">{m.icon}</svg>
+    </span>
+  )
+}
+
+function PersonaIcon({ kind }) {
+  const stroke = tokens.primary
+  if (kind === 'student') return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M6 12v5c3 3 9 3 12 0v-5" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+  if (kind === 'dev') return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+      <polyline points="16 18 22 12 16 6" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <polyline points="8 6 2 12 8 18" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+  if (kind === 'pm') return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+      <path d="M9 11l3 3L22 4" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+  if (kind === 'team') return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="9" cy="7" r="4" stroke={stroke} strokeWidth="1.6"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+  return null
+}
+
+// ===== Data =====
+const FEATURES = [
+  { n: '01', title: 'AI 기반 Step Flow 생성', en: 'Step Flow',
+    body: '아이디어만 입력하면, AI가 다음 단계를 3가지 방향으로 제안합니다. 검증된 6단계 프로세스 위에서 캔버스가 자랍니다.',
+    quote: '막연함을 "다음 한 걸음"으로', icon: 'compass' },
+  { n: '02', title: '분기점 롤백 & 재탐색', en: 'Branching',
+    body: '잘못된 방향이라면 되돌아가서 다른 가지를 탐색하세요. 기록은 남고, 모든 결정은 자산으로 보존됩니다.',
+    quote: '되돌아갈 수 있는 선택', icon: 'tree', highlight: true },
+  { n: '03', title: 'Step별 클릭 어시스턴트', en: 'Side Panel Guide',
+    body: '노드를 클릭하면 멘토링·용어사전·노션 템플릿이 펼쳐집니다. 딱딱한 방법론 문서 대신 맥락에 맞는 가이드.',
+    quote: '곁에 있는 시니어 멘토', icon: 'book' },
+]
+
+const PERSONAS = [
+  { kind: 'student', title: '캡스톤을 준비 중인 대학생',
+    body: '첫 팀 프로젝트, 어디서부터 시작해야 할지 몰라 막막한 당신' },
+  { kind: 'dev', title: '사이드 프로젝트를 구상 중인 개발자',
+    body: '아이디어는 넘치는데, 체계적으로 정리하고 싶은 당신' },
+  { kind: 'pm', title: '신규 서비스를 기획 중인 PM',
+    body: '검증된 프레임워크 위에서 빠르게 구조를 잡고 싶은 당신' },
+  { kind: 'team', title: '팀과 의사결정을 공유하고 싶은 리더',
+    body: '"왜 이 결정을 했는지" 팀원에게 명확히 보여주고 싶은 당신' },
+]
+
+const GALLERY_ROW_1 = [
+  '배달 라이더 경로 앱', '캠퍼스 중고거래 플랫폼', '반려동물 건강 관리 앱',
+  '음악 추천 큐레이션 앱', 'AI 면접 코칭 서비스', '도시농부 커뮤니티',
+  '취준 스터디 매칭', '여행 일정 자동 정리',
+]
+const GALLERY_ROW_2 = [
+  '소셜 독서 커뮤니티', '스마트팜 모니터링 대시보드', '실시간 협업 화이트보드',
+  '러닝 크루 기록 SNS', '집안일 분담 가족 앱', '동아리 운영 자동화',
+  '학생 동선 안전 알림', '취미 클래스 큐레이션',
+]
+
+// 마퀴 한 줄 — 같은 콘텐츠를 두 번 이어붙여 seamless loop 구현
+function MarqueeRow({ items, direction = 'left', duration = 38 }) {
+  // 2배만 이어붙이면 칩 폭이 좁아 -50% 이동 거리가 짧고 결과적으로 시각적 속도가 느려 정적으로 보일 수 있다.
+  // 칩 갯수가 적을수록 4배로 늘려 한 cycle 이동 거리를 늘린다.
+  const repeat = items.length < 10 ? 4 : 2
+  const doubled = Array.from({ length: repeat }, () => items).flat()
+  const animName = direction === 'left' ? 'pocoMarqueeLeft' : 'pocoMarqueeRight'
+  // repeat=4면 -25%만 이동해도 한 사이클이 완성되도록 keyframes도 분기
+  const animSuffix = repeat === 4 ? '4x' : ''
+  return (
+    <div className={styles.marqueeRow}>
+      <div
+        className={styles.marqueeTrack}
+        style={{ animation: `${animName}${animSuffix} ${duration}s linear infinite` }}
+      >
+        {doubled.map((name, i) => (
+          <span key={`${name}-${i}`} className={styles.galleryChip} style={{
+            padding: '12px 22px', background: '#FBFAFF',
+            border: `1px solid ${tokens.primarySoftBorder}`, borderRadius: 99,
+            fontSize: 14, fontWeight: 500, color: tokens.ink, letterSpacing: '-0.01em',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: 99, background: tokens.primary, flexShrink: 0 }} />
+            {name}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ===== Main page =====
@@ -407,7 +567,7 @@ export default function LandingPage() {
     let currentIdx = 0
     let isAnimating = false
     let lastWheelAt = 0
-    const DURATION = 800
+    const DURATION = 665
 
     const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
@@ -503,38 +663,29 @@ export default function LandingPage() {
 
   return (
     <div style={{ width: '100%', background: tokens.bg, fontFamily: fontStack, color: tokens.ink }}>
-      {/* Sticky Nav */}
+      {/* ===== Sticky Nav ===== */}
       <div className={styles.navSticky}>
-        <header
-          style={{
-            width: '100%', padding: '20px 56px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: 'transparent', boxSizing: 'border-box',
-          }}
-        >
+        <header style={{
+          width: '100%', padding: '20px 56px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'transparent', boxSizing: 'border-box',
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img src="/poco-logo-text.svg" alt="poco" height={28} />
           </div>
           <nav style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
             <a href="#features" style={navLinkStyle}>기능</a>
-            <a href="#preview" style={navLinkStyle}>제품 미리보기</a>
+            <a href="#personas" style={navLinkStyle}>누구를 위한가</a>
             <a href="https://github.com/kookmin-sw/2026-capstone-59" target="_blank" rel="noopener noreferrer" style={navLinkStyle}>GitHub</a>
-            {isLoggedIn ? (
-              <GhostCTA size="sm" onClick={handleLogout}>로그아웃</GhostCTA>
-            ) : null}
+            {isLoggedIn ? <GhostCTA size="sm" onClick={handleLogout}>로그아웃</GhostCTA> : null}
             <PrimaryCTA size="sm" onClick={handleStart}>Get started!</PrimaryCTA>
           </nav>
         </header>
       </div>
 
-      {/* ===== HERO ===== */}
-      <section className={styles.snapSection} style={{
-        textAlign: 'center',
-        background: tokens.bgGradient,
-        overflow: 'hidden',
-        justifyContent: 'flex-start',
-        paddingTop: 'clamp(96px, 12vh, 140px)',
-      }}>
+      {/* ===== 1. HERO ===== */}
+      {/* justify-content: center 대신 flex-start + padding-top 으로 nav 와의 클립 방지 */}
+      <section className={`${styles.snapSection} ${styles.heroSection}`} style={{ textAlign: 'center', background: tokens.bgGradient, overflow: 'hidden' }}>
         <FloatingDots />
         <div style={{ position: 'relative', maxWidth: 880, margin: '0 auto' }}>
           <div className={styles.fadeUp} style={{ animationDelay: '0.05s' }}>
@@ -542,15 +693,14 @@ export default function LandingPage() {
           </div>
 
           <div className={styles.fadeScale} style={{ display: 'flex', justifyContent: 'center', margin: '24px 0 8px', animationDelay: '0.18s' }}>
-            <img src="/poco-logo-text.svg" alt="poco" style={{ height: 'clamp(140px, 22vh, 220px)', width: 'auto' }} />
+            <img src="/poco-logo-text.svg" alt="poco" style={{ height: 220, width: 'auto' }} />
           </div>
 
           <h1 className={styles.fadeUp} style={{
             fontSize: 52, lineHeight: 1.18, letterSpacing: '-0.035em', fontWeight: 700,
             margin: '16px 0 18px', color: tokens.ink, animationDelay: '0.35s',
           }}>
-            조금씩, 한 걸음씩 —<br />
-            아이디어를 설계까지 쌓아가는 <span style={{ color: tokens.primary }}>사고의 캔버스</span>
+            당신의 생각이 <span style={{ color: tokens.primary }}>트리</span>로 자라납니다
           </h1>
 
           <p className={styles.fadeUp} style={{
@@ -562,14 +712,14 @@ export default function LandingPage() {
           </p>
 
           <div className={styles.fadeUp} style={{ display: 'flex', gap: 12, justifyContent: 'center', alignItems: 'center', animationDelay: '0.65s' }}>
-            <PrimaryCTA size="lg" onClick={handleStart} glow>Get started!</PrimaryCTA>
+            <PrimaryCTA size="lg" onClick={handleStart} glow>무료로 시작하기 →</PrimaryCTA>
             <GhostCTA size="lg" onClick={handleGitHub}>
               View on GitHub <span style={{ color: tokens.sub }}>↗</span>
             </GhostCTA>
           </div>
 
           <div className={styles.fadeIn} style={{
-            marginTop: 56, display: 'inline-flex', gap: 14, alignItems: 'center',
+            marginTop: 40, display: 'inline-flex', gap: 14, alignItems: 'center',
             color: tokens.sub, fontSize: 13, fontFamily: monoStack, whiteSpace: 'nowrap',
             animationDelay: '0.85s',
           }}>
@@ -580,103 +730,182 @@ export default function LandingPage() {
         </div>
 
         <div className={styles.fadeIn} style={{
-          marginTop: 'clamp(28px, 6vh, 80px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          marginTop: 48, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
           color: tokens.sub, fontSize: 11, fontFamily: monoStack, letterSpacing: '0.16em',
           textTransform: 'uppercase', animationDelay: '1.1s',
         }}>
-          scroll
-          <span style={{
-            width: 1, height: 32,
+          한 걸음 더 내려가 보세요
+          <span style={{ width: 1, height: 32,
             background: `linear-gradient(to bottom, ${tokens.primarySoftBorder}, transparent)`,
-            animation: 'pocoFloat 2.4s ease-in-out infinite',
-          }} />
+            animation: 'pocoFloat 2.4s ease-in-out infinite' }} />
         </div>
       </section>
 
-      {/* ===== PROBLEM ===== */}
+      {/* ===== 2. 이런 경험, 있지 않나요? ===== */}
       <section className={styles.snapSection} style={{ background: '#fff', padding: '80px 56px' }}>
-        <div style={{ maxWidth: 980, margin: '0 auto', width: '100%' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%' }}>
           <Reveal>
-            <Eyebrow>The Problem</Eyebrow>
-            <h2 style={{ fontSize: 42, lineHeight: 1.25, letterSpacing: '-0.03em', fontWeight: 700, margin: '16px 0 0', maxWidth: 720 }}>
-              AI는 <span style={{ color: tokens.primary }}>How</span>를 만들어준다.<br />
-              그렇다면 <span style={{ color: tokens.primary }}>What·Why</span>는?
-            </h2>
-          </Reveal>
-
-          <div style={{ marginTop: 64, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
-            <Reveal delay={0.05}>
-              <div style={{
-                padding: 32, background: '#FAFAFD',
-                border: `1px solid ${tokens.border}`, borderRadius: 18, height: '100%',
-              }}>
-                <div style={{ fontSize: 13, color: tokens.sub, fontFamily: monoStack, letterSpacing: '0.06em' }}>AI가 잘하는 것</div>
-                <div style={{ fontSize: 22, fontWeight: 700, marginTop: 10, letterSpacing: '-0.02em' }}>How — 어떻게 만들지</div>
-                <div style={{ fontSize: 15, color: tokens.body, marginTop: 14, lineHeight: 1.65 }}>
-                  코드도, 디자인도, 문서도 엄청난 속도로 만들어 줍니다. 손은 더 이상 병목이 아닙니다.
-                </div>
-              </div>
-            </Reveal>
-            <Reveal delay={0.2}>
-              <div style={{
-                padding: 32, background: tokens.primarySoft,
-                border: `1px solid ${tokens.primarySoftBorder}`, borderRadius: 18, height: '100%',
-              }}>
-                <div style={{ fontSize: 13, color: tokens.primary, fontFamily: monoStack, letterSpacing: '0.06em' }}>여전히 우리의 몫</div>
-                <div style={{ fontSize: 22, fontWeight: 700, marginTop: 10, letterSpacing: '-0.02em', color: tokens.ink }}>
-                  What · Why — 무엇을 왜 만들지
-                </div>
-                <div style={{ fontSize: 15, color: tokens.body, marginTop: 14, lineHeight: 1.65 }}>
-                  "왜 이 결정을 했는가"는 AI가 대신해줄 수 없습니다. Poco는 이 영역을 구조적으로 수행할 수 있게 돕습니다.
-                </div>
-              </div>
-            </Reveal>
-          </div>
-
-          <Reveal delay={0.15}>
-            <blockquote style={{
-              marginTop: 56, marginInline: 0, padding: '28px 32px',
-              borderLeft: `3px solid ${tokens.primary}`, background: '#FBFAFF',
-              borderRadius: '0 14px 14px 0', fontSize: 18, lineHeight: 1.65,
-              color: tokens.body, letterSpacing: '-0.01em', fontStyle: 'italic',
-            }}>
-              "AI한테 뭐라도 시켜보려는데… 정작 내가 뭘 만들고 싶은 건지부터 모르겠다.<br />
-              용어도 어렵고, 빠뜨린 단계는 없는지 불안하고, 사람들에게 '왜 이 결정을 했는지' 설명할 자신도 없다."
-            </blockquote>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ===== 6 STAGE ===== */}
-      <section className={styles.snapSection} style={{ background: tokens.bg, padding: '80px 56px' }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', width: '100%' }}>
-          <Reveal>
-            <div style={{ textAlign: 'center', marginBottom: 72 }}>
-              <Eyebrow align="center">6 Stage Process</Eyebrow>
+            <div style={{ textAlign: 'center', marginBottom: 56 }}>
+              <Eyebrow align="center">Sound Familiar?</Eyebrow>
               <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.03em', margin: '16px 0 10px' }}>
-                검증된 방법론을 자연스럽게
+                이런 경험, 있지 않나요?
               </h2>
               <p style={{ fontSize: 15, color: tokens.sub, margin: 0, lineHeight: 1.65 }}>
-                DOJ SDLC 10단계를 초심자·소규모 팀에 맞게 재구성한 6단계 프로세스.<br />
-                각 단계마다 핵심 관문에서 멘토링과 템플릿이 제공됩니다.
+                AI 챗봇은 분명 똑똑한데, 막상 프로젝트를 만들려고 하면 어딘가 답답하죠.
               </p>
             </div>
           </Reveal>
-          <StageStrip />
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+            {[
+              { tag: '챗봇과의 대화', user: '아 잠깐, 아까 말한 기술 스택은 뭐였지?', ai: '이전 대화에서 기술 스택에 대해 말씀하신 적이 없는 것 같습니다. 다시 알려주시겠어요?', label: '대화는 흘러갑니다' },
+              { tag: '팀 회의 직전', user: '팀원한테 설명해야 하는데… 왜 이 결정 했더라?', ai: '대화 로그를 다시 읽어보세요. 길죠?', label: '근거는 흩어집니다' },
+              { tag: '아이디어 정리', user: '아이디어는 있는데 어디부터 손대지?', ai: '좋은 아이디어네요! 먼저 요구사항을 정리해볼까요? (그래서 뭘 묻지...)', label: '시작점이 흐립니다' },
+            ].map((c, i) => (
+              <Reveal key={i} delay={i * 0.1} y={32}>
+                <div className={styles.card} style={{
+                  padding: 24, background: '#FAFAFD',
+                  border: `1px solid ${tokens.border}`, borderRadius: 18,
+                  display: 'flex', flexDirection: 'column', gap: 14, height: '100%',
+                }}>
+                  <div style={{ fontSize: 11, color: tokens.sub, fontFamily: monoStack, letterSpacing: '0.08em' }}>{c.tag}</div>
+
+                  <div style={{
+                    alignSelf: 'flex-end', maxWidth: '85%', padding: '10px 14px',
+                    background: tokens.primary, color: '#fff', fontSize: 13.5, lineHeight: 1.55,
+                    borderRadius: '14px 14px 4px 14px', letterSpacing: '-0.01em',
+                  }}>{c.user}</div>
+
+                  <div style={{
+                    alignSelf: 'flex-start', maxWidth: '85%', padding: '10px 14px',
+                    background: '#fff', color: tokens.body, fontSize: 13, lineHeight: 1.55,
+                    borderRadius: '14px 14px 14px 4px', border: `1px solid ${tokens.border}`,
+                    letterSpacing: '-0.01em',
+                  }}>{c.ai}</div>
+
+                  <div style={{
+                    marginTop: 'auto', paddingTop: 12, fontSize: 12, color: tokens.primary,
+                    fontWeight: 600, fontFamily: monoStack, letterSpacing: '-0.005em',
+                  }}>↳ {c.label}</div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={0.3}>
+            <p style={{
+              textAlign: 'center', marginTop: 48, fontSize: 17, lineHeight: 1.65,
+              color: tokens.ink, letterSpacing: '-0.01em',
+            }}>
+              <span style={{ color: tokens.primary, fontWeight: 700 }}>여기서 Poco가 시작됩니다.</span>
+            </p>
+          </Reveal>
         </div>
       </section>
 
-      {/* ===== FEATURES ===== */}
+      {/* ===== 3. 4-way 비교 표 (Jira/Notion · 챗봇 · 방법론 문서 · Poco) ===== */}
+      <section className={styles.snapSection} style={{ background: tokens.bg, padding: '80px 56px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+          <Reveal>
+            <div style={{ textAlign: 'center', marginBottom: 48 }}>
+              <Eyebrow align="center">What's Different</Eyebrow>
+              <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.03em', margin: '16px 0 10px' }}>
+                무엇이 다른가요?
+              </h2>
+              <p style={{ fontSize: 15, color: tokens.sub, margin: 0, lineHeight: 1.65 }}>
+                다른 도구·자료에도 장점이 있지만, Poco만 줄 수 있는 가치가 있어요.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <div className={styles.comparisonTable}>
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col" className={styles.tableLabelCol}></th>
+                    <th scope="col">Jira / Notion</th>
+                    <th scope="col">일반 챗봇</th>
+                    <th scope="col">방법론 문서<br /><span className={styles.colSub}>SWEBOK · PMBOK</span></th>
+                    <th scope="col" className={styles.pocoCol}>Poco</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { label: '다음 할 일 제시',
+                      cells: [
+                        { mark: 'no', text: '직접 작성·관리' },
+                        { mark: 'mid', text: '질문 능력 필요' },
+                        { mark: 'no', text: '사용자가 해석' },
+                        { mark: 'yes', text: 'AI가 자동 제시' },
+                      ] },
+                    { label: '의사결정 보존',
+                      cells: [
+                        { mark: 'mid', text: '텍스트 산재' },
+                        { mark: 'no', text: '대화는 흘러감' },
+                        { mark: 'no', text: '별도 기록 필요' },
+                        { mark: 'yes', text: '트리로 시각화' },
+                      ] },
+                    { label: '방법론 근거',
+                      cells: [
+                        { mark: 'no', text: '없음' },
+                        { mark: 'no', text: '답이 흔들림' },
+                        { mark: 'yes', text: '완전한 표준' },
+                        { mark: 'yes', text: 'DOJ SDLC + SWEBOK' },
+                      ] },
+                    { label: '분기 탐색 · 롤백',
+                      cells: [
+                        { mark: 'no', text: '불가' },
+                        { mark: 'no', text: '대화 흐름만' },
+                        { mark: 'no', text: '문서 정독뿐' },
+                        { mark: 'yes', text: '자유로운 회귀' },
+                      ] },
+                    { label: '시작 진입 장벽',
+                      cells: [
+                        { mark: 'mid', text: '도구 학습' },
+                        { mark: 'yes', text: '낮음' },
+                        { mark: 'no', text: '매우 높음' },
+                        { mark: 'yes', text: '아이디어만 입력' },
+                      ] },
+                  ].map((row) => (
+                    <tr key={row.label}>
+                      <th scope="row" className={styles.tableLabelCol}>{row.label}</th>
+                      {row.cells.map((c, idx) => {
+                        const isPoco = idx === 3
+                        return (
+                          <td key={idx} className={isPoco ? styles.pocoCol : ''}>
+                            <CompareMark kind={c.mark} />
+                            <div className={styles.cellText}>{c.text}</div>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.3}>
+            <p style={{ textAlign: 'center', marginTop: 28, fontSize: 14, color: tokens.sub, fontFamily: monoStack, letterSpacing: '-0.005em' }}>
+              챗봇은 대화를 쌓습니다. Poco는 결정을 보존합니다.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ===== 4. FEATURES ===== */}
       <section id="features" className={styles.snapSection} style={{ background: '#fff', padding: '80px 56px' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%' }}>
           <Reveal>
-            <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <Eyebrow align="center">3 Core Features</Eyebrow>
-              <h2 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em', margin: '16px 0 0' }}>
+              <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.03em', margin: '16px 0 0' }}>
                 다음 한 걸음, Poco가 함께
               </h2>
             </div>
           </Reveal>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {FEATURES.map((f, i) => (
               <Reveal key={f.n} delay={i * 0.12} y={36}>
@@ -717,49 +946,149 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ===== PRODUCT PREVIEW ===== */}
-      <section id="preview" className={styles.snapSection} style={{ background: tokens.bg, padding: '80px 56px' }}>
+      {/* ===== 5. 6 STAGE ===== */}
+      <section className={styles.snapSection} style={{ background: tokens.bg, padding: '80px 56px' }}>
+        <div style={{ maxWidth: 1180, margin: '0 auto', width: '100%' }}>
+          <Reveal>
+            <div style={{ textAlign: 'center', marginBottom: 72 }}>
+              <Eyebrow align="center">6 Stage Process</Eyebrow>
+              <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.03em', margin: '16px 0 10px' }}>
+                검증된 방법론을 자연스럽게
+              </h2>
+              <p style={{ fontSize: 15, color: tokens.sub, margin: 0, lineHeight: 1.65 }}>
+                DOJ SDLC 10단계를 초심자·소규모 팀에 맞게 재구성한 6단계 프로세스.<br />
+                각 단계마다 핵심 관문에서 멘토링과 템플릿이 제공됩니다.
+              </p>
+            </div>
+          </Reveal>
+          <StageStrip />
+        </div>
+      </section>
+
+      {/* ===== 6. METHODOLOGY & TRUST ===== */}
+      <section className={styles.snapSection} style={{
+        background: 'linear-gradient(180deg, #1A1735 0%, #0F0E2A 100%)',
+        padding: '100px 56px',
+        color: '#fff',
+      }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%' }}>
           <Reveal>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40, gap: 32, flexWrap: 'wrap' }}>
-              <div>
-                <Pill>Live Canvas</Pill>
-                <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.03em', margin: '14px 0 0', maxWidth: 540 }}>
-                  캔버스 안에서 사고는 <span style={{ color: tokens.primary }}>트리</span>로 자란다
-                </h2>
+            <div style={{ textAlign: 'center', marginBottom: 64 }}>
+              <div style={{
+                fontSize: 12.5, color: '#9D87FF', fontWeight: 600,
+                letterSpacing: '0.16em', textTransform: 'uppercase',
+                fontFamily: monoStack, display: 'inline-flex', alignItems: 'center', gap: 8,
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: 99, background: '#9D87FF', display: 'inline-block' }} />
+                Methodology & Trust
               </div>
-              <p style={{ fontSize: 15, color: tokens.body, lineHeight: 1.7, maxWidth: 360, margin: 0 }}>
-                선택의 궤적이 캔버스 위에 그대로 남습니다. 분기점으로 돌아가 다른 길을 다시 탐색해도, 모든 흔적이 자산으로 보존됩니다.
+              <h2 style={{
+                fontSize: 44, lineHeight: 1.25, fontWeight: 800, letterSpacing: '-0.03em',
+                margin: '20px 0 16px', color: '#fff',
+              }}>
+                AI의 즉흥성이 아닌,<br />
+                <span style={{
+                  background: 'linear-gradient(90deg, #B6A2FF 0%, #7C5CFF 100%)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}>20년의 방법론</span> 위에서 작동합니다.
+              </h2>
+              <p style={{ fontSize: 15.5, color: '#A8A2C8', margin: 0, lineHeight: 1.7 }}>
+                Poco의 AI 프롬프트는 국제 표준 문서에 근거합니다.<br />
+                단순한 생성이 아닌, 검증된 프레임워크 기반의 구조적 안내를 제공합니다.
               </p>
             </div>
           </Reveal>
 
-          <Reveal delay={0.1} y={40}>
+          {/* Stats */}
+          <Reveal delay={0.1}>
             <div style={{
-              position: 'relative', borderRadius: 24,
-              background: 'linear-gradient(180deg, #F4F1FF 0%, #FAF8FF 100%)',
-              border: `1px solid ${tokens.primarySoftBorder}`, padding: 14,
-              boxShadow: '0 30px 60px -30px rgba(124,92,255,0.3)',
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16,
+              maxWidth: 720, margin: '0 auto 64px', textAlign: 'center',
             }}>
-              <div style={{
-                borderRadius: 16, overflow: 'hidden', background: '#fff',
-                height: 'min(540px, 52vh)',
-              }}>
-                <img
-                  src="/canvas-preview.png"
-                  alt="Poco 캔버스 미리보기"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-              </div>
+              {[
+                { value: '20+', label: '년간 검증된 방법론' },
+                { value: '16', label: '편의 자체 가이드 문서' },
+                { value: '25', label: '개 Knowledge Area 커버' },
+              ].map((s, i) => (
+                <div key={i}>
+                  <div style={{
+                    fontSize: 56, fontWeight: 800, lineHeight: 1, color: '#fff',
+                    letterSpacing: '-0.04em', fontFamily: fontStack,
+                  }}>
+                    {s.value}
+                  </div>
+                  <div style={{
+                    fontSize: 13, color: '#9890BC', marginTop: 12,
+                    letterSpacing: '-0.005em',
+                  }}>
+                    {s.label}
+                  </div>
+                </div>
+              ))}
             </div>
           </Reveal>
 
-          <div style={{ marginTop: 28, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            {PREVIEW_NOTES.map(([t, s], i) => (
-              <Reveal key={t} delay={0.05 + i * 0.1}>
-                <div style={{ padding: '12px 18px', borderLeft: `2px solid ${tokens.primarySoftBorder}` }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: tokens.ink }}>{t}</div>
-                  <div style={{ fontSize: 13, color: tokens.sub, marginTop: 4 }}>{s}</div>
+          {/* Source cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <Reveal delay={0.18}>
+              <SourceCard
+                title="SWEBOK"
+                badge="V4.0"
+                year="2024"
+                subtitle="Software Engineering Body of Knowledge"
+                publisher="IEEE Computer Society"
+                description="전 세계 소프트웨어 공학의 지식체계를 정의하는 국제 표준. 15개 Knowledge Area를 기반으로 소프트웨어 개발의 전 과정을 체계화합니다."
+                tag="15개 Knowledge Area"
+                href="https://www.computer.org/education/bodies-of-knowledge/software-engineering"
+              />
+            </Reveal>
+            <Reveal delay={0.28}>
+              <SourceCard
+                title="DOJ SDLC"
+                badge="Guidance"
+                year="2003"
+                subtitle="System Development Life Cycle"
+                publisher="U.S. Department of Justice"
+                description="미국 법무부가 정의한 시스템 개발 생명주기 실무 가이드라인. 10단계 Phase를 통해 프로젝트 전 과정의 의사결정을 구조화합니다."
+                tag="10단계 Phase"
+                href="https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm"
+              />
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== 7. WHO IS IT FOR ===== */}
+      <section id="personas" className={styles.snapSection} style={{ background: tokens.bg, padding: '80px 56px' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%' }}>
+          <Reveal>
+            <div style={{ textAlign: 'center', marginBottom: 56 }}>
+              <Eyebrow align="center">Who's It For</Eyebrow>
+              <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.03em', margin: '16px 0 0' }}>
+                누구를 위한 건가요?
+              </h2>
+            </div>
+          </Reveal>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 18 }}>
+            {PERSONAS.map((p, i) => (
+              <Reveal key={p.kind} delay={i * 0.08} y={32}>
+                <div className={styles.card} style={{
+                  padding: 28, background: '#fff',
+                  border: `1px solid ${tokens.border}`, borderRadius: 18,
+                  display: 'flex', gap: 18, alignItems: 'flex-start',
+                }}>
+                  <div style={{
+                    flexShrink: 0, width: 56, height: 56, borderRadius: 14,
+                    background: tokens.primarySoft, display: 'grid', placeItems: 'center',
+                  }}>
+                    <PersonaIcon kind={p.kind} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em' }}>{p.title}</div>
+                    <div style={{ fontSize: 14, color: tokens.body, lineHeight: 1.65, marginTop: 8 }}>{p.body}</div>
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -767,19 +1096,57 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ===== CTA + FOOTER ===== */}
+      {/* ===== 8. PROJECT GALLERY ===== */}
+      <section className={styles.snapSection} style={{ background: '#fff', padding: '80px 56px' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%' }}>
+          <Reveal>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <Eyebrow align="center">In the Wild</Eyebrow>
+              <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.03em', margin: '16px 0 10px' }}>
+                이런 프로젝트들이 자라고 있어요
+              </h2>
+              <p style={{ fontSize: 15, color: tokens.sub, margin: 0, lineHeight: 1.65 }}>
+                다양한 영역의 아이디어가 Poco 위에서 구조를 잡아가고 있습니다.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.15}>
+            <div className={styles.marqueeWrap} style={{ marginTop: 48 }}>
+              <MarqueeRow items={GALLERY_ROW_1} direction="left" duration={38} />
+              <MarqueeRow items={GALLERY_ROW_2} direction="right" duration={42} />
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.4}>
+            <p style={{
+              textAlign: 'center', marginTop: 48, fontSize: 13, color: tokens.sub,
+              fontFamily: monoStack, letterSpacing: '0.04em',
+            }}>
+              당신의 다음 한 걸음은 무엇인가요?
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ===== 9. CTA + FOOTER ===== */}
       <section className={`${styles.snapSection} ${styles.hasFooter}`} style={{ background: '#fff' }}>
         <div className={styles.snapCta}>
           <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
             <Reveal>
-              <h2 style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-0.03em', margin: 0 }}>
-                무엇을 만들지부터,<br />
-                Poco와 함께 정의해보세요.
+              <h2 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em', margin: 0, lineHeight: 1.25 }}>
+                당신의 <span style={{ color: tokens.primary }}>첫 발자국</span>을<br />
+                남겨보세요
               </h2>
             </Reveal>
             <Reveal delay={0.15}>
+              <p style={{ marginTop: 24, fontSize: 16, color: tokens.body, lineHeight: 1.65 }}>
+                조금씩, 한 걸음씩 — 아이디어를 설계까지 함께 쌓아가요.
+              </p>
+            </Reveal>
+            <Reveal delay={0.3}>
               <div style={{ marginTop: 36, display: 'flex', gap: 12, justifyContent: 'center' }}>
-                <PrimaryCTA size="lg" onClick={handleStart} glow>Get started!</PrimaryCTA>
+                <PrimaryCTA size="lg" onClick={handleStart} glow>무료로 시작하기 →</PrimaryCTA>
               </div>
             </Reveal>
           </div>
@@ -829,10 +1196,6 @@ export default function LandingPage() {
 }
 
 const navLinkStyle = {
-  fontSize: 14,
-  color: tokens.body,
-  textDecoration: 'none',
-  fontFamily: fontStack,
-  fontWeight: 500,
-  whiteSpace: 'nowrap',
+  fontSize: 14, color: tokens.body, textDecoration: 'none',
+  fontFamily: fontStack, fontWeight: 500, whiteSpace: 'nowrap',
 }
