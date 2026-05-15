@@ -4,7 +4,12 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
-from app.core.exceptions import InvalidRollbackError, StepNotFoundError
+from app.core.exceptions import (
+    InvalidInputError,
+    InvalidRollbackError,
+    StageNotFoundError,
+    StepNotFoundError,
+)
 from app.core.models.step import Step as StepModel
 from app.core.repositories import (
     project as project_repo,
@@ -27,9 +32,27 @@ logger = get_logger(__name__)
 
 
 def get_step_tree(
-    db: Session, project_id: uuid.UUID, stage_id: uuid.UUID
+    db: Session,
+    project_id: uuid.UUID,
+    stage_id: uuid.UUID | None = None,
+    stage_sequence: int | None = None,
 ) -> StepTreeResponse:
-    """Step 트리 + Footprint 경로를 조립하여 반환."""
+    """Step 트리 + Footprint 경로를 조립하여 반환.
+
+    stage_id 또는 stage_sequence 중 정확히 하나가 제공되어야 한다.
+    stage_sequence 가 주어지면 시드 Stage 테이블에서 해당 Stage 를 조회한다.
+    """
+    if (stage_id is None) == (stage_sequence is None):
+        raise InvalidInputError(
+            "stage_id 또는 stage_sequence 중 정확히 하나만 제공해야 합니다."
+        )
+
+    if stage_sequence is not None:
+        stage = stage_repo.get_stage_by_sequence(db, stage_sequence)
+        if stage is None:
+            raise StageNotFoundError()
+        stage_id = stage.id
+
     steps = step_repo.get_steps_by_stage(db, project_id, stage_id)
     return StepTreeResponse(
         current_path=_build_current_path(steps),

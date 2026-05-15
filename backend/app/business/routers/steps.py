@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
@@ -21,12 +21,19 @@ router = EnvelopeRouter()
 
 @router.get("/tree", status_code=http_status.HTTP_200_OK)
 def get_step_tree(
-    stage_id: UUID,
+    stage_id: UUID | None = Query(default=None),
+    stage_sequence: int | None = Query(default=None, ge=1),
     db: Session = Depends(get_db),
     project: ProjectModel = Depends(get_owned_project),
 ) -> StepTreeResponse:
-    """project_id + stage_id 기준 Step 트리 + Footprint 경로 반환."""
-    return step_service.get_step_tree(db, project.id, stage_id)
+    """project_id + (stage_id 또는 stage_sequence) 기준 Step 트리 + Footprint 경로 반환.
+
+    stage_id 와 stage_sequence 중 정확히 하나를 제공해야 한다.
+    프로젝트 목록의 썸네일 미리보기처럼 stage_id 를 모를 때는 stage_sequence 로 호출한다.
+    """
+    return step_service.get_step_tree(
+        db, project.id, stage_id=stage_id, stage_sequence=stage_sequence
+    )
 
 
 @router.get("/{stage_id}/required", status_code=http_status.HTTP_200_OK)
