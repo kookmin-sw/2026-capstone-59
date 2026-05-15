@@ -23,6 +23,20 @@ def _is_response_class(annotation: Any) -> bool:
         return False
 
 
+def _merge_injected_cookies(
+    json_response: JSONResponse, injected: Any
+) -> JSONResponse:
+    """엔드포인트가 주입받은 Response 객체에 설정된 Set-Cookie 헤더를
+    envelope JSONResponse 로 옮긴다. (set_cookie / delete_cookie 호출 결과 보존)
+    """
+    if not isinstance(injected, StarletteResponse):
+        return json_response
+    for name, value in injected.raw_headers:
+        if name.lower() == b"set-cookie":
+            json_response.raw_headers.append((name, value))
+    return json_response
+
+
 def _wrap_endpoint(endpoint: Callable) -> Callable:
     """엔드포인트의 반환값을 SuccessResponse로 래핑하여 JSONResponse로 반환."""
     is_async = inspect.iscoroutinefunction(endpoint)
@@ -31,21 +45,25 @@ def _wrap_endpoint(endpoint: Callable) -> Callable:
 
         @functools.wraps(endpoint)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
+            # 엔드포인트가 response: Response 를 주입받아 쿠키를 수정한 경우
+            # 그 헤더를 envelope JSONResponse 로 보존한다.
+            injected = kwargs.get("response")
             result = await endpoint(*args, **kwargs)
             if isinstance(result, StarletteResponse):
                 return result
             body = SuccessResponse(data=result).model_dump(mode="json")
-            return JSONResponse(content=body)
+            return _merge_injected_cookies(JSONResponse(content=body), injected)
 
     else:
 
         @functools.wraps(endpoint)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
+            injected = kwargs.get("response")
             result = endpoint(*args, **kwargs)
             if isinstance(result, StarletteResponse):
                 return result
             body = SuccessResponse(data=result).model_dump(mode="json")
-            return JSONResponse(content=body)
+            return _merge_injected_cookies(JSONResponse(content=body), injected)
 
     return wrapper
 
