@@ -63,11 +63,15 @@ class BedrockAPIError(AIError):
 
 
 class OutputViolatesTemplateError(AIError):
-    """design-export 출력 .md 가 고정 템플릿 마커를 만족하지 않음.
+    """design-export 출력이 고정 템플릿 마커를 만족하지 않음 (v1.0~v1.3 옵션 A 잔존).
 
-    박제: Poco_Design_Export_Spec_v1.md v1.3 §5-2 (고정 템플릿 + AI 채움).
-    SCHEMA_VALIDATION_ERROR 코드 재사용 (design.md §6-3 — 코드 폭발 방지).
-    백엔드는 details["missing_marker"] 로 분기 가능.
+    박제: Poco_Design_Export_Spec_v1.md v1.0~v1.3 §5-2.
+    v1.4 옵션 B-단일 회귀 후 사용처 없음 — AI가 .md 골격을 만들지 않으므로
+    `_REQUIRED_MARKERS` 검증 자체가 사라짐. 미래 호환을 위해 클래스는
+    보존하되 active 코드 경로에서는 호출하지 않는다 (design.md §3-7-5).
+
+    SCHEMA_VALIDATION_ERROR 코드 재사용. 백엔드는 details["missing_marker"]
+    로 분기 가능.
     """
 
     def __init__(
@@ -79,11 +83,15 @@ class OutputViolatesTemplateError(AIError):
 
 
 class OutputViolatesHonestyGuardError(AIError):
-    """design-export 출력 .md 에 금지 표현이 등장함.
+    """design-export 출력에 표현 정직성 가드 금지 표현이 등장함.
 
-    박제: Poco_Design_Export_Spec_v1.md v1.3 §4-8 (표현 정직성).
-    SCHEMA_VALIDATION_ERROR 코드 재사용 (design.md §6-3 — 코드 폭발 방지).
-    백엔드는 details["banned_phrase"] 로 분기 가능.
+    박제: Poco_Design_Export_Spec_v1.md v1.4 §4-8 (표현 정직성).
+    v1.4 옵션 B-단일 Z+ 에서는 AI 출력 questions·core_summary 의 모든 문자열을
+    `_BANNED_PATTERNS` 정규식으로 스캔하여 위반 시 raise 한다 (재시도 없이
+    즉시 — design.md §3-7-2).
+
+    SCHEMA_VALIDATION_ERROR 코드 재사용. 백엔드는 details["banned_phrase"]
+    로 분기 가능.
     """
 
     def __init__(

@@ -14,7 +14,6 @@ import logging
 import sys
 import time
 import uuid
-from datetime import datetime, timezone
 from typing import Optional
 
 import boto3
@@ -26,7 +25,6 @@ from ai.exceptions import (
     AIGenerationFailedError,
     BedrockAPIError,
     OutputViolatesHonestyGuardError,
-    OutputViolatesTemplateError,
 )
 from ai.fixtures.required_steps import stage_1_required_steps
 from ai.schemas.accept import AcceptInput
@@ -42,11 +40,11 @@ from ai.schemas.common import (
     StepInfo,
 )
 from ai.schemas.design_export import (
-    AcceptedStepData,
+    AcceptedStepForAI,
     DesignExportInput,
-    ProjectStateForExport,
-    RequiredStepExportData,
-    StageExportData,
+    DesignExportOutput,
+    ProjectContextForAI,
+    RequiredStepForAI,
 )
 from ai.schemas.generate import GenerateInput, GenerateOutput
 from ai.schemas.side_panel import SidePanelInput, SidePanelOutput
@@ -432,44 +430,36 @@ _QUICK_MENTORING = MentoringContent(
 
 
 def _design_export_quick_input() -> DesignExportInput:
-    """빠른 모드 fixture — 즉시 실행 가능한 Stage 1 R2 데이터."""
-    project_info = ProjectInfo(
-        project_id=str(uuid.uuid4()),
+    """빠른 모드 fixture — 즉시 실행 가능한 Stage 1 R2 데이터 (v1.4 Z+)."""
+    project_context = ProjectContextForAI(
         name="스터디 매칭 앱",
+        description="대학생용 스터디 매칭 플랫폼",
         duration_months=3,
         member_count=4,
-        description="대학생용 스터디 매칭 플랫폼",
         constraints=["React + FastAPI", "AWS 프리 티어"],
         initial_prompt="학과 선후배가 스터디를 쉽게 구성할 수 있는 앱을 만들고 싶음",
     )
     accepted_steps = [
-        AcceptedStepData(
-            step_id=str(uuid.uuid4()),
+        AcceptedStepForAI(
             name="타겟 사용자 인터뷰 계획",
             description="1차 타겟 사용자군 특성 정의 활동",
-            accepted_at=datetime(2026, 5, 10, 14, 0, tzinfo=timezone.utc),
             sidepanel_mentoring=_QUICK_MENTORING,
         ),
-        AcceptedStepData(
-            step_id=str(uuid.uuid4()),
+        AcceptedStepForAI(
             name="경쟁 서비스 조사",
             description="에브리타임·카카오오픈채팅 등 기존 대안 분석",
-            accepted_at=datetime(2026, 5, 11, 10, 30, tzinfo=timezone.utc),
             sidepanel_mentoring=None,
         ),
-        AcceptedStepData(
-            step_id=str(uuid.uuid4()),
+        AcceptedStepForAI(
             name="사용자 검증 설문 설계",
             description="30명 대상 구글폼 설문 항목 정의",
-            accepted_at=datetime(2026, 5, 12, 9, 0, tzinfo=timezone.utc),
             sidepanel_mentoring=None,
         ),
     ]
-    required_step = RequiredStepExportData(
+    required_step = RequiredStepForAI(
         required_step_id="1-R2",
         required_step_name="대상 사용자 파악",
         goal="정의된 문제로 불편을 겪는 구체적 사용자군을 식별한다.",
-        entry_criteria="문제/기회에 관한 맥락이 존재한다.",
         fulfillment_criteria=[
             "1차 타겟 사용자군의 특성 정의",
             "사용자의 현재 행동·습관·맥락 파악",
@@ -477,20 +467,14 @@ def _design_export_quick_input() -> DesignExportInput:
         ],
         accepted_general_steps=accepted_steps,
     )
-    stage = StageExportData(
-        stage_sequence=1,
-        stage_name="아이디어 구체화",
-        required_steps=[required_step],
-    )
     return DesignExportInput(
-        project_info=project_info,
-        project_state=ProjectStateForExport(stages=[stage]),
-        generated_at=datetime.now(tz=timezone.utc),
+        project_context=project_context,
+        selected_required_steps=[required_step],
     )
 
 
 def _design_export_detailed_input() -> DesignExportInput:
-    """상세 모드 — 사용자 입력으로 ProjectInfo + 스테이지 수 선택."""
+    """상세 모드 — 사용자 입력으로 ProjectContext + RS 수 선택 (v1.4 Z+)."""
     _section("design-export — 상세 입력")
     initial_prompt = _input_required("초기 아이디어: ")
     duration_months = _input_int("기간 (개월): ", minimum=1)
@@ -502,64 +486,50 @@ def _design_export_detailed_input() -> DesignExportInput:
         if _constraints_raw
         else None
     )
-    project_info = ProjectInfo(
-        project_id=str(uuid.uuid4()),
+    project_context = ProjectContextForAI(
         name=name,
         duration_months=duration_months,
         member_count=member_count,
-        description=None,
         constraints=constraints,
         initial_prompt=initial_prompt,
     )
 
-    num_stages = _input_choice("모사할 Stage 수 (1/2): ", range(1, 3))
+    num_rs = _input_choice("선택할 Required_Step 수 (1~3): ", range(1, 4))
+    selected_required_steps: list[RequiredStepForAI] = []
     stage_names = [
         "아이디어 구체화", "프로젝트 계획", "요구사항 정의",
         "설계", "개발", "테스트 및 검증",
     ]
-    stages: list[StageExportData] = []
-    for s_idx in range(num_stages):
-        seq = s_idx + 1
-        num_rs = _input_choice(f"Stage {seq} Required_Step 수 (1/2): ", range(1, 3))
-        required_steps: list[RequiredStepExportData] = []
-        for rs_idx in range(num_rs):
-            num_as = _input_choice(
-                f"  Stage {seq} RS{rs_idx + 1} — accepted_general_steps 수 (0~3): ",
-                range(0, 4),
-            )
-            accepted: list[AcceptedStepData] = []
-            for as_idx in range(num_as):
-                accepted.append(
-                    AcceptedStepData(
-                        step_id=str(uuid.uuid4()),
-                        name=f"Step {s_idx + 1}-{rs_idx + 1}-{as_idx + 1}",
-                        description="(시뮬레이터 자동 생성)",
-                        accepted_at=datetime.now(tz=timezone.utc),
-                        sidepanel_mentoring=None,
-                    )
-                )
-            required_steps.append(
-                RequiredStepExportData(
-                    required_step_id=f"{seq}-R{rs_idx + 1}",
-                    required_step_name=f"필수 Step {seq}-{rs_idx + 1}",
-                    goal="(시뮬레이터 자동 생성)",
-                    entry_criteria="(시뮬레이터 자동 생성)",
-                    fulfillment_criteria=["기준 1", "기준 2"],
-                    accepted_general_steps=accepted,
+    for rs_idx in range(num_rs):
+        seq = _input_choice(
+            f"  RS{rs_idx + 1} — Stage 번호 (1~6): ", range(1, 7)
+        )
+        num_as = _input_choice(
+            f"  RS{rs_idx + 1} — accepted_general_steps 수 (0~3): ",
+            range(0, 4),
+        )
+        accepted: list[AcceptedStepForAI] = []
+        for as_idx in range(num_as):
+            accepted.append(
+                AcceptedStepForAI(
+                    name=f"Step {seq}-{rs_idx + 1}-{as_idx + 1}",
+                    description="(시뮬레이터 자동 생성)",
+                    sidepanel_mentoring=None,
                 )
             )
-        stages.append(
-            StageExportData(
-                stage_sequence=seq,
-                stage_name=stage_names[seq - 1],
-                required_steps=required_steps,
+        selected_required_steps.append(
+            RequiredStepForAI(
+                required_step_id=f"{seq}-R{rs_idx + 1}",
+                required_step_name=f"{stage_names[seq - 1]} 필수 Step {rs_idx + 1}",
+                goal="(시뮬레이터 자동 생성)",
+                fulfillment_criteria=["기준 1", "기준 2"],
+                accepted_general_steps=accepted,
             )
         )
 
     return DesignExportInput(
-        project_info=project_info,
-        project_state=ProjectStateForExport(stages=stages),
-        generated_at=datetime.now(tz=timezone.utc),
+        project_context=project_context,
+        selected_required_steps=selected_required_steps,
     )
 
 
@@ -570,21 +540,41 @@ def _build_design_export_bedrock() -> object:
 
 def _print_design_export_header(input_data: DesignExportInput) -> None:
     _section("design-export 시나리오 시작")
-    pi = input_data.project_info
-    total_rs = sum(len(s.required_steps) for s in input_data.project_state.stages)
+    ctx = input_data.project_context
     total_as = sum(
-        len(rs.accepted_general_steps)
-        for s in input_data.project_state.stages
-        for rs in s.required_steps
+        len(rs.accepted_general_steps) for rs in input_data.selected_required_steps
     )
-    print(f"  project_id : {pi.project_id}")
-    print(f"  이름       : {pi.name or '(미입력)'}")
-    print(f"  선택 Stage : {len(input_data.project_state.stages)}개")
-    print(f"  Required_Step : {total_rs}개 / accepted_general_steps : {total_as}개")
+    print(f"  이름          : {ctx.name or '(미입력)'}")
+    print(f"  인원·기간     : {ctx.member_count}명 / {ctx.duration_months}개월")
+    print(f"  Required_Step : {len(input_data.selected_required_steps)}개")
+    print(f"  accepted steps: {total_as}개")
+
+
+def _print_design_export_result(result: DesignExportOutput) -> None:
+    """AI 생성 결과(questions_per_rs + core_summary)를 터미널에 출력."""
+    _section("AI 생성 결과 (v1.4 Z+)")
+
+    print()
+    print("  [RS별 What·Why 질문]")
+    _hr()
+    for rs_q in result.questions_per_rs:
+        print(f"  • {rs_q.required_step_id}")
+        for i, q in enumerate(rs_q.questions, start=1):
+            print(f"    {i}. {q}")
+        print()
+
+    print("  [핵심 What·Why 정리]")
+    _hr()
+    for item in result.core_summary:
+        print(f"  - {item}")
+    print()
+
+    _ok("검증 PASS (금지 표현 0건, required_step_id 매칭 정상)")
+    _hr()
 
 
 async def _run_design_export(input_data: DesignExportInput) -> None:
-    """design-export 시나리오 실행 — Bedrock 호출 + 결과 출력."""
+    """design-export 시나리오 실행 — Bedrock 호출 + 결과 출력 (v1.4 Z+)."""
     bedrock_runtime = _build_design_export_bedrock()
 
     _wait("프롬프트 렌더 + Bedrock 호출 중...")
@@ -595,19 +585,17 @@ async def _run_design_export(input_data: DesignExportInput) -> None:
             bedrock_runtime_client=bedrock_runtime,
             model_id=ai_settings.MODEL_ID,
         )
-    except OutputViolatesTemplateError as exc:
-        elapsed = time.perf_counter() - t_start
-        _fail(f"검증 실패 (TEMPLATE)  [{elapsed:.2f}s]")
-        missing = exc.details.get("missing_marker", "(알 수 없음)")
-        print(f"  missing_marker: {missing!r}")
-        print("  → AI 응답이 고정 템플릿 마커를 누락. 프롬프트·max_tokens 재검토 필요.")
-        return
     except OutputViolatesHonestyGuardError as exc:
         elapsed = time.perf_counter() - t_start
         _fail(f"검증 실패 (HONESTY)  [{elapsed:.2f}s]")
         phrase = exc.details.get("banned_phrase", "(알 수 없음)")
         print(f"  banned_phrase: {phrase!r}")
-        print("  → AI 응답에 금지 표현 등장. 정직성 가드 표 강화 필요.")
+        expected = exc.details.get("expected")
+        actual = exc.details.get("actual")
+        if expected is not None and actual is not None:
+            print(f"  expected IDs: {expected}")
+            print(f"  actual IDs  : {actual}")
+        print("  → 프롬프트 강화 또는 max_tokens 재검토 필요.")
         return
     except BedrockAPIError as exc:
         elapsed = time.perf_counter() - t_start
@@ -619,19 +607,18 @@ async def _run_design_export(input_data: DesignExportInput) -> None:
         return
 
     elapsed = time.perf_counter() - t_start
-    md_len = len(result.markdown)
+    total_questions = sum(len(rs_q.questions) for rs_q in result.questions_per_rs)
 
     print()
     _hr()
     print("  [응답 수신]")
-    print(f"  응답 시간    : {elapsed:.2f}s")
-    print(f"  markdown 길이: {md_len}자  (토큰 약 {md_len // 4} est.)")
-    _ok("검증 PASS (마커 19개 모두 포함, 금지 패턴 0건)")
+    print(f"  응답 시간       : {elapsed:.2f}s")
+    print(f"  RS 수           : {len(result.questions_per_rs)}개")
+    print(f"  질문 총 수      : {total_questions}개")
+    print(f"  핵심 정리 수    : {len(result.core_summary)}개")
     _hr()
 
-    _section("생성된 markdown")
-    print(result.markdown)
-    _hr("─")
+    _print_design_export_result(result)
 
 
 # ---------------------------------------------------------------------------
