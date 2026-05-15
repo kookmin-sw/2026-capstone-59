@@ -5,6 +5,7 @@ import { HiOutlineUser } from 'react-icons/hi'
 import styles from './ProjectListPage.module.css'
 import { BsGrid, BsList, BsThreeDotsVertical, BsPencil, BsPlus } from 'react-icons/bs'
 import { getProjects, deleteProject, updateProject } from '../api/projects'
+import { getMe, logout } from '../api/auth'
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -35,6 +36,9 @@ export default function ProjectListPage() {
 
   const [constraintInput, setConstraintInput] = useState('')
   const [editConstraints, setEditConstraints] = useState([])
+
+  const [user, setUser] = useState(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   
   useEffect(() => {
     getProjects({ page, size, sort_by: sortBy, is_deleted: false }).then((data) => {
@@ -42,6 +46,10 @@ export default function ProjectListPage() {
       setTotalCount(data.total_count ?? 0)
     })
   }, [page, sortBy])
+
+  useEffect(() => {
+    getMe().then(setUser).catch(() => {})
+  }, [])
 
   const sortedProjects = [...projects].sort((a, b) => {
     if (sortBy === 'updated_at') return new Date(b.updated_at) - new Date(a.updated_at)
@@ -165,11 +173,30 @@ export default function ProjectListPage() {
               <HiOutlineTrash size={18} /> 휴지통
             </button>
           </nav>
-          <div className={styles.user}>
-            <HiOutlineUser size={20} />
-            <span>User</span>
+          <div className={styles.userWrapper}>
+            <button
+              className={styles.userBtn}
+              onClick={() => setUserMenuOpen((v) => !v)}
+            >
+              <HiOutlineUser size={18} />
+              <span>{user?.email ?? 'User'}</span>
+            </button>
+            {userMenuOpen && (
+              <div className={styles.userDropdown}>
+                <p className={styles.userEmail}>{user?.email ?? '-'}</p>
+                <button
+                  className={styles.logoutBtn}
+                  onClick={async () => {
+                    await logout()
+                    navigate('/')
+                  }}
+                >
+                  로그아웃
+                </button>
+              </div>
+            )}
           </div>
-        </aside>
+        </aside>.
 
         <main className={styles.main}>
           <div className={styles.subHeader}>
