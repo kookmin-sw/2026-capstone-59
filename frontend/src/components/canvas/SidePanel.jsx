@@ -406,7 +406,7 @@ function MentoringContent({ raw, isLoading, streamingText, isRequired }) {
   )
 }
 
-export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting }) {
+export default function SidePanel({ step, detail, streamingText, isOpen, onClose, onAccept, hasChildren, isAccepting, forceTab }) {
   const [lastStep, setLastStep] = useState(step)
   const [activeTab, setActiveTab] = useState('mentoring')
   const [tabStepId, setTabStepId] = useState(step?.id)
@@ -415,6 +415,11 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
     setTabStepId(step?.id)
     setActiveTab('mentoring')
   }
+
+  // 외부에서 특정 탭으로 강제 전환 (온보딩 투어용)
+  useEffect(() => {
+    if (forceTab) setActiveTab(forceTab)
+  }, [forceTab])
 
   useEffect(() => {
     if (step) setTimeout(() => setLastStep(step), 0)
@@ -457,6 +462,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
         {tabs.map((tab) => (
           <button
             key={tab}
+            data-tour={`sidepanel-tab-${tab}`}
             className={`${styles.tab} ${activeTab === tab ? styles.activeTab : ''}`}
             onClick={() => setActiveTab(tab)}
           >
@@ -466,11 +472,11 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
       </div>
       
       <div className={styles.content}>
-        <div style={{ display: activeTab === 'mentoring' ? 'block' : 'none' }}>
+        <div data-tour="sidepanel-content" style={{ display: activeTab === 'mentoring' ? 'block' : 'none' }}>
           <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} />
         </div>
 
-        <div style={{ display: activeTab === 'dictionary' ? 'block' : 'none' }}>
+        <div data-tour="sidepanel-dictionary-content" style={{ display: activeTab === 'dictionary' ? 'block' : 'none' }}>
           <div className={styles.dictionaryList}>
             {!detail
               ? [...Array(3)].map((_, i) => (
@@ -524,7 +530,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
 
       <div className={styles.footer}>
         {(status !== 'ACCEPTED' && !hasChildren && onAccept) && (
-          <button className={styles.acceptBtn} onClick={onAccept} disabled={isAccepting}>
+          <button data-tour="sidepanel-accept" className={styles.acceptBtn} onClick={onAccept} disabled={isAccepting}>
             <HiCheck size={15} />
             accept
           </button>

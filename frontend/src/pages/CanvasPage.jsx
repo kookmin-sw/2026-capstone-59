@@ -102,7 +102,7 @@ export default function CanvasPage() {
     {
       selector: `[data-tour="canvas-area"]`,
       title: '의사결정 캔버스',
-      body: 'AI가 제안한 다음 한 걸음의 선택지가 노드로 그려져요. 마음에 드는 노드를 더블클릭하면 해당 경로로 진행됩니다.',
+      body: 'AI가 제안한 다음 한 걸음의 선택지가 노드로 그려져요. 마음에 드는 Step을 클릭한 뒤 우측 사이드 패널에서 Accept버튼을 클릭하면 해당 경로로 진행됩니다.',
       placement: 'top',
     },
     {
@@ -112,6 +112,48 @@ export default function CanvasPage() {
       placement: 'bottom',
     },
   ]
+
+  // SidePanel 첫 노출 가이드 투어
+  const [sidePanelTourOpen, setSidePanelTourOpen] = useState(false)
+  const [sidePanelTourTab, setSidePanelTourTab] = useState(null)
+  const handleSidePanelTourClose = () => {
+    setSidePanelTourOpen(false)
+    setSidePanelTourTab(null)
+    localStorage.setItem('poco.tour.sidePanel', '1')
+  }
+  const SIDE_PANEL_TOUR_STEPS = [
+    {
+      selector: `[data-tour="sidepanel-tab-mentoring"]`,
+      title: 'AI Mentoring',
+      body: '이 Step의 목적, 추천 방법, 자주 하는 실수, 한 줄 팁을 AI가 정리해드려요.',
+      placement: 'bottom',
+      onEnter: () => setSidePanelTourTab('mentoring'),
+    },
+    {
+      selector: `[data-tour="sidepanel-tab-dictionary"]`,
+      title: 'Dictionary',
+      body: '이 Step에서 등장한 용어를 한 번에 모아 풀이해드려요. 처음 보는 단어가 있어도 따로 검색할 필요 없어요.',
+      placement: 'bottom',
+      onEnter: () => setSidePanelTourTab('dictionary'),
+    },
+    {
+      selector: `[data-tour="sidepanel-accept"]`,
+      title: 'Accept',
+      body: '이 Step으로 결정하면 AI가 다음 한 걸음의 선택지 3개를 새로 만들어 드려요. 결정의 흔적은 트리에 남습니다.',
+      placement: 'top',
+      onEnter: () => setSidePanelTourTab('mentoring'),
+    },
+  ]
+
+  // SidePanel이 처음 열렸을 때 투어 시작 (캔버스 투어가 끝나야만 시작)
+  useEffect(() => {
+    if (!selectedStep) return
+    if (tourOpen) return /* 캔버스 투어 진행 중이면 대기 */
+    const seen = localStorage.getItem('poco.tour.sidePanel')
+    if (seen) return
+    const t = setTimeout(() => setSidePanelTourOpen(true), 500)
+    return () => clearTimeout(t)
+  }, [selectedStep, tourOpen])
   const detailCacheRef = useRef({})
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
@@ -962,6 +1004,7 @@ export default function CanvasPage() {
           isAccepting={isAccepting}
           isStreamMode={isStreamMode}
           hasChildren={selectedHasChildren}
+          forceTab={sidePanelTourTab}
           onClose={() => {
             clearStreamCallbacks()
             clearTyping()
@@ -1086,6 +1129,13 @@ export default function CanvasPage() {
         steps={TOUR_STEPS}
         open={tourOpen}
         onClose={handleTourClose}
+      />
+
+      {/* SidePanel 첫 노출 가이드 투어 */}
+      <OnboardingTour
+        steps={SIDE_PANEL_TOUR_STEPS}
+        open={sidePanelTourOpen}
+        onClose={handleSidePanelTourClose}
       />
     </div>
   )

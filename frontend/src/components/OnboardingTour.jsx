@@ -13,6 +13,7 @@ const VIEWPORT_MARGIN = 16 /* 말풍선이 viewport 가장자리에 닿지 않�
  * @param {string}   steps[].title    - 말풍선 제목
  * @param {string}   steps[].body     - 말풍선 본문
  * @param {string=}  steps[].placement - 'top' | 'bottom' | 'left' | 'right' | 'auto' (기본 'auto')
+ * @param {Function=} steps[].onEnter - 단계 진입 시 호출 (탭 전환·스크롤 등 사전 준비)
  * @param {boolean}  open  - 투어 표시 여부
  * @param {Function} onClose - 종료/스킵 핸들러
  * @param {Function=} onComplete - 마지막 Next 클릭 시
@@ -25,6 +26,11 @@ export default function OnboardingTour({ steps, open, onClose, onComplete }) {
   const tooltipRef = useRef(null)
 
   const current = steps?.[index]
+
+  // 단계 진입 시 onEnter 콜백 실행 (탭 전환 등 사전 준비)
+  useEffect(() => {
+    if (open && current?.onEnter) current.onEnter()
+  }, [open, index, current])
 
   // 타겟 요소의 BoundingClientRect를 측정
   const measure = useCallback(() => {
