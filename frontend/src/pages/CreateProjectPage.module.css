@@ -362,12 +362,27 @@
   color: var(--color-text-disabled);
 }
 
+.hintRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.hintLine {
+  font-size: 33px;
+  font-weight: 300;
+  color: #3c3b47;
+  margin-top: -9px;   /* 텍스트 높이 맞춤 미세 조정 */
+}
+
 .hint {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: #5c5a6c;
   line-height: 1.8;
-  margin-top: 4px;
+  margin-top: 5px;
 }
 
 .chipInputRow {
@@ -437,10 +452,10 @@
 }
 
 .promptExamples {
-  margin-top: 20px;
+  margin-top: 5px;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
+  gap: 8px;
   max-width: 660px;
   width: 100%;
 }
@@ -449,14 +464,24 @@
   font-size: 13px;
   color: var(--color-text-secondary);
   line-height: 1.8;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.promptTipLine {
+  font-size: 43px;
+  font-weight: 200;
+  color: #3c3b47;
+  margin: 0;
+  margin-top: -1px;   /* 텍스트 높이 맞춤 미세 조정 */
 }
 
 .promptTip {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: #5c5a6c;
-  line-height: 1.8;
-  margin-top: 4px;
+  line-height: 1.7;
+  margin-top: 11px;
 }
 
 .errorMsg {

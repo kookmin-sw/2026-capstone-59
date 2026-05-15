@@ -157,7 +157,11 @@ export default function CreateProjectPage() {
                 }}
                   rows={1}
                 />
-                <p className={styles.hint}>💡 한 줄로 짧게! 외부에 이 프로젝트를 소개할 때 쓰는 부제 같은 거예요.</p>
+                <div className={styles.hintRow}>
+                  <p className={styles.hintLine}>|</p>
+                  <p className={styles.hint}>
+                    💡 한 줄로 짧게! 외부에 이 프로젝트를 소개할 때 쓰는 부제 같은 거예요.</p>
+                </div>
               </div>
 
               {/* 제약 사항 */}
@@ -196,9 +200,12 @@ export default function CreateProjectPage() {
                   </div>
                 )}
                 {constraintError && <p className={styles.errorMsg}>{constraintError}</p>}
-                <p className={styles.hint}>
-                  💡 이 프로젝트의 한계나 제약을 적어주세요. 시작 후엔 추가만 가능해요!<br />
-                </p>
+                <div className={styles.hintRow}>
+                  <p className={styles.hintLine}>|</p>
+                  <p className={styles.hint}>
+                    💡 이 프로젝트의 한계나 제약을 적어주세요. 시작 후엔 추가만 가능해요!<br />
+                  </p>
+                </div>
               </div>
 
               <div className={styles.actions}>
@@ -255,6 +262,7 @@ export default function CreateProjectPage() {
           </div>
 
           <div className={styles.promptExamples}>
+            <p className={styles.promptTipLine}>|</p>
             <p className={styles.promptTip}>
               💡 친구한테 "이런 거 만들어보려고…" 하고 얘기한다 생각하고 풀어보세요. 디테일은 poco와 진행하면서 단계별로 정리해 나가요!<br />             
             </p>
