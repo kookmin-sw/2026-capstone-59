@@ -168,32 +168,69 @@ function Eyebrow({ children, align = 'left' }) {
   )
 }
 
+// 고양이 발바닥 SVG (사용자 제공 아트워크)
+function CatPawIcon({ size = 64 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 324 335" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g opacity="0.7">
+        <path d="M64.7098 179.37C82.0026 194.181 84.9275 219.141 71.2427 235.118C57.5579 251.095 32.4456 252.041 15.1528 237.229C-2.14002 222.418 -5.06493 197.458 8.61984 181.481C22.3046 165.504 47.4169 164.558 64.7098 179.37Z" fill="#4A35D0" fillOpacity="0.18"/>
+        <path d="M247.402 95.4747C247.366 118.243 264.392 136.728 285.428 136.76C306.465 136.793 323.548 118.362 323.583 95.593C323.618 72.8242 306.593 54.3399 285.556 54.3072C264.52 54.2746 247.437 72.7059 247.402 95.4747Z" fill="#4A35D0" fillOpacity="0.18"/>
+        <path d="M132.871 63.9595C139.997 92.0618 166.485 109.592 192.034 103.114C217.583 96.6355 232.518 68.6025 225.393 40.5002C218.267 12.3979 191.779 -5.132 166.23 1.3461C140.681 7.8242 125.746 35.8572 132.871 63.9595Z" fill="#4A35D0" fillOpacity="0.18"/>
+        <path d="M114.89 71.9734C131.562 95.692 127.596 127.207 106.032 142.364C84.4687 157.52 53.473 150.58 36.8014 126.861C20.1299 103.143 24.0958 71.6278 45.6595 56.4709C67.2231 41.3141 98.2189 48.2548 114.89 71.9734Z" fill="#4A35D0" fillOpacity="0.18"/>
+        <path d="M313.351 254.801C291.948 299.012 250.039 278.463 225.851 289.57C201.663 300.678 191.877 345.921 140.176 331.779C66.1967 302.399 95.4947 171.393 158.222 142.587C220.95 113.782 340.998 178.434 313.351 254.801Z" fill="#4A35D0" fillOpacity="0.18"/>
+      </g>
+    </svg>
+  )
+}
+
 function FloatingDots() {
-  const dots = [
-    { x: 8, y: 18, s: 8, o: 0.5, d: 0 },
-    { x: 92, y: 12, s: 14, o: 0.35, d: 1.5 },
-    { x: 18, y: 78, s: 10, o: 0.4, d: 2.8 },
-    { x: 88, y: 68, s: 18, o: 0.25, d: 0.8 },
-    { x: 4, y: 50, s: 6, o: 0.5, d: 3.5 },
-    { x: 75, y: 88, s: 12, o: 0.3, d: 2.1 },
+  // x, y: 위치(%), s: 크기(px), o: 추가 투명도, r: 회전(deg), d: 애니메이션 지연(s)
+  // 크기를 다양화(28~96)하고 화면 전체에 풍성하게 배치
+  const paws = [
+    // 네 모서리 — 큰 악센트
+    { x: 5,  y: 10, s: 130, r: -20, d: 0 },
+    { x: 93, y: 14, s: 140, r: 25,  d: 1.2 },
+    { x: 6,  y: 78, s: 124, r: 40,  d: 2.4 },
+    { x: 92, y: 80, s: 136, r: -35, d: 0.6 },
+
+    // 좌우 가장자리 중간 — 중간 크기
+    { x: 12, y: 44, s: 82,  r: -10, d: 1.5 },
+    { x: 88, y: 50, s: 86,  r: 15,  d: 2.7 },
+
+    // 상하 가장자리 — 보조
+    { x: 38, y: 6,  s: 64,  r: 90,  d: 0.9 },
+    { x: 64, y: 92, s: 70,  r: -80, d: 2.0 },
   ]
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      {dots.map((d, i) => (
+      {paws.map((p, i) => (
+        // 3-layer 구조:
+        //   바깥: position + 중심 보정 (translate -50%, -50%)
+        //   중간: 정적 회전
+        //   안쪽: 애니메이션 (translateY 만)
+        // 한 요소에 transform 을 정적·애니메이션 양쪽으로 쓰면 키프레임이 transform 전체를
+        // 덮어써 애니메이션 시작 순간 점프가 발생하므로 책임을 분리한다.
         <span
           key={i}
           style={{
             position: 'absolute',
-            left: `${d.x}%`,
-            top: `${d.y}%`,
-            width: d.s,
-            height: d.s,
-            borderRadius: 99,
-            background: '#C7BBFF',
-            opacity: d.o,
-            animation: `pocoFloat ${5 + (i % 3)}s ease-in-out ${d.d}s infinite`,
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
           }}
-        />
+        >
+          <span style={{ display: 'inline-block', transform: `rotate(${p.r}deg)` }}>
+            <span
+              style={{
+                display: 'inline-block',
+                animation: `pocoFloat ${6 + (i % 5)}s ease-in-out ${p.d}s infinite`,
+              }}
+            >
+              <CatPawIcon size={p.s} />
+            </span>
+          </span>
+        </span>
       ))}
     </div>
   )
@@ -491,7 +528,13 @@ export default function LandingPage() {
       </div>
 
       {/* ===== HERO ===== */}
-      <section className={styles.snapSection} style={{ textAlign: 'center', background: tokens.bgGradient, overflow: 'hidden' }}>
+      <section className={styles.snapSection} style={{
+        textAlign: 'center',
+        background: tokens.bgGradient,
+        overflow: 'hidden',
+        justifyContent: 'flex-start',
+        paddingTop: 'clamp(96px, 12vh, 140px)',
+      }}>
         <FloatingDots />
         <div style={{ position: 'relative', maxWidth: 880, margin: '0 auto' }}>
           <div className={styles.fadeUp} style={{ animationDelay: '0.05s' }}>
@@ -499,7 +542,7 @@ export default function LandingPage() {
           </div>
 
           <div className={styles.fadeScale} style={{ display: 'flex', justifyContent: 'center', margin: '24px 0 8px', animationDelay: '0.18s' }}>
-            <img src="/poco-logo-text.svg" alt="poco" style={{ height: 220, width: 'auto' }} />
+            <img src="/poco-logo-text.svg" alt="poco" style={{ height: 'clamp(140px, 22vh, 220px)', width: 'auto' }} />
           </div>
 
           <h1 className={styles.fadeUp} style={{
@@ -537,7 +580,7 @@ export default function LandingPage() {
         </div>
 
         <div className={styles.fadeIn} style={{
-          marginTop: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          marginTop: 'clamp(28px, 6vh, 80px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
           color: tokens.sub, fontSize: 11, fontFamily: monoStack, letterSpacing: '0.16em',
           textTransform: 'uppercase', animationDelay: '1.1s',
         }}>

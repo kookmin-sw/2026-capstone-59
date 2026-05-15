@@ -47,12 +47,14 @@
 }
 
 /* ====== Sticky nav ====== */
+/* 배경색을 깔지 않고 backdrop-filter 만 두어, Hero 의 그라데이션과 자연스럽게 이어지도록 한다.
+   다른 섹션을 스크롤할 때는 backdrop blur 로 가독성만 약간 보강. */
 .navSticky {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(250, 248, 255, 0.85);
-  backdrop-filter: saturate(150%) blur(12px);
+  background: transparent;
+  backdrop-filter: saturate(140%) blur(8px);
 }
 
 /* ====== Reveal on scroll ====== */
