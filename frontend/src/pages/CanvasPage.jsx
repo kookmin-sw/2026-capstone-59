@@ -387,6 +387,17 @@ export default function CanvasPage() {
           typingDrainCallbackRef.current = proceed
         }
       }
+    } else {
+      // ACCEPTED 노드 등 버퍼 없는 경우
+      setIsStreamMode(false)
+      try {
+        const detail = await getStepDetail(node.id)
+        if (requestId !== detailRequestRef.current) return
+        setStepDetail(detail)
+        detailCacheRef.current[node.id] = detail
+      } catch {
+        //
+      }
     }
   }
 
