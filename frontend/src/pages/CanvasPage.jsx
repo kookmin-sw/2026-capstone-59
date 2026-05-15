@@ -15,6 +15,7 @@ import RequiredStepNode from '../components/canvas/RequiredStepNode'
 import GhostNode from '../components/canvas/GhostNode'
 import GhostEdge from '../components/canvas/GhostEdge'
 import NewEdge from '../components/canvas/NewEdge'
+import OnboardingTour from '../components/OnboardingTour'
 
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep } from '../api/step'
@@ -77,6 +78,40 @@ export default function CanvasPage() {
   const typingQueueRef = useRef('')
   const typingTimerRef = useRef(null)
   const typingDrainCallbackRef = useRef(null)
+
+  // 첫 진입 가이드 투어 (캔버스)
+  const [tourOpen, setTourOpen] = useState(false)
+  useEffect(() => {
+    const seen = localStorage.getItem('poco.tour.canvas')
+    if (!seen) {
+      const t = setTimeout(() => setTourOpen(true), 800)
+      return () => clearTimeout(t)
+    }
+  }, [])
+  const handleTourClose = () => {
+    setTourOpen(false)
+    localStorage.setItem('poco.tour.canvas', '1')
+  }
+  const TOUR_STEPS = [
+    {
+      selector: `[data-tour="canvas-stage-nav"]`,
+      title: 'Stage Navigator',
+      body: '왼쪽 패널은 6단계 SDLC 진행 상황을 보여줘요. 단계마다 핵심 관문이 있고, 클릭해서 이동할 수 있습니다.',
+      placement: 'right',
+    },
+    {
+      selector: `[data-tour="canvas-area"]`,
+      title: '의사결정 캔버스',
+      body: 'AI가 제안한 다음 한 걸음의 선택지가 노드로 그려져요. 마음에 드는 노드를 더블클릭하면 해당 경로로 진행됩니다.',
+      placement: 'top',
+    },
+    {
+      selector: `[data-tour="canvas-share"]`,
+      title: '공유하기',
+      body: '읽기 전용 링크로 캔버스를 외부에 공유할 수 있어요. 팀원에게 진행 상황을 보여줄 때 유용합니다.',
+      placement: 'bottom',
+    },
+  ]
   const detailCacheRef = useRef({})
   const [toast, setToast] = useState(null)
   const [toastVisible, setToastVisible] = useState(false)
@@ -848,6 +883,7 @@ export default function CanvasPage() {
         <div className={styles.headerRight}>
         <button
           className={styles.shareBtn}
+          data-tour="canvas-share"
           onClick={handleShareOpen}>
             공유하기
         </button>
@@ -858,23 +894,25 @@ export default function CanvasPage() {
       </header>
 
       <div className={styles.body}>
-        <StageNavigator
-          stages={uiStages}
-          currentStageId={currentStageId}
-          selectedStageId={selectedStageId}
-          onSelectStage={(id) => {
-            setSelectedStageId(id)
-            sessionStorage.setItem(`selectedStage_${projectId}`, id)
-          }}
-          collapsed={navCollapsed}
-          onToggle={() => {
-            const next = !navCollapsed
-            setNavCollapsed(next)
-            localStorage.setItem('navCollapsed', next)
-          }}
-        />
+        <div data-tour="canvas-stage-nav">
+          <StageNavigator
+            stages={uiStages}
+            currentStageId={currentStageId}
+            selectedStageId={selectedStageId}
+            onSelectStage={(id) => {
+              setSelectedStageId(id)
+              sessionStorage.setItem(`selectedStage_${projectId}`, id)
+            }}
+            collapsed={navCollapsed}
+            onToggle={() => {
+              const next = !navCollapsed
+              setNavCollapsed(next)
+              localStorage.setItem('navCollapsed', next)
+            }}
+          />
+        </div>
 
-        <div className={styles.canvasWrapper}>
+        <div className={styles.canvasWrapper} data-tour="canvas-area">
           <ToastAlarm
             message={toast}
             visible={toastVisible}
@@ -1042,6 +1080,13 @@ export default function CanvasPage() {
           </div>
         )}
       </div>
+
+      {/* 첫 진입 가이드 투어 */}
+      <OnboardingTour
+        steps={TOUR_STEPS}
+        open={tourOpen}
+        onClose={handleTourClose}
+      />
     </div>
   )
 }

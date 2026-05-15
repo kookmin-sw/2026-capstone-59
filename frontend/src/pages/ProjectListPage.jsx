@@ -7,6 +7,7 @@ import { BsGrid, BsList, BsThreeDotsVertical, BsPencil, BsPlus, BsSearch, BsX } 
 import { getProjects, deleteProject, updateProject } from '../api/projects'
 import { getMe, logout } from '../api/auth'
 import StepTreeThumbnail from '../components/StepTreeThumbnail'
+import OnboardingTour from '../components/OnboardingTour'
 import { useThumbnailTree } from '../hooks/useThumbnailTree'
 
 function ProjectThumb({ project, variant = 'grid' }) {
@@ -63,6 +64,54 @@ export default function ProjectListPage() {
 
   const [user, setUser] = useState(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+
+  // 첫 진입 가이드 투어
+  const [tourOpen, setTourOpen] = useState(false)
+  useEffect(() => {
+    const seen = localStorage.getItem('poco.tour.projectList')
+    if (!seen) {
+      // 페이지 렌더링 직후 살짝 지연시켜 자연스럽게 등장
+      const t = setTimeout(() => setTourOpen(true), 600)
+      return () => clearTimeout(t)
+    }
+  }, [])
+  const handleTourClose = () => {
+    setTourOpen(false)
+    localStorage.setItem('poco.tour.projectList', '1')
+  }
+
+  const TOUR_STEPS = [
+    {
+      selector: `[data-tour="project-list-title"]`,
+      title: '여기는 프로젝트 목록 화면이에요',
+      body: '지금까지 만든 프로젝트가 여기에 모입니다. 이름·생성일 기준으로 정렬하거나 검색할 수 있어요.',
+      placement: 'bottom',
+    },
+    {
+      selector: `[data-tour="project-search"]`,
+      title: '프로젝트 검색',
+      body: '이름으로 빠르게 찾을 수 있어요. 입력하면 자동으로 필터링됩니다.',
+      placement: 'bottom',
+    },
+    {
+      selector: `[data-tour="project-view-toggle"]`,
+      title: '보기 방식 변경',
+      body: '카드형 / 리스트형으로 전환할 수 있어요. 취향대로 선택하세요.',
+      placement: 'bottom',
+    },
+    {
+      selector: `[data-tour="project-trash"]`,
+      title: '휴지통',
+      body: '삭제한 프로젝트는 휴지통으로 이동해요. 언제든 복원할 수 있습니다.',
+      placement: 'right',
+    },
+    {
+      selector: `[data-tour="project-create"]`,
+      title: '새 프로젝트 시작하기',
+      body: '버튼을 눌러 새 프로젝트를 만들면 Poco가 다음 한 걸음을 안내해드려요.',
+      placement: 'top',
+    },
+  ]
   
   // 검색어 디바운싱 (300ms)
   useEffect(() => {
@@ -214,7 +263,9 @@ export default function ProjectListPage() {
               <HiOutlineFolder size={18} /> 모든 프로젝트
             </button>
             <button className={styles.navItem} onClick={() =>
-              navigate('/projects/trash')}>
+              navigate('/projects/trash')}
+              data-tour="project-trash"
+            >
               <HiOutlineTrash size={18} /> 휴지통
             </button>
           </nav>
@@ -245,9 +296,9 @@ export default function ProjectListPage() {
 
         <main className={styles.main}>
           <div className={styles.subHeader}>
-            <h2 className={styles.title}>모든 프로젝트</h2>
+            <h2 className={styles.title} data-tour="project-list-title">모든 프로젝트</h2>
             <div className={styles.controls}>
-              <div className={styles.searchBox}>
+              <div className={styles.searchBox} data-tour="project-search">
                 <BsSearch className={styles.searchIcon} size={14} />
                 <input
                   className={styles.searchInput}
@@ -272,7 +323,7 @@ export default function ProjectListPage() {
                 <option value="created_at">생성일</option>
                 <option value="name">이름</option>
               </select>
-              <div className={styles.viewToggle}>
+              <div className={styles.viewToggle} data-tour="project-view-toggle">
                 <button
                   className={viewMode === 'grid' ? styles.viewBtnActive : styles.viewBtn}
                   onClick={() => setViewMode('grid')}
@@ -376,7 +427,7 @@ export default function ProjectListPage() {
           )}
 
           <div className={styles.footer}>
-            <button className={styles.createBtn} onClick={() => navigate('/projects/create')}>
+            <button className={styles.createBtn} onClick={() => navigate('/projects/create')} data-tour="project-create">
               프로젝트 생성하기 <span>+</span>
             </button>
             <div className={styles.pagination}>
@@ -562,6 +613,13 @@ export default function ProjectListPage() {
           {toast.message}
         </div>
       )}
+
+      {/* 첫 진입 가이드 투어 */}
+      <OnboardingTour
+        steps={TOUR_STEPS}
+        open={tourOpen}
+        onClose={handleTourClose}
+      />
     </div>
   )
 }

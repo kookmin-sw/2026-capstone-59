@@ -1,0 +1,229 @@
+/* ===== Root ===== */
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.mounted {
+  opacity: 1;
+}
+
+/* ===== SVG Overlay (스포트라이트) ===== */
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* SVG 내부의 spotlight rect는 mask 안에서 부드럽게 transition */
+.spotlight {
+  transition:
+    x 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+    y 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+    width 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ===== 타겟 가장자리 강조 ring ===== */
+.ring {
+  position: absolute;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 2px rgba(124, 92, 255, 0.85),
+    0 0 0 6px rgba(124, 92, 255, 0.18),
+    0 0 24px 6px rgba(124, 92, 255, 0.45);
+  transition:
+    top 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+    left 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+    width 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: pocoTourPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pocoTourPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(124, 92, 255, 0.85),
+      0 0 0 6px rgba(124, 92, 255, 0.18),
+      0 0 24px 6px rgba(124, 92, 255, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(124, 92, 255, 0.85),
+      0 0 0 10px rgba(124, 92, 255, 0.1),
+      0 0 32px 8px rgba(124, 92, 255, 0.55);
+  }
+}
+
+/* ===== 말풍선 ===== */
+.tooltip {
+  position: absolute;
+  width: min(360px, calc(100vw - 32px));
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px 16px;
+  box-shadow:
+    0 4px 8px rgba(20, 18, 40, 0.06),
+    0 24px 48px -16px rgba(20, 18, 40, 0.28);
+  pointer-events: auto;
+  font-family: 'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: #11121A;
+  /* 단계 변경 시 부드러운 fade-up */
+  animation: pocoTooltipFadeUp 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* 위치 transition은 transform/top/left 조합 — top/left만 부드럽게 */
+  transition:
+    top 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+    left 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes pocoTooltipFadeUp {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tooltipHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tooltipStep {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7C5CFF;
+  letter-spacing: 0.06em;
+  background: #F4F1FF;
+  padding: 3px 9px;
+  border-radius: 99px;
+}
+
+.skipBtn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #7A7A88;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-family: inherit;
+}
+.skipBtn:hover {
+  background: #F4F1FF;
+  color: #7C5CFF;
+}
+
+.tooltipTitle {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #11121A;
+}
+
+.tooltipBody {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #3C3C48;
+  letter-spacing: -0.005em;
+}
+
+.tooltipActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.prevBtn,
+.nextBtn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease;
+}
+
+.prevBtn {
+  background: transparent;
+  color: #7A7A88;
+  border: 1px solid #ECECF2;
+}
+.prevBtn:hover:not(:disabled) {
+  background: #FAFAFD;
+  color: #11121A;
+}
+.prevBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.nextBtn {
+  background: #7C5CFF;
+  color: #fff;
+  border: none;
+  box-shadow: 0 1px 2px rgba(124, 92, 255, 0.3), 0 6px 16px -6px rgba(124, 92, 255, 0.45);
+}
+.nextBtn:hover {
+  background: #6A47FF;
+  transform: translateY(-1px);
+}
+.nextBtn:active {
+  transform: translateY(0);
+}
+
+/* ===== Arrow ===== */
+.arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.arrow_top {
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #fff;
+  filter: drop-shadow(0 -2px 2px rgba(20, 18, 40, 0.04));
+}
+.arrow_bottom {
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #fff;
+  filter: drop-shadow(0 2px 2px rgba(20, 18, 40, 0.06));
+}
+.arrow_left {
+  top: 50%;
+  left: -8px;
+  transform: translateY(-50%);
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #fff;
+  filter: drop-shadow(-2px 0 2px rgba(20, 18, 40, 0.04));
+}
+.arrow_right {
+  top: 50%;
+  right: -8px;
+  transform: translateY(-50%);
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 8px solid #fff;
+  filter: drop-shadow(2px 0 2px rgba(20, 18, 40, 0.04));
+}
