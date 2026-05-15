@@ -1,0 +1,56 @@
+.thumbContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-primary-bg);
+  /* 카드 클릭이 ReactFlow에 가로채이지 않도록 차단 */
+  pointer-events: none;
+  /* 미니어처에서 노드 텍스트/아이콘이 너무 또렷하지 않도록 가벼운 흐림 효과 (선택) */
+}
+
+/* ReactFlow 어트리뷰션 숨김 (proOptions 외 안전망) */
+.thumbContainer :global(.react-flow__attribution) {
+  display: none;
+}
+
+/* 미니어처에서 노드의 hover·focus 등 인터랙션 시각 변화 차단 */
+.thumbContainer :global(.react-flow__node),
+.thumbContainer :global(.react-flow__edge) {
+  pointer-events: none;
+}
+
+/* Controls/Background 등은 렌더하지 않지만, 혹시 노출될 경우 대비 */
+.thumbContainer :global(.react-flow__controls),
+.thumbContainer :global(.react-flow__minimap) {
+  display: none;
+}
+
+.skeleton {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-bg) 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    var(--color-primary-bg) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary-bg);
+  color: var(--color-text-disabled, #9ca3af);
+  font-size: 12px;
+}

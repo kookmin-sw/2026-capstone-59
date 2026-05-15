@@ -6,6 +6,25 @@ import styles from './ProjectListPage.module.css'
 import { BsGrid, BsList, BsThreeDotsVertical, BsPencil, BsPlus } from 'react-icons/bs'
 import { getProjects, deleteProject, updateProject } from '../api/projects'
 import { getMe, logout } from '../api/auth'
+import StepTreeThumbnail from '../components/StepTreeThumbnail'
+import { useThumbnailTree } from '../hooks/useThumbnailTree'
+
+function ProjectThumb({ project, variant = 'grid' }) {
+  const { ref, data, isLoading } = useThumbnailTree(
+    project.project_id,
+    project.current_stage_sequence
+  )
+  const className = variant === 'grid' ? styles.cardThumb : styles.listThumb
+  return (
+    <div ref={ref} className={className}>
+      <StepTreeThumbnail
+        steps={data?.steps}
+        stageSequence={project.current_stage_sequence}
+        isLoading={isLoading}
+      />
+    </div>
+  )
+}
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -233,7 +252,7 @@ export default function ProjectListPage() {
                 )}
               {sortedProjects.map((p) => (
                 <div key={p.project_id} className={styles.card} onClick={() => navigate(`/canvas/${p.project_id}`, { state: { projectName: p.name ?? 'Project' } })}>
-                  <div className={styles.cardThumb} />
+                  <ProjectThumb project={p} variant="grid" />
                   <div className={styles.cardInfo}>
                     <div>
                       <p className={styles.cardName}>{p.name ?? 'Project 1'}</p>
@@ -273,7 +292,7 @@ export default function ProjectListPage() {
                 {sortedProjects.map((p) => (
                   <tr key={p.project_id} onClick={() => navigate(`/canvas/${p.project_id}`)}>
                     <td>
-                      <div className={styles.listThumb} />
+                      <ProjectThumb project={p} variant="list" />
                       {p.name ?? '(이름 없음)'}
                     </td>
                     <td>{timeAgo(p.updated_at)}</td>
