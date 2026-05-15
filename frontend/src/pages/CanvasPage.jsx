@@ -792,11 +792,45 @@ export default function CanvasPage() {
   }
 
   async function handleCopyUrl() {
+    // navigator.clipboard 는 HTTPS / localhost 에서만 동작하므로
+    // 실패하거나 미지원이면 document.execCommand('copy') 로 폴백한다.
+    const fallbackCopy = (text) => {
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'fixed'
+      textarea.style.top = '0'
+      textarea.style.left = '-9999px'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      textarea.setSelectionRange(0, text.length)
+      let ok = false
+      try {
+        ok = document.execCommand('copy')
+      } catch {
+        ok = false
+      }
+      document.body.removeChild(textarea)
+      return ok
+    }
+
+    let success = false
     try {
-      await navigator.clipboard.writeText(shareUrl)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl)
+        success = true
+      } else {
+        success = fallbackCopy(shareUrl)
+      }
+    } catch {
+      success = fallbackCopy(shareUrl)
+    }
+
+    if (success) {
       setShareCopied(true)
       setTimeout(() => setShareCopied(false), 2000)
-    } catch {
+    } else {
       alert('복사에 실패했어요.')
     }
   }
