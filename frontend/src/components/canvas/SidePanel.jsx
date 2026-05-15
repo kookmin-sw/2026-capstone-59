@@ -239,30 +239,52 @@ function StreamingStructuredView({ data }) {
   return (
     <div className={styles.mentoringJson}>
       {data.description
-    ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
-        <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
-        <TypewriterText key="description" text={data.description} className={styles.mentoringDescription} />
-      </section>
-    : <TitledSkeleton title="📖 Step 설명" />}
+        ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
+            <h4 className={styles.mentoringSectionTitle}>📖 Step 설명</h4>
+            <p className={styles.mentoringDescription}>{data.description}</p>
+          </section>
+        : <TitledSkeleton title="📖 Step 설명" />}
 
       {data.recommended_methods?.length > 0
         ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
             <h4 className={styles.mentoringSectionTitle}>🔥 추천 방법</h4>
-            <MethodListTyping items={data.recommended_methods} />
+            <div className={styles.methodList}>
+              {data.recommended_methods.map((m, i) => (
+                <div key={i} className={styles.methodItem}>
+                  <p className={styles.methodTitle}>{i + 1}. {m.title}</p>
+                  {m.content.split('\n').filter(Boolean).map((line, j) => (
+                    <p key={j} className={styles.methodContent}>{line}</p>
+                  ))}
+                </div>
+              ))}
+            </div>
           </section>
         : <TitledSkeleton title="🔥 추천 방법" />}
 
       {data.common_mistakes?.length > 0
         ? <section className={`${styles.mentoringSection} ${styles.fadeInSection}`}>
             <h4 className={styles.mentoringSectionTitle}>⚠️ 자주 하는 실수</h4>
-            <MistakeListTyping items={data.common_mistakes} />
+            <div className={styles.mistakeList}>
+              {data.common_mistakes.map((m, i) => (
+                <div key={i} className={styles.mistakeItem}>
+                  <p className={styles.mistakeTitle}>{i + 1}. {m.mistake}</p>
+                  {(m.bad_example || m.good_example) && (
+                    <div className={styles.mistakeExamples}>
+                      {m.bad_example && <p className={styles.mistakeBad}>❌ "{m.bad_example}"</p>}
+                      {m.good_example && <p className={styles.mistakeGood}>✅ "{m.good_example}"</p>}
+                    </div>
+                  )}
+                  {m.explanation && <p className={styles.mistakeExplanation}>{m.explanation}</p>}
+                </div>
+              ))}
+            </div>
           </section>
         : <TitledSkeleton title="⚠️ 자주 하는 실수" />}
 
       {data.one_line_tip
         ? <div className={`${styles.tipBox} ${styles.fadeInSection}`}>
             <span className={styles.tipTitle}>💡 한 줄 팁</span>
-            <TypewriterText key="one_line_tip" text={data.one_line_tip} className={styles.tipText} />
+            <p className={styles.tipText}>{data.one_line_tip}</p>
           </div>
         : <TitledSkeleton title="💡 한 줄 팁" />}
     </div>
