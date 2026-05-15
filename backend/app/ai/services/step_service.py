@@ -419,6 +419,18 @@ def _create_generated_step_nodes(
 def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequest:
     fulfilled_ids = _get_fulfilled_required_step_ids(db, parent_step.project_id)
 
+    belonging_rs_id = parent_step.belonging_required_step_id or parent_step.required_step_id
+    rs = db.get(RequiredStepModel, belonging_rs_id)
+    current_required_step = CurrentRequiredStep(
+        step_id=rs.id,
+        name=rs.name,
+        is_completed=rs.id in fulfilled_ids,
+        goal=rs.goal,
+        entry_criteria=rs.entry_criteria,
+        fulfillment_criteria=rs.fulfillment_criteria,
+        minimum_fulfillment_count=rs.minimum_fulfillment_count,
+    )
+
     accepted_steps = (
         db.query(StepModel)
         .join(StageModel, StepModel.stage_id == StageModel.id)
@@ -435,9 +447,7 @@ def _build_generate_request(db: Session, parent_step: StepModel) -> GenerateRequ
     return GenerateRequest(
         project_info=_build_project_info(parent_step),
         current_stage=_build_current_stage(parent_step),
-        current_required_step=_get_current_required_step(
-            db, parent_step.stage_id, fulfilled_ids
-        ),
+        current_required_step=current_required_step,
         decision_history=[
             DecisionHistoryItem(
                 step_id=s.id,
