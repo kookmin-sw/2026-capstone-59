@@ -18,9 +18,8 @@ export function makeEdge(sourceId, targetId, solid = false) {
     target: targetId,
     type: 'default',
     style: {
-      stroke: '#291C80',
-      strokeWidth: solid ?  1.5: 1.5,
-      strokeDasharray: solid ? undefined : '5,5',
+      stroke: solid ? '#3c2ab0' : '#C5BDFB',
+      strokeWidth: 1.5,
     },
   }
 }
@@ -57,16 +56,25 @@ export function flattenTree(steps, stageSequence) {
     const children = node.children ?? []
     if (children.length === 0) return
 
-    const sorted = [...children].sort((a, b) => (a.is_required ? 1 : 0) - (b.is_required ? 1 : 0))
-    const sizes = sorted.map(child => getSubtreeSize(child))
-    const totalLeaves = sizes.reduce((sum, s) => sum + s, 0)
-    const totalHeight = (totalLeaves - 1) * Y_GAP
+    const regularChildren = children.filter(c => !c.is_required)
+    const requiredChildren = children.filter(c => c.is_required)
 
+    const sizes = regularChildren.map(child => getSubtreeSize(child))
+    const totalLeaves = sizes.reduce((sum, s) => sum + s, 0)
+    const totalHeight = totalLeaves > 0 ? (totalLeaves - 1) * Y_GAP : 0
+
+    let lastRegularChildY = centerY
     let currentY = centerY - totalHeight / 2
-    sorted.forEach((child, index) => {
+
+    regularChildren.forEach((child, index) => {
       const childCenterY = currentY + (sizes[index] - 1) * Y_GAP / 2
       build(child, depth + 1, childCenterY)
+      lastRegularChildY = childCenterY
       currentY += sizes[index] * Y_GAP
+    })
+
+    requiredChildren.forEach((child) => {
+      build(child, depth + 1, lastRegularChildY + Y_GAP * 0.5)
     })
   }
 
