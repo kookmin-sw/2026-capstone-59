@@ -78,6 +78,7 @@ export default function CanvasPage() {
   const typingQueueRef = useRef('')
   const typingTimerRef = useRef(null)
   const typingDrainCallbackRef = useRef(null)
+  const canvasWrapperRef = useRef(null)
 
   // 첫 진입 가이드 투어 (캔버스)
   const [tourOpen, setTourOpen] = useState(false)
@@ -422,17 +423,45 @@ export default function CanvasPage() {
     if (!rfInstance || nodes.length === 0) return
     if (!shouldFitViewRef.current) return
     shouldFitViewRef.current = false
-    if (nodes.length < 4) {
-      rfInstance.setViewport({ x: -10, y: 0, zoom: 1 }, { duration: 0 })
-      return
-    }
-    
+
+    // 현재 진행 경로의 leaf — ACCEPTED 노드 중 ACCEPTED 자식이 없는 가장 끝 노드
+    const acceptedNodes = nodes.filter((n) => n.data?.status === 'ACCEPTED')
+    const acceptedIds = new Set(acceptedNodes.map((n) => n.id))
+    const hasAcceptedChild = (parentId) =>
+      edges.some((e) => e.source === parentId && acceptedIds.has(e.target))
+    const leafAccepted = acceptedNodes.find((n) => !hasAcceptedChild(n.id))
+    // ACCEPTED가 없으면 첫 노드(루트)로 fallback
+    const focusNode = leafAccepted ?? nodes[0]
+    if (!focusNode) return
+
+    // 캔버스 wrapper의 실제 픽셀 크기 측정 (sidebar/sidepanel 제외한 실제 영역)
+    const wrap = canvasWrapperRef.current
+    const rect = wrap?.getBoundingClientRect()
+    const viewportW = rect?.width ?? window.innerWidth
+    const viewportH = rect?.height ?? window.innerHeight
+
     ;(async () => {
-      await rfInstance.fitView({ duration: 0, padding: 0.1 })
-      const { y, zoom } = rfInstance.getViewport()
-      rfInstance.setViewport({ x: 80 - 50 * zoom, y, zoom }, { duration: 200 })
+      // 노드가 적을 때는 fitView를 건너뛰고 기본 zoom 유지
+      let zoom = 1
+      if (nodes.length >= 4) {
+        await rfInstance.fitView({ duration: 0, padding: 0.2 })
+        zoom = rfInstance.getViewport().zoom
+      }
+
+      // focusNode 기준으로 wrapper 중앙 정렬
+      const NODE_W = 180
+      const NODE_H = 60
+      const cx = (focusNode.position?.x ?? 0) + NODE_W / 2
+      const cy = (focusNode.position?.y ?? 0) + NODE_H / 2
+      const targetX = viewportW / 2 - cx * zoom
+      const targetY = viewportH / 2 - cy * zoom
+
+      rfInstance.setViewport(
+        { x: targetX, y: targetY, zoom },
+        { duration: 400 }
+      )
     })()
-  }, [nodes, rfInstance])
+  }, [nodes, edges, rfInstance])
 
   useEffect(() => {
     if (!selectedStageId || !projectId) return
@@ -954,7 +983,7 @@ export default function CanvasPage() {
           />
         </div>
 
-        <div className={styles.canvasWrapper} data-tour="canvas-area">
+        <div className={styles.canvasWrapper} data-tour="canvas-area" ref={canvasWrapperRef}>
           <ToastAlarm
             message={toast}
             visible={toastVisible}
