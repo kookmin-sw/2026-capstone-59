@@ -60,3 +60,35 @@ class BedrockAPIError(AIError):
 
     def __init__(self, message: str = "Bedrock API 호출에 실패했습니다.", details: Optional[dict] = None):
         super().__init__(AIErrorCode.BEDROCK_API_ERROR, message, details)
+
+
+class OutputViolatesTemplateError(AIError):
+    """design-export 출력 .md 가 고정 템플릿 마커를 만족하지 않음.
+
+    박제: Poco_Design_Export_Spec_v1.md v1.3 §5-2 (고정 템플릿 + AI 채움).
+    SCHEMA_VALIDATION_ERROR 코드 재사용 (design.md §6-3 — 코드 폭발 방지).
+    백엔드는 details["missing_marker"] 로 분기 가능.
+    """
+
+    def __init__(
+        self,
+        message: str = "출력이 고정 템플릿 마커를 만족하지 않습니다.",
+        details: Optional[dict] = None,
+    ):
+        super().__init__(AIErrorCode.SCHEMA_VALIDATION_ERROR, message, details)
+
+
+class OutputViolatesHonestyGuardError(AIError):
+    """design-export 출력 .md 에 금지 표현이 등장함.
+
+    박제: Poco_Design_Export_Spec_v1.md v1.3 §4-8 (표현 정직성).
+    SCHEMA_VALIDATION_ERROR 코드 재사용 (design.md §6-3 — 코드 폭발 방지).
+    백엔드는 details["banned_phrase"] 로 분기 가능.
+    """
+
+    def __init__(
+        self,
+        message: str = "출력이 표현 정직성 가드를 위반했습니다.",
+        details: Optional[dict] = None,
+    ):
+        super().__init__(AIErrorCode.SCHEMA_VALIDATION_ERROR, message, details)
