@@ -1,17 +1,19 @@
 """ai/services/design_export_generator.py 단위 테스트.
 
-박제: design.md §7-1-1 example tests + 프롬프트 정적 검증.
-Property-based tests는 Task 5.2* 별도 파일(test_design_export_generator_property.py)에서 처리.
+박제: design.md §7-1-1 example tests + 프롬프트 정적 검증 + PBT (Hypothesis, Task 5.2).
 """
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 from unittest.mock import AsyncMock, MagicMock, call
 
 import pytest
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
 from ai.exceptions import (
     AIGenerationFailedError,
@@ -606,3 +608,324 @@ class TestPromptFileStaticValidation:
         assert "{project_info_block}" in prompt_text
         assert "{project_state_block}" in prompt_text
         assert "{generated_at}" in prompt_text
+
+
+# ---------------------------------------------------------------------------
+# Property-Based Tests (Hypothesis, design.md §5)
+# ---------------------------------------------------------------------------
+
+# -- Strategies --
+
+_safe_text = st.text(
+    alphabet=st.characters(
+        whitelist_categories=("Lu", "Ll", "Nd", "Zs"),
+        whitelist_characters=".,!?()[]가나다라마바사아자차카타파하",
+    ),
+    min_size=1,
+    max_size=40,
+).filter(lambda s: s.strip())
+
+_recommended_method_st = st.builds(
+    RecommendedMethod,
+    title=_safe_text,
+    content=_safe_text.map(lambda s: f"RMCONTENT_{s}"),
+)
+
+_common_mistake_st = st.builds(
+    CommonMistake,
+    mistake=_safe_text,
+    bad_example=_safe_text.map(lambda s: f"BADEX_{s}"),
+    good_example=_safe_text.map(lambda s: f"GOODEX_{s}"),
+)
+
+_mentoring_st = st.builds(
+    MentoringContent,
+    description=_safe_text,
+    recommended_methods=st.lists(_recommended_method_st, min_size=0, max_size=3),
+    common_mistakes=st.lists(_common_mistake_st, min_size=0, max_size=3),
+    one_line_tip=_safe_text,
+)
+
+_accepted_step_st = st.builds(
+    AcceptedStepData,
+    step_id=st.uuids().map(str),
+    name=_safe_text,
+    description=_safe_text,
+    accepted_at=st.datetimes(
+        min_value=datetime(2024, 1, 1),
+        max_value=datetime(2026, 12, 31),
+    ),
+    sidepanel_mentoring=st.one_of(st.none(), _mentoring_st),
+)
+
+
+@st.composite
+def _required_step_export_st(draw: st.DrawFn) -> RequiredStepExportData:
+    seq = draw(st.integers(min_value=1, max_value=6))
+    ridx = draw(st.integers(min_value=1, max_value=4))
+    # UUID suffix ensures globally unique IDs across stages (for order-preservation tests)
+    uid = draw(st.uuids().map(lambda u: str(u)[:8]))
+    return RequiredStepExportData(
+        required_step_id=f"{seq}-R{ridx}-{uid}",
+        required_step_name=draw(_safe_text),
+        goal=draw(_safe_text),
+        entry_criteria=draw(_safe_text),
+        fulfillment_criteria=draw(st.lists(_safe_text, min_size=1, max_size=4)),
+        accepted_general_steps=draw(st.lists(_accepted_step_st, min_size=0, max_size=3)),
+    )
+
+
+@st.composite
+def _stage_export_st(draw: st.DrawFn) -> StageExportData:
+    seq = draw(st.integers(min_value=1, max_value=6))
+    stage_names = [
+        "아이디어 구체화", "프로젝트 계획", "요구사항 정의",
+        "설계", "개발", "테스트 및 검증",
+    ]
+    return StageExportData(
+        stage_sequence=seq,
+        stage_name=stage_names[seq - 1],
+        required_steps=draw(st.lists(_required_step_export_st(), min_size=1, max_size=2)),
+    )
+
+
+@st.composite
+def design_export_input_strategy(draw: st.DrawFn) -> DesignExportInput:
+    name = draw(st.one_of(st.none(), _safe_text))
+    description = draw(st.one_of(st.none(), _safe_text))
+    constraints = draw(
+        st.one_of(
+            st.none(),
+            st.lists(_safe_text, min_size=0, max_size=3),
+        )
+    )
+    project_info = ProjectInfo(
+        project_id=str(draw(st.uuids())),
+        name=name,
+        duration_months=draw(st.integers(min_value=1, max_value=24)),
+        member_count=draw(st.integers(min_value=1, max_value=10)),
+        description=description,
+        constraints=constraints,
+        initial_prompt=draw(_safe_text),
+    )
+    stages = draw(st.lists(_stage_export_st(), min_size=1, max_size=2))
+    generated_at = draw(
+        st.datetimes(
+            min_value=datetime(2024, 1, 1),
+            max_value=datetime(2026, 12, 31),
+        )
+    )
+    return DesignExportInput(
+        project_info=project_info,
+        project_state=ProjectStateForExport(stages=stages),
+        generated_at=generated_at,
+    )
+
+
+# -- MockDesignExportLLM --
+
+
+def _generate_deterministic_markdown(input_data: DesignExportInput) -> str:
+    """DesignExportInput → _validate_markdown 통과 + Property 5~7 조건 만족하는 결정론적 .md 생성."""
+    pi = input_data.project_info
+    name = pi.name if pi.name else "(미입력)"
+    constraints_str = ", ".join(pi.constraints) if pi.constraints else "(미입력)"
+    generated_at_str = input_data.generated_at.strftime("%Y-%m-%d %H:%M")
+
+    # 사고 궤적 섹션 — 입력 순서 보존
+    trajectory_parts: list[str] = []
+    for stage in input_data.project_state.stages:
+        for rs in stage.required_steps:
+            # 진행한 결정 블록
+            if rs.accepted_general_steps:
+                decisions = "\n".join(
+                    f"{i + 1}. {step.name}"
+                    for i, step in enumerate(rs.accepted_general_steps)
+                )
+            else:
+                decisions = "1. (아직 없음)"
+
+            block = (
+                f"#### {rs.required_step_id} {rs.required_step_name}\n\n"
+                f"**목표**: {rs.goal}\n\n"
+                f"**충족 기준**:\n- {rs.fulfillment_criteria[0]}\n\n"
+                f"**진행한 결정** (사용자 클릭 순서):\n{decisions}\n\n"
+                f"**이 단계에서 인지한 What·Why 질문**:\n- 사용자가 인지한 질문이 있는가?\n\n"
+                f"**사고 흐름 요약**: 사고가 진행 중인 상태다."
+            )
+            trajectory_parts.append(block)
+
+    trajectory_block = "\n\n".join(trajectory_parts)
+
+    return (
+        f"# {name} — 사고 궤적 문서\n\n"
+        "> **이 문서는 Poco가 생성한 What·Why 사고 궤적 문서입니다.**\n"
+        ">\n"
+        "> 사용자는 6단계 흐름(아이디어 구체화 → 프로젝트 계획 → 요구사항 정의"
+        " → 설계 → 개발 → 테스트 및 검증)으로 사고를 진행합니다.\n"
+        ">\n"
+        "> **이 문서를 받은 외부 AI에게**:\n"
+        "> 답 디테일이 필요하면 사용자에게 직접 보충 질문하세요.\n\n"
+        "---\n\n"
+        "## 프로젝트 컨텍스트\n\n"
+        f"- 이름: {name}\n"
+        f"- 인원·기간: {pi.member_count}명 / {pi.duration_months}개월\n"
+        f"- 제약사항: {constraints_str}\n"
+        f"- 초기 아이디어: {pi.initial_prompt}\n\n"
+        "## 사용자가 거쳐온 사고 궤적\n\n"
+        f"{trajectory_block}\n\n"
+        "## 핵심 What·Why 정리\n\n"
+        "- 사고를 진행 중인 상태.\n\n"
+        "---\n\n"
+        f"생성: {generated_at_str} (KST) / 도구: Poco\n"
+    )
+
+
+class MockDesignExportLLM:
+    """LLMClient 대역 — 결정론적 마크다운을 DesignExportOutput 으로 반환한다."""
+
+    def __init__(self, input_data: DesignExportInput) -> None:
+        self._markdown = _generate_deterministic_markdown(input_data)
+
+    async def invoke(
+        self,
+        prompt: str,
+        expected_schema: Any,
+        max_retries: int = 2,
+        max_tokens: Optional[int] = None,
+    ) -> DesignExportOutput:
+        return DesignExportOutput(markdown=self._markdown)
+
+
+# -- Property Tests --
+
+
+@settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+@given(input_data=design_export_input_strategy())
+def test_pbt_fixed_template_markers_always_present(input_data: DesignExportInput):
+    """Property 1: 임의 입력에 대해 출력 .md 에 _REQUIRED_MARKERS 19개가 모두 포함된다.
+
+    design.md §5 — 고정 템플릿 마커 불변 조건.
+    """
+    llm = MockDesignExportLLM(input_data)
+    service = DesignExportGenerator(llm=llm)
+    result = asyncio.run(service.generate_design_export(input_data))
+    for marker in _REQUIRED_MARKERS:
+        assert marker in result.markdown, f"필수 마커 누락: {marker!r}"
+
+
+@settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+@given(input_data=design_export_input_strategy())
+def test_pbt_project_context_fields_preserved(input_data: DesignExportInput):
+    """Property 2: 프로젝트 컨텍스트 필드(name/member_count/duration_months/constraints)가 출력에 반영된다.
+
+    design.md §5 — 프로젝트 컨텍스트 보존 불변 조건.
+    """
+    llm = MockDesignExportLLM(input_data)
+    service = DesignExportGenerator(llm=llm)
+    result = asyncio.run(service.generate_design_export(input_data))
+
+    pi = input_data.project_info
+    expected_name = pi.name if pi.name else "(미입력)"
+    assert expected_name in result.markdown
+
+    assert str(pi.member_count) in result.markdown
+    assert str(pi.duration_months) in result.markdown
+
+    if pi.constraints:
+        for c in pi.constraints:
+            assert c in result.markdown
+    else:
+        assert "(미입력)" in result.markdown
+
+
+@settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+@given(input_data=design_export_input_strategy())
+def test_pbt_footer_timestamp_exact_match(input_data: DesignExportInput):
+    """Property 3: 푸터 타임스탬프가 generated_at 을 그대로 반영한다.
+
+    design.md §5 — 푸터 타임스탬프 불변 조건 (Req 7.9).
+    """
+    llm = MockDesignExportLLM(input_data)
+    service = DesignExportGenerator(llm=llm)
+    result = asyncio.run(service.generate_design_export(input_data))
+
+    expected_ts = input_data.generated_at.strftime("%Y-%m-%d %H:%M")
+    assert f"{expected_ts} (KST)" in result.markdown
+    assert "도구: Poco" in result.markdown
+
+
+@settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+@given(input_data=design_export_input_strategy())
+def test_pbt_mentoring_raw_content_not_in_output(input_data: DesignExportInput):
+    """Property 4: sidepanel_mentoring 의 원본 content/bad_example/good_example 이 출력에 노출되지 않는다.
+
+    design.md §5 — 멘토링 원본 콘텐츠 미노출 불변 조건 (방향 3: 변환 규칙).
+    RMCONTENT_/BADEX_/GOODEX_ 접두사로 전략에서 마킹해 두었으므로 접두사 존재 여부로 검사한다.
+    """
+    llm = MockDesignExportLLM(input_data)
+    service = DesignExportGenerator(llm=llm)
+    result = asyncio.run(service.generate_design_export(input_data))
+
+    assert "RMCONTENT_" not in result.markdown
+    assert "BADEX_" not in result.markdown
+    assert "GOODEX_" not in result.markdown
+
+
+@settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+@given(input_data=design_export_input_strategy())
+def test_pbt_decision_section_correctness(input_data: DesignExportInput):
+    """Property 5: "진행한 결정" 블록이 accepted_general_steps 유무에 따라 올바르게 채워진다.
+
+    design.md §5 — 빈 목록 → "(아직 없음)", 비어있지 않으면 step 이름 포함.
+    """
+    llm = MockDesignExportLLM(input_data)
+    service = DesignExportGenerator(llm=llm)
+    result = asyncio.run(service.generate_design_export(input_data))
+
+    for stage in input_data.project_state.stages:
+        for rs in stage.required_steps:
+            if not rs.accepted_general_steps:
+                assert "(아직 없음)" in result.markdown
+            else:
+                for step in rs.accepted_general_steps:
+                    assert step.name in result.markdown
+
+
+@settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+@given(input_data=design_export_input_strategy())
+def test_pbt_banned_expressions_not_in_output(input_data: DesignExportInput):
+    """Property 6: 출력 .md 에 표현 정직성 가드 금지 패턴이 등장하지 않는다.
+
+    design.md §5 — 정직성 가드 불변 조건 (Req 9.3, §3-6-2).
+    """
+    llm = MockDesignExportLLM(input_data)
+    service = DesignExportGenerator(llm=llm)
+    result = asyncio.run(service.generate_design_export(input_data))
+
+    for pattern in _BANNED_PATTERNS:
+        match = pattern.search(result.markdown)
+        assert match is None, f"금지 패턴 감지: {pattern.pattern!r} → {match.group(0)!r}"
+
+
+@settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+@given(input_data=design_export_input_strategy())
+def test_pbt_input_order_preserved_in_output(input_data: DesignExportInput):
+    """Property 7: 입력 Stage → RequiredStep → AcceptedStep 순서가 출력에서 유지된다.
+
+    design.md §5 — 입력 순서 보존 불변 조건.
+    """
+    llm = MockDesignExportLLM(input_data)
+    service = DesignExportGenerator(llm=llm)
+    result = asyncio.run(service.generate_design_export(input_data))
+    md = result.markdown
+
+    # 각 required_step_id 의 등장 위치가 입력 순서와 동일해야 함
+    positions: list[int] = []
+    for stage in input_data.project_state.stages:
+        for rs in stage.required_steps:
+            pos = md.find(rs.required_step_id)
+            assert pos != -1, f"required_step_id {rs.required_step_id!r} 미발견"
+            positions.append(pos)
+
+    assert positions == sorted(positions), "required_step 등장 순서가 입력 순서와 다름"
