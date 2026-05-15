@@ -194,7 +194,9 @@ class DesignExportGenerator:
         흐름:
             1) 입력을 마크다운 컨텍스트 블록으로 직렬화
             2) 프롬프트 렌더 (PromptTemplate.load_and_render)
-            3) LLM 동기 호출 max_tokens=4096 (Req 10.2, 10.6)
+            3) LLM 동기 호출 max_tokens=8192 — 한국어 markdown은 1글자당
+               약 1.5~2 토큰이라 큰 입력(Stage 다수 선택)에서 4096으로는
+               truncation 발생. CloudShell 실측에서 Stage ≥2 모두 잘림 확인.
             4) 출력 markdown 검증 → 위반 시 즉시 raise (재시도 금지 §6-2)
         """
         project_info_block = _format_project_info(input_data.project_info)
@@ -227,7 +229,7 @@ class DesignExportGenerator:
         result: DesignExportOutput = await self.llm.invoke(
             prompt,
             DesignExportOutput,
-            max_tokens=4096,
+            max_tokens=8192,
         )
 
         _validate_markdown(result.markdown)

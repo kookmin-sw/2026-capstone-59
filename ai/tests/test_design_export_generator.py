@@ -337,11 +337,13 @@ class TestHappyPath:
         assert schema_arg is DesignExportOutput
 
     @pytest.mark.asyncio
-    async def test_llm_invoke_passes_max_tokens_4096(self):
+    async def test_llm_invoke_passes_max_tokens_8192(self):
+        # Req 10.6 — 본래 ~4K 가정이었으나 한국어 markdown 1글자당 1.5~2 tokens라
+        # Stage 다수 선택 시 4096 truncation 확인됨 (CloudShell 실측). 8192로 상향.
         service, llm = _make_service()
         await service.generate_design_export(_input_full())
         kwargs = llm.invoke.await_args.kwargs
-        assert kwargs.get("max_tokens") == 4096
+        assert kwargs.get("max_tokens") == 8192
 
     @pytest.mark.asyncio
     async def test_empty_accepted_steps_input_succeeds(self):
