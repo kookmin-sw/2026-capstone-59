@@ -5,7 +5,7 @@ from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.business.services import project_service
+from app.business.services import project_service, step_service
 from app.business.dependencies import get_owned_project
 from app.core.api.route import EnvelopeRouter
 from app.core.auth.dependencies import get_current_user
@@ -17,6 +17,7 @@ from app.core.schemas.project import (
     ProjectResponse,
     ProjectUpdateRequest,
 )
+from app.core.schemas.step import AcceptedRequiredStepListResponse
 
 router = EnvelopeRouter()
 
@@ -89,3 +90,11 @@ def delete_share_link(
     """프로젝트 공유 해제."""
     project_service.delete_share_token(db, project.id)
     return None
+
+
+@router.get("/{project_id}/accepted-required-steps", status_code=http_status.HTTP_200_OK)
+def get_accepted_required_steps(
+    db: Session = Depends(get_db),
+    project: ProjectModel = Depends(get_owned_project),
+) -> AcceptedRequiredStepListResponse:
+    return step_service.get_accepted_required_steps(db, project.id)

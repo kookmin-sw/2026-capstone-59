@@ -24,6 +24,8 @@ from app.core.schemas.step import (
     StepKeepResponse,
     StepTreeNode,
     StepTreeResponse,
+    AcceptedRequiredStepItem,
+    AcceptedRequiredStepListResponse
 )
 
 from app.core.logging import get_logger
@@ -345,3 +347,16 @@ def _build_tree(steps: list[StepModel]) -> list[StepTreeNode]:
             roots.append(node)
 
     return roots
+
+def get_accepted_required_steps(db: Session, project_id: uuid.UUID) -> AcceptedRequiredStepListResponse:
+    steps = step_repo.get_accepted_required_steps(db, project_id)
+    return AcceptedRequiredStepListResponse(
+        required_steps=[
+            AcceptedRequiredStepItem(
+                step_id=s.id,
+                name=s.name,
+                stage_sequence=s.stage.sequence,
+            )
+            for s in steps
+        ]
+    )

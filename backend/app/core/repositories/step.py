@@ -241,3 +241,15 @@ def get_ancestors_ordered(db: Session, step_id: UUID) -> list[StepTree]:
         .order_by(StepTree.depth.asc())
         .all()
     )
+
+
+def get_accepted_required_steps(db: Session, project_id: UUID) -> list[Step]:
+    return (
+        db.query(Step)
+        .filter(
+            Step.project_id == project_id,
+            Step.required_step_id.isnot(None),
+            Step.status == StepStatus.ACCEPTED,
+        )
+        .all()
+    )

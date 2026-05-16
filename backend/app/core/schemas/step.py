@@ -156,3 +156,13 @@ class SidePanelRequest(BaseModel):
     decision_history: list[SidePanelDecisionHistoryItem]
     current_required_step: CurrentRequiredStep | None
     rag_context: dict = {}
+
+
+class AcceptedRequiredStepItem(BaseModel):
+    step_id: UUID
+    name: str
+    stage_sequence: int
+
+
+class AcceptedRequiredStepListResponse(BaseModel):
+    required_steps: list[AcceptedRequiredStepItem]
