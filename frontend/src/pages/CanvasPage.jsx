@@ -434,12 +434,14 @@ export default function CanvasPage() {
         processedNodes = n.map(node => {
           let position
           let extraData = {}
+          let extraStyle = undefined
 
           if (ghostPosMap.has(node.id)) {
             position = ghostPosMap.get(node.id)                          // 새 일반 노드 → 고스트 위치
           } else if (siblingReqId && node.id === siblingReqId && reqSlot) {
             position = reqSlot  
-            extraData.isReparented = true // 이월된 필수 표시                                          // reparent된 필수 → 필수 슬롯
+            extraData.isReparented = true                                 // reparent된 필수 → 필수 슬롯
+            extraStyle = { transition: 'none' }
           } else if (!existingIds.has(node.id) && node.type === 'requiredStepNode' && reqSlot) {
             position = reqSlot                                            // 새로 생긴 필수 → 필수 슬롯
           } else if (currentPositions.has(node.id)) {
@@ -450,6 +452,7 @@ export default function CanvasPage() {
           return {
             ...node,
             position,
+            style: extraStyle,
             data: {
               ...node.data,
               isNew: !existingIds.has(node.id),
