@@ -551,7 +551,6 @@ export default function CanvasPage() {
     if (!selectedStageId || !projectId) return
     shouldFitViewRef.current = true
     fetchAndRenderTree(selectedStageId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStageId, projectId])
 
   useEffect(() => {
