@@ -180,6 +180,7 @@ export default function CanvasPage() {
   const shownToastsRef = useRef(new Set())
   const persistentMsgRef = useRef(null)
   const justCompletedRSRef = useRef(null)
+  const lastToastByStageRef = useRef({})  // { stageId: { message, persistent } }
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -305,6 +306,9 @@ export default function CanvasPage() {
     setToastPersistent(false)
     setToastVisible(true)
     timerRef.current = setTimeout(() => setToastVisible(false), duration)
+    if (selectedStageId) {
+      lastToastByStageRef.current[selectedStageId] = { message, persistent: false }
+    }
   }
 
   function showPersistentToast(message) {
@@ -574,7 +578,9 @@ export default function CanvasPage() {
     }
     setToastVisible(false)
     setToastPersistent(false)
-    persistentMsgRef.current = null
+    // 이전 stage 기억된 토스트 → persistentMsgRef 복원 
+    const remembered = lastToastByStageRef.current[selectedStageId]
+    persistentMsgRef.current = remembered?.persistent ? remembered.message : null
     currentRequiredStepName.current = null
     lastCompletedRequiredStepRef.current = null
     shownToastsRef.current.clear()
