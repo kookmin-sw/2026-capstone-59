@@ -71,9 +71,39 @@ function normalizeChildren(children = []) {
 }
 
 function normalize(node) {
+  const children = normalizeChildren(node.children ?? []).map(normalize)
+
+  if (children.length === 0) {
+    return { ...node, children: [] }
+  }
+
+  const regular = children.filter((c) => !c.is_required)
+  const required = children.find((c) => c.is_required)
+
+  // regular 슬롯 3개 채우기
+  const paddedRegular = [...regular]
+  while (paddedRegular.length < 3) {
+    paddedRegular.push({
+      step_id: `__phantom_regular_${node.step_id}_${paddedRegular.length}__`,
+      name: '',
+      is_required: false,
+      __phantom: true,
+      children: [],
+    })
+  }
+
+  // required 슬롯 (있으면 실제 노드, 없으면 phantom)
+  const requiredSlot = required ?? {
+    step_id: `__phantom_required_${node.step_id}__`,
+    name: '',
+    is_required: true,
+    __phantom: true,
+    children: [],
+  }
+
   return {
     ...node,
-    children: normalizeChildren(node.children ?? []).map(normalize),
+    children: [...paddedRegular, requiredSlot],
   }
 }
 
@@ -107,6 +137,7 @@ function layoutOrderedTree(steps) {
 
   tree.each((node) => {
     if (node.data.__virtual) return
+    if (node.data.__phantom) return
 
     const data = node.data
     const h = nodeHeightOf(data)
