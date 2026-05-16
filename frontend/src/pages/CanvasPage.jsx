@@ -86,6 +86,8 @@ export default function CanvasPage() {
   const ghostPositionsRef = useRef([])
   const savedPositionsRef = useRef(null)
   const movedPositionsRef = useRef(null)
+  const requiredSlotRef = useRef(null)
+  const siblingRequiredIdRef = useRef(null)
 
   // 첫 진입 가이드 투어 (캔버스)
   const [tourOpen, setTourOpen] = useState(false)
@@ -178,7 +180,7 @@ export default function CanvasPage() {
 
   function addGhostNodes(acceptedNode) {
     const stage = stages.find(s => s.stage_id === selectedStageId)
-    const { ghostPositions, existingPositions } = predictGhostPositions(
+    const { ghostPositions, requiredSlot, existingPositions, siblingRequiredId } = predictGhostPositions(
       acceptedNode.id,
       nodes,
       edges,
@@ -192,6 +194,8 @@ export default function CanvasPage() {
 
     ghostPositionsRef.current = ghostPositions
     movedPositionsRef.current = existingPositions
+    requiredSlotRef.current = requiredSlot
+    siblingRequiredIdRef.current = siblingRequiredId
 
     const ghostNodes = ghostPositions.map((pos, i) => ({
       id: `ghost-${i}`,
@@ -209,14 +213,16 @@ export default function CanvasPage() {
       type: 'ghostEdge',
     }))
 
-    // 기존 노드 새 Dagre 위치로 이동 및 고스트 추가
+    // 기존 노드 새 Dagre 위치로 이동 (단, sibling 필수는 옛 자리 유지)
     setNodes(nds => [
       ...nds
         .filter(n => n.type !== 'ghostNode')
-        .map(n => existingPositions.has(n.id)
-          ? { ...n, position: existingPositions.get(n.id) }
-          : n
-        ),
+        .map(n => {
+          if (n.id === siblingRequiredId) return n  // 옛 필수는 아직 안 움직임
+          return existingPositions.has(n.id)
+            ? { ...n, position: existingPositions.get(n.id) }
+            : n
+        }),
       ...ghostNodes
     ])
     setEdges(eds => [
@@ -244,6 +250,8 @@ export default function CanvasPage() {
       savedPositionsRef.current = null
       ghostPositionsRef.current = []
       movedPositionsRef.current = null
+      requiredSlotRef.current = null
+      siblingRequiredIdRef.current = null
     }, 300)
   }
 
@@ -402,27 +410,36 @@ export default function CanvasPage() {
       const newRegularNodes = n
         .filter(node => !existingIds.has(node.id) && node.type !== 'requiredStepNode')
         .sort((a, b) => a.position.y - b.position.y)
-      
-      const ghostPosMap = new Map()
-      newRegularNodes.forEach((node, i) => {
-        if (i < savedGhostPos.length) ghostPosMap.set(node.id, savedGhostPos[i])
-      })
 
-      processedNodes = n.map(node => {
-        let position
-        if (ghostPosMap.has(node.id)) {
-          position = ghostPosMap.get(node.id) // 새 노드 => 고스트 위치로
-        } else if (currentPositions.has(node.id)) { // 기존 노드 => 현재 위치 유치
-          position = currentPositions.get(node.id)
-        } else {
-          position = node.position // 그 외 Degre 위치
-        }
-        return {
-          ...node,
-          position,
-          data: { ...node.data, isNew: !existingIds.has(node.id) },
-        }
-      })
+        const ghostPosMap = new Map()
+        newRegularNodes.forEach((node, i) => {
+          if (i < savedGhostPos.length) ghostPosMap.set(node.id, savedGhostPos[i])
+        })
+
+        const reqSlot = requiredSlotRef.current
+        const siblingReqId = siblingRequiredIdRef.current
+        requiredSlotRef.current = null
+        siblingRequiredIdRef.current = null
+
+        processedNodes = n.map(node => {
+          let position
+          if (ghostPosMap.has(node.id)) {
+            position = ghostPosMap.get(node.id)                          // 새 일반 노드 → 고스트 위치
+          } else if (siblingReqId && node.id === siblingReqId && reqSlot) {
+            position = reqSlot                                            // reparent된 필수 → 필수 슬롯
+          } else if (!existingIds.has(node.id) && node.type === 'requiredStepNode' && reqSlot) {
+            position = reqSlot                                            // 새로 생긴 필수 → 필수 슬롯
+          } else if (currentPositions.has(node.id)) {
+            position = currentPositions.get(node.id)                      // 기존 노드 → 현재 위치
+          } else {
+            position = node.position                                      // 그 외 → Dagre 위치
+          }
+          return {
+            ...node,
+            position,
+            data: { ...node.data, isNew: !existingIds.has(node.id) },
+          }
+        })
     } else {
       processedNodes = n
     }
