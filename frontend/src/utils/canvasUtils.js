@@ -5,15 +5,6 @@ import dagre from '@dagrejs/dagre'
 export const X_GAP = 350
 export const Y_GAP = 170
 
-// Dagre 레이아웃 파라미터
-// - DAGRE_NODE_W/H 는 시각용 노드의 대략적 bounding box (StepNode 180w·~70h, RequiredStepNode 180w·120h)
-// - RANKSEP 은 깊이(랭크) 사이 간격, NODESEP 은 같은 깊이 형제 사이 간격
-// - 형제 간 노드 중심 거리 ≈ DAGRE_NODE_H + NODESEP
-const DAGRE_NODE_W = 200
-const DAGRE_NODE_H = 90
-const DAGRE_RANKSEP = 150
-const DAGRE_NODESEP = 36
-
 export const STAGE_ENGLISH = {
   1: 'Ideation', 2: 'Planning', 3: 'Requirement',
   4: 'Design', 5: 'Development', 6: 'Test',
@@ -56,6 +47,25 @@ export function makeEdge(sourceId, targetId, solid = false) {
   }
 }
 
+// Dagre 레이아웃 파라미터
+// - DAGRE_NODE_W/H 는 시각용 노드의 대략적 bounding box (StepNode 180w·~70h, RequiredStepNode 180w·120h)
+// - RANKSEP 은 깊이(랭크) 사이 간격, NODESEP 은 같은 깊이 형제 사이 간격
+// - 형제 간 노드 중심 거리 ≈ DAGRE_NODE_H + NODESEP
+
+const DAGRE_STEP_NODE_W = 200
+const DAGRE_STEP_NODE_H = 90
+const DAGRE_REQUIRED_NODE_H = 130
+const DAGRE_RANKSEP = 150
+const DAGRE_NODESEP = 36
+
+function nodeHeightOf(stepData) {
+  return stepData?.is_required ? DAGRE_REQUIRED_NODE_H : DAGRE_STEP_NODE_H
+}
+
+function nodeWidthOf() {
+  return DAGRE_STEP_NODE_W
+}
+
 /**
  * Step 트리를 Dagre 자동 레이아웃으로 평탄화한다.
  * - 좌→우(LR) 트리. 깊이가 같은 형제는 일정 간격(NODESEP)만 유지하므로
@@ -63,6 +73,7 @@ export function makeEdge(sourceId, targetId, solid = false) {
  * - Required Step 의 형제 정렬 우선순위는 build 순서(=children 배열 순서) 가 영향을 주며,
  *   기존처럼 일반 Step 을 먼저 배치한 뒤 Required Step 을 마지막에 추가해 시각적 흐름을 맞춘다.
  */
+
 export function flattenTree(steps, stageSequence) {
   if (!steps?.length) return { nodes: [], edges: [] }
 
@@ -77,13 +88,16 @@ export function flattenTree(steps, stageSequence) {
   g.setDefaultEdgeLabel(() => ({}))
 
   const meta = new Map()
-
-  // 부모 → 자식 순서 (원본 트리 순서 보존용)
   const parentToOrderedChildren = new Map()
 
   function walk(node, parentId) {
     meta.set(node.step_id, node)
-    g.setNode(node.step_id, { width: DAGRE_NODE_W, height: DAGRE_NODE_H })
+
+    g.setNode(node.step_id, {
+      width: nodeWidthOf(node),
+      height: nodeHeightOf(node),
+    })
+
     if (parentId) {
       g.setEdge(parentId, node.step_id)
       if (!parentToOrderedChildren.has(parentId)) {
@@ -93,24 +107,26 @@ export function flattenTree(steps, stageSequence) {
     }
 
     const children = node.children ?? []
-    const regular = children.filter(c => !c.is_required)
-    const required = children.filter(c => c.is_required)
-    regular.forEach(c => walk(c, node.step_id))
-    required.forEach(c => walk(c, node.step_id))
+    const regular = children.filter((c) => !c.is_required)
+    const required = children.filter((c) => c.is_required)
+
+    regular.forEach((c) => walk(c, node.step_id))
+    required.forEach((c) => walk(c, node.step_id))
   }
 
-  steps.forEach(root => walk(root, null))
+  steps.forEach((root) => walk(root, null))
 
   dagre.layout(g)
 
-  // 후처리: 각 부모의 자식들을 원본 순서대로 Y 재배열 (subtree 전체 시프트)
   function getDescendants(nodeId) {
     const result = [nodeId]
     const queue = [nodeId]
     const visited = new Set([nodeId])
+
     while (queue.length > 0) {
       const cur = queue.shift()
       const successors = g.successors(cur) ?? []
+
       for (const next of successors) {
         if (!visited.has(next)) {
           visited.add(next)
@@ -119,59 +135,71 @@ export function flattenTree(steps, stageSequence) {
         }
       }
     }
+
     return result
+  }
+
+  function getHeightById(id) {
+    return nodeHeightOf(meta.get(id))
   }
 
   parentToOrderedChildren.forEach((childIds) => {
     if (childIds.length <= 1) return
 
-    const subtreeInfos = childIds.map(id => {
+    const subtreeInfos = childIds.map((id) => {
       const descendants = getDescendants(id)
-      const ys = descendants.map(d => g.node(d).y)
-      const centerMinY = Math.min(...ys)
-      const centerMaxY = Math.max(...ys)
+      const tops = descendants.map((d) => g.node(d).y - getHeightById(d) / 2)
+      const bottoms = descendants.map((d) => g.node(d).y + getHeightById(d) / 2)
+      const top = Math.min(...tops)
+      const bottom = Math.max(...bottoms)
+
       return {
         id,
-        top: centerMinY - DAGRE_NODE_H / 2,        // bounding box 상단
-        bottom: centerMaxY + DAGRE_NODE_H / 2,     // bounding box 하단
-        height: (centerMaxY - centerMinY) + DAGRE_NODE_H,
-        centerMinY,                                 // delta 계산용
+        top,
+        bottom,
+        height: bottom - top,
       }
     })
 
-    const totalTop = Math.min(...subtreeInfos.map(s => s.top))
-    const totalBottom = Math.max(...subtreeInfos.map(s => s.bottom))
+    const subtreeMap = new Map(subtreeInfos.map((info) => [info.id, info]))
+    const totalTop = Math.min(...subtreeInfos.map((s) => s.top))
+    const totalBottom = Math.max(...subtreeInfos.map((s) => s.bottom))
     const totalHeight = subtreeInfos.reduce((sum, s) => sum + s.height, 0)
     const totalSpace = totalBottom - totalTop
 
-    // 안전장치: 최소 NODESEP만큼은 띄움
-    const gap = childIds.length > 1
-      ? Math.max(DAGRE_NODESEP, (totalSpace - totalHeight) / (childIds.length - 1))
-      : 0
+    const gap =
+      childIds.length > 1
+        ? Math.max(DAGRE_NODESEP, (totalSpace - totalHeight) / (childIds.length - 1))
+        : 0
 
     let currentTop = totalTop
+
     childIds.forEach((id) => {
-      const s = subtreeInfos.find(info => info.id === id)
-      // currentTop은 bounding box top. 첫 노드 center는 currentTop + NODE_H/2
-      const deltaY = (currentTop + DAGRE_NODE_H / 2) - s.centerMinY
+      const subtree = subtreeMap.get(id)
+      const deltaY = currentTop - subtree.top
+
       if (deltaY !== 0) {
-        getDescendants(id).forEach(descId => {
+        getDescendants(id).forEach((descId) => {
           g.node(descId).y += deltaY
         })
       }
-      currentTop += s.height + gap
+
+      currentTop += subtree.height + gap
     })
   })
 
-  const nodes = g.nodes().map(id => {
+  const nodes = g.nodes().map((id) => {
     const layoutNode = g.node(id)
     const stepData = meta.get(id)
+    const h = nodeHeightOf(stepData)
+    const w = nodeWidthOf(stepData)
+
     return {
       id,
       type: stepData.is_required ? 'requiredStepNode' : 'stepNode',
       position: {
-        x: layoutNode.x - DAGRE_NODE_W / 2,
-        y: layoutNode.y - DAGRE_NODE_H / 2,
+        x: layoutNode.x - w / 2,
+        y: layoutNode.y - h / 2,
       },
       data: {
         label: stepData.name,
@@ -184,7 +212,7 @@ export function flattenTree(steps, stageSequence) {
     }
   })
 
-  const edges = g.edges().map(e => {
+  const edges = g.edges().map((e) => {
     const child = meta.get(e.w)
     return makeEdge(e.v, e.w, child?.status === 'ACCEPTED')
   })
