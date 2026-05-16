@@ -140,28 +140,65 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
   const realNodes = rfNodes.filter(n => n.type !== 'ghostNode')
   const realEdges = rfEdges.filter(e => e.type !== 'ghostEdge')
 
+  // accept 노드의 형제 중 READY 상태의 필수 노드 찾기 (reparent 대상)
+  const acceptedParentEdge = realEdges.find(e => e.target === acceptedNodeId)
+  const acceptedParentId = acceptedParentEdge?.source
+  let siblingRequiredId = null
+  if (acceptedParentId) {
+    const siblingIds = realEdges
+      .filter(e => e.source === acceptedParentId && e.target !== acceptedNodeId)
+      .map(e => e.target)
+    const siblingReq = realNodes.find(
+      n => siblingIds.includes(n.id) 
+        && n.type === 'requiredStepNode' 
+        && n.data?.status === 'READY'
+    )
+    siblingRequiredId = siblingReq?.id ?? null
+  }
+
+  // parent → children 인접 리스트 (sibling 필수 edge는 제거)
   const childrenMap = new Map()
   realNodes.forEach(n => childrenMap.set(n.id, []))
   realEdges.forEach(e => {
+    if (e.target === siblingRequiredId) return  // 옛 부모와의 연결 끊기
     childrenMap.get(e.source)?.push(e.target)
   })
 
+  // 가짜 자식: 일반 3개 + 필수 1개 (또는 sibling required reparent)
   const fakeIds = ['__gp0', '__gp1', '__gp2']
   fakeIds.forEach(id => childrenMap.set(id, []))
   childrenMap.get(acceptedNodeId)?.push(...fakeIds)
 
-  const hasParent = new Set(realEdges.map(e => e.target))
+  // 필수 슬롯: sibling required가 있으면 그걸, 없으면 가짜 필수 추가
+  const fakeRequiredId = '__gpR'
+  let requiredSlotId
+  if (siblingRequiredId) {
+    childrenMap.get(acceptedNodeId)?.push(siblingRequiredId)
+    requiredSlotId = siblingRequiredId
+  } else {
+    childrenMap.set(fakeRequiredId, [])
+    childrenMap.get(acceptedNodeId)?.push(fakeRequiredId)
+    requiredSlotId = fakeRequiredId
+  }
+
+  const hasParent = new Set(
+    realEdges
+      .filter(e => e.target !== siblingRequiredId)
+      .map(e => e.target)
+  )
   const roots = realNodes.filter(n => !hasParent.has(n.id))
   const nodeMap = new Map(realNodes.map(n => [n.id, n]))
 
   function buildStep(nodeId) {
-    const isFake = fakeIds.includes(nodeId)
+    const isFakeRegular = fakeIds.includes(nodeId)
+    const isFakeRequired = nodeId === fakeRequiredId
+    const isFake = isFakeRegular || isFakeRequired
     const node = nodeMap.get(nodeId)
     return {
       step_id: nodeId,
       name: isFake ? '' : (node?.data?.label ?? ''),
       status: isFake ? 'READY' : (node?.data?.status ?? 'READY'),
-      is_required: isFake ? false : (node?.type === 'requiredStepNode'),
+      is_required: isFakeRequired || (isFake ? false : node?.type === 'requiredStepNode'),
       is_keep: false,
       children: (childrenMap.get(nodeId) ?? []).map(buildStep),
     }
@@ -170,17 +207,20 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
   const steps = roots.map(r => buildStep(r.id))
   const { nodes: layoutNodes } = flattenTree(steps, stageSequence)
 
-  const fakeSet = new Set(fakeIds)
+  const fakeSet = new Set([...fakeIds, fakeRequiredId])
 
   const ghostPositions = fakeIds
     .map(id => layoutNodes.find(n => n.id === id)?.position)
     .filter(Boolean)
 
+  const requiredSlot = layoutNodes.find(n => n.id === requiredSlotId)?.position ?? null
+
+  // existingPositions: 실제 존재하는 노드만 (가짜 제외)
   const existingPositions = new Map(
     layoutNodes
       .filter(n => !fakeSet.has(n.id))
       .map(n => [n.id, n.position])
   )
 
-  return { ghostPositions, existingPositions }
+  return { ghostPositions, requiredSlot, existingPositions, siblingRequiredId }
 }
