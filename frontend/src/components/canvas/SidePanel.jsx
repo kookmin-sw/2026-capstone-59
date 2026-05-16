@@ -441,24 +441,37 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
   const [lastStep, setLastStep] = useState(step)
   const [activeTab, setActiveTab] = useState('mentoring')
   const [tabStepId, setTabStepId] = useState(step?.id)
+  const [lastDetail, setLastDetail] = useState(detail)
+  const [lastStreamingText, setLastStreamingText] = useState(streamingText)
 
   if (step?.id !== tabStepId) {
     setTabStepId(step?.id)
     setActiveTab('mentoring')
   }
 
+  // truthy일 때만 보존, 리셋 안 함
+  useEffect(() => {
+    if (detail) setLastDetail(detail)
+  }, [detail])
+
+  useEffect(() => {
+    if (streamingText) setLastStreamingText(streamingText)
+  }, [streamingText])
+
   useEffect(() => {
     if (step) setTimeout(() => setLastStep(step), 0)
   }, [step])
 
   const current = step ?? lastStep
+  const displayDetail = isOpen ? detail : (detail ?? lastDetail)
+  const displayStreamingText = isOpen ? streamingText : (streamingText ?? lastStreamingText)
   const status = current?.data?.status
   const isRequired = current?.data?.is_required ?? (current?.type === 'requiredStepNode')
   const name = current?.data?.label ?? ''
 
-  const mentoring = detail?.mentoring ?? ''
-  const dictionary = detail?.dictionary ?? []
-  const artifact = detail?.template_url ? { notion_template_url: detail.template_url } : null
+  const mentoring = displayDetail?.mentoring ?? ''
+  const dictionary = displayDetail?.dictionary ?? []
+  const artifact = displayDetail?.template_url ? { notion_template_url: displayDetail.template_url } : null
 
   const tabs = isRequired
     ? ['mentoring', 'dictionary', 'template']
@@ -499,12 +512,12 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
       
       <div className={styles.content}>
         <div style={{ display: activeTab === 'mentoring' ? 'block' : 'none' }}>
-          <MentoringContent raw={mentoring} isLoading={!detail} streamingText={streamingText} isRequired={isRequired} />
+          <MentoringContent raw={mentoring} isLoading={!displayDetail} streamingText={displayStreamingText} isRequired={isRequired} />
         </div>
 
         <div style={{ display: activeTab === 'dictionary' ? 'block' : 'none' }}>
           <div className={styles.dictionaryList}>
-            {!detail
+            {!displayDetail
               ? [...Array(3)].map((_, i) => (
                   <div key={i} className={styles.dictionaryItem}>
                     <div className={styles.skeletonTitle} />
