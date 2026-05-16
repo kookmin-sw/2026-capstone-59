@@ -405,7 +405,12 @@ export default function CanvasPage() {
     stageHasProgressRef.current[stageId] = hasProgress
 
     let processedNodes
+    const reqSlot = animateNew ? requiredSlotRef.current : null
+    const siblingReqId = animateNew ? siblingRequiredIdRef.current : null
     if (animateNew) {
+      requiredSlotRef.current = null
+      siblingRequiredIdRef.current = null
+
       // 기존 노드 현재 위치
       // addGhostNodes에서 이동시킨 위치를 ref에서 읽어옴 (클로저 stale 방지)
       const currentPositions = movedPositionsRef.current ?? new Map(
@@ -425,11 +430,6 @@ export default function CanvasPage() {
         newRegularNodes.forEach((node, i) => {
           if (i < savedGhostPos.length) ghostPosMap.set(node.id, savedGhostPos[i])
         })
-
-        const reqSlot = requiredSlotRef.current
-        const siblingReqId = siblingRequiredIdRef.current
-        requiredSlotRef.current = null
-        siblingRequiredIdRef.current = null
 
         processedNodes = n.map(node => {
           let position
@@ -462,13 +462,15 @@ export default function CanvasPage() {
     }
 
     setNodes(processedNodes)
-    const processedEdges = animateNew
-      ? e.map(edge =>
-          !existingIds.has(edge.target)
-            ? { ...edge, type: 'newEdge' }
-            : edge
-        )
-      : e
+      const processedEdges = animateNew
+    ? e.map(edge => {
+        const isNewTarget = !existingIds.has(edge.target)
+        const isReparentedTarget = siblingReqId && edge.target === siblingReqId
+        return (isNewTarget || isReparentedTarget)
+          ? { ...edge, type: 'newEdge' }
+          : edge
+      })
+    : e
 
     setEdges(processedEdges)
 
