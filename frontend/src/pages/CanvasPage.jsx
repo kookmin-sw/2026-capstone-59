@@ -224,20 +224,17 @@ export default function CanvasPage() {
     setNodes(nds => [
       ...nds
         .filter(n => n.type !== 'ghostNode')
-        .map(n =>
-          existingPositions.has(n.id)
-            ? {
-              ...n,
-              position: existingPositions.get(n.id),
-              data: {
-                ...n.data,
-                isReparenting: n.id === siblingRequiredId,
-              },
-            }
-          : n
-        ),
+        .map(n => {
+          if (n.id === siblingRequiredId) {
+            return { ...n, data: { ...n.data, isExiting: true } }  // 옛 자리 + fade out
+          }
+          return existingPositions.has(n.id)
+            ? { ...n, position: existingPositions.get(n.id) }
+            : n
+        }),
       ...ghostNodes
     ])
+    
     setEdges(eds => [
       ...eds.filter(e => e.type !== 'ghostEdge').map(e => {
         if (siblingRequiredId && e.target === siblingRequiredId) {
@@ -416,61 +413,26 @@ export default function CanvasPage() {
     stageHasProgressRef.current[stageId] = hasProgress
 
     let processedNodes
-    const reqSlot = animateNew ? requiredSlotRef.current : null
     const siblingReqId = animateNew ? siblingRequiredIdRef.current : null
     if (animateNew) {
       requiredSlotRef.current = null
       siblingRequiredIdRef.current = null
-
-      // 기존 노드 현재 위치
-      // addGhostNodes에서 이동시킨 위치를 ref에서 읽어옴 (클로저 stale 방지)
-      const currentPositions = movedPositionsRef.current ?? new Map(
-        nodes.filter(n => n.type !== 'ghostNode').map(n => [n.id, n.position])
-      )
       movedPositionsRef.current = null
-
-      const savedGhostPos = ghostPositionsRef.current
       ghostPositionsRef.current = []
       savedPositionsRef.current = null
 
-      const newRegularNodes = n
-        .filter(node => !existingIds.has(node.id) && node.type !== 'requiredStepNode')
-        .sort((a, b) => a.position.y - b.position.y)
-
-        const ghostPosMap = new Map()
-        newRegularNodes.forEach((node, i) => {
-          if (i < savedGhostPos.length) ghostPosMap.set(node.id, savedGhostPos[i])
-        })
-
-        processedNodes = n.map(node => {
-          let position
-          let extraData = {}
-          let extraStyle = undefined
-
-          if (ghostPosMap.has(node.id)) {
-            position = ghostPosMap.get(node.id)                          // 새 일반 노드 → 고스트 위치
-          } else if (siblingReqId && node.id === siblingReqId && reqSlot) {
-            position = reqSlot  
-            extraData.isReparented = true                                 // reparent된 필수 → 필수 슬롯
-            extraStyle = { transition: 'none' }
-          } else if (!existingIds.has(node.id) && node.type === 'requiredStepNode' && reqSlot) {
-            position = reqSlot                                            // 새로 생긴 필수 → 필수 슬롯
-          } else if (currentPositions.has(node.id)) {
-            position = currentPositions.get(node.id)                      // 기존 노드 → 현재 위치
-          } else {
-            position = node.position                                      // 그 외 → Dagre 위치
-          }
-          return {
-            ...node,
-            position,
-            style: extraStyle,
-            data: {
-              ...node.data,
-              isNew: !existingIds.has(node.id),
-              ...extraData,
-            },
-          }
-        })
+      processedNodes = n.map(node => {
+        const isReparentedRequired = siblingReqId && node.id === siblingReqId
+        return {
+          ...node,
+          style: isReparentedRequired ? { transition: 'none' } : undefined,
+          data: {
+            ...node.data,
+            isNew: !existingIds.has(node.id),
+            isReparented: isReparentedRequired,
+          },
+        }
+      })
     } else {
       processedNodes = n
     }
@@ -478,9 +440,8 @@ export default function CanvasPage() {
     setNodes(processedNodes)
       const processedEdges = animateNew
     ? e.map(edge => {
-        const isNewTarget = !existingIds.has(edge.target)
         const isReparentedTarget = siblingReqId && edge.target === siblingReqId
-        return (isNewTarget || isReparentedTarget)
+        return isReparentedTarget
           ? { ...edge, type: 'newEdge' }
           : edge
       })
