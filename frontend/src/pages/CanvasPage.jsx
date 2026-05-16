@@ -22,7 +22,11 @@ import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelSt
 import { createShare, deleteShare, getShareStatus } from '../api/projects'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
-import { STAGE_ENGLISH, X_GAP, Y_GAP, flattenTree, getStageProgressFromTree, findRequiredStep, getLatestActiveStage } from '../utils/canvasUtils'
+import { 
+  STAGE_ENGLISH, X_GAP, Y_GAP, flattenTree, 
+  getStageProgressFromTree, findRequiredStep, 
+  getLatestActiveStage, predictGhostPositions
+} from '../utils/canvasUtils'
 
 import styles from './CanvasPage.module.css'
 import { HiOutlineUser } from 'react-icons/hi'
@@ -79,6 +83,8 @@ export default function CanvasPage() {
   const typingTimerRef = useRef(null)
   const typingDrainCallbackRef = useRef(null)
   const canvasWrapperRef = useRef(null)
+  const ghostPositionsRef = useRef([])
+  const savedPositionsRef = useRef(null)
 
   // 첫 진입 가이드 투어 (캔버스)
   const [tourOpen, setTourOpen] = useState(false)
@@ -170,28 +176,51 @@ export default function CanvasPage() {
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
   function addGhostNodes(acceptedNode) {
-    const { id, position } = acceptedNode
-    const ghostX = position.x + X_GAP
-    const offsets = [-Y_GAP * 0.6, 0, Y_GAP * 0.6]
+    const stage = stages.find(s => s.stage_id === selectedStageId)
+    const { ghostPositions, existingPositions } = predictGhostPositions(
+      acceptedNode.id,
+      nodes,
+      edges,
+      stage?.stage_sequence
+    )
 
-    const ghostNodes = offsets.map((dy, i) => ({
+    // 실패 시 복원용으로 현재 위치 저장
+    savedPositionsRef.current = new Map(
+      nodes.filter(n => n.type !== 'ghostNode').map(n => [n.id, n.position])
+    )
+
+    ghostPositionsRef.current = ghostPositions
+
+    const ghostNodes = ghostPositions.map((pos, i) => ({
       id: `ghost-${i}`,
       type: 'ghostNode',
-      position: { x: ghostX, y: position.y + dy + 3 },
+      position: { pos },
       data: {},
       selectable: false,
       draggable: false,
     }))
 
-    const ghostEdges = offsets.map((_, i) => ({
+    const ghostEdges = ghostPositions.map((_, i) => ({
       id: `ghost-edge-${i}`,
-      source: id,
+      source: acceptedNode.id,
       target: `ghost-${i}`,
       type: 'ghostEdge',
     }))
 
-    setNodes(nds => [...nds, ...ghostNodes])
-    setEdges(eds => [...eds, ...ghostEdges])
+    // 기존 노드 새 Dagre 위치로 이동 및 고스트 추가
+    setNodes(nds => [
+      ...nds
+        .filter(n => n.type !== 'ghostNode')
+        .map(n => existingPositions.has(n.id)
+          ? { ...n, position: existingPositions.get(n.id) }
+          : n
+        ),
+      ...ghostNodes
+    ])
+    setEdges(eds => [
+      ...eds.filter(e => e.type !== 'ghostEdge'),
+      ...ghostEdges
+    ])
   }
 
   function removeGhostNodes() {
