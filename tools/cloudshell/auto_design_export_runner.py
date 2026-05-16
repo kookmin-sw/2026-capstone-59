@@ -471,10 +471,11 @@ GENERAL_STEP_FIXTURES: dict[str, list[dict]] = {
         {"name": "2개월 개발 일정 타당성 검토", "desc": "4인 팀 기준 MVP 범위 내 2개월 완료 가능 여부 판단"},
         {"name": "주요 리스크 목록화", "desc": "지도 API 비용·정확도 리스크, 실시간 처리 지연 리스크 정리"},
     ],
-    # --- Stage 2 (2 steps each) ---
+    # --- Stage 2 (3 steps each — v1.5: fixture 균등화) ---
     "2-R1": [
         {"name": "2개월 전체 마일스톤 구성", "desc": "요구사항 정의 2주 → 설계 1주 → 개발 4주 → 테스트 1주 마일스톤 배분"},
         {"name": "스프린트 단위 세부 일정 작성", "desc": "1주 단위 스프린트 8회 계획, 각 스프린트 목표 정의"},
+        {"name": "Step별 공수·난이도 추정", "desc": "주요 작업 단위별 예상 공수(시간)와 기술 난이도 추정 — 일정 타당성 근거 확보"},
     ],
     "2-R2": [
         {
@@ -491,14 +492,17 @@ GENERAL_STEP_FIXTURES: dict[str, list[dict]] = {
             ),
         },
         {"name": "역할 간 경계 협의", "desc": "API 계약·코드 리뷰 책임·데일리 스탠드업 규칙 확정"},
+        {"name": "의사결정·리뷰 주체 명시", "desc": "기획·기술·디자인 의사결정 권한자와 PR 리뷰 필수 인원 결정"},
     ],
     "2-R3": [
         {"name": "기술 리스크 목록화", "desc": "지도 API 비용 초과·실시간 경로 계산 지연·AI 정확도 미달 리스크 식별"},
         {"name": "일정·인력 리스크 검토", "desc": "팀원 이탈 가능성·학기말 일정 충돌 등 일정 리스크 정리"},
+        {"name": "리스크별 완화 방안 정리", "desc": "각 리스크의 완화 액션(API 사용량 제한·캐싱·정확도 임계값 등) 매핑"},
     ],
     "2-R4": [
         {"name": "기술 스택 확정", "desc": "React Native(Expo) + FastAPI + PostgreSQL + Kakao Maps API 스택 확정"},
         {"name": "협업 도구 결정", "desc": "GitHub(브랜치 전략) + Notion(위키) + Discord(소통) + Linear(이슈) 확정"},
+        {"name": "개발·배포 환경 구성 방향", "desc": "AWS Lambda 서버리스 + GitHub Actions CI/CD 파이프라인 초기 방향 정리"},
     ],
     # --- Stage 3 (3 steps each) ---
     "3-R1": [
@@ -533,7 +537,7 @@ GENERAL_STEP_FIXTURES: dict[str, list[dict]] = {
         {"name": "요구사항 추적 매트릭스 작성", "desc": "요구사항 ID ↔ 기능 ↔ 테스트 케이스 매핑 표 초안 작성"},
         {"name": "팀 리뷰 미팅 진행", "desc": "4인 팀 전원 대상 요구사항 최종 검토 미팅 및 확정"},
     ],
-    # --- Stage 4 (2 steps each) ---
+    # --- Stage 4 (3 steps each — v1.5: fixture 균등화) ---
     "4-R1": [
         {
             "name": "구성요소 다이어그램 초안 작성",
@@ -549,23 +553,28 @@ GENERAL_STEP_FIXTURES: dict[str, list[dict]] = {
             ),
         },
         {"name": "AWS 서버리스 배포 구조 확정", "desc": "Lambda + API Gateway + RDS(PostgreSQL) + S3 구조 확정 및 ARN 설계"},
+        {"name": "요구사항-구성요소 매핑 정리", "desc": "기능 요구사항 11개를 각 구성요소에 배분하여 누락 없이 매핑"},
     ],
     "4-R2": [
         {"name": "핵심 엔티티 식별", "desc": "Rider·Order·RouteOptimization·Waypoint 엔티티 식별 및 주요 속성 정의"},
         {"name": "ERD 초안 작성", "desc": "엔티티 간 관계(Rider 1:N Order, Order N:M Waypoint) 정의 및 ERD 작성"},
+        {"name": "데이터 타입·제약조건 정리", "desc": "타임스탬프 정밀도, 좌표 소수점 자릿수, NOT NULL 제약 등 컬럼 단위 정리"},
     ],
     "4-R3": [
         {"name": "주요 화면 와이어프레임 작성", "desc": "메인 지도 화면·주문 목록·경로 결과 화면 와이어프레임 Figma 작성"},
         {"name": "REST API 엔드포인트 명세", "desc": "경로 최적화 요청·주문 조회·라이더 위치 업데이트 API 스펙 OpenAPI 3.0 작성"},
+        {"name": "외부 서비스 연동 인터페이스 정리", "desc": "Kakao Maps API 호출 형식·인증·rate limit 대응 방식 명세"},
     ],
     "4-R4": [
         {"name": "설계 검토 회의 진행", "desc": "아키텍처·ERD·와이어프레임 팀 리뷰 실시, 불일치 항목 5건 정리"},
         {"name": "설계 반영 수정 완료", "desc": "리뷰 결과 기반 API 스펙·ERD 수정 — Waypoint 테이블 인덱스 추가 포함"},
+        {"name": "성능·보안 관점 점검", "desc": "응답 시간 3초 목표 달성 가능성·라이더 위치 데이터 암호화 적용 여부 점검"},
     ],
-    # --- Stage 5 (2 steps each) ---
+    # --- Stage 5 (3 steps each — v1.5: fixture 균등화) ---
     "5-R1": [
         {"name": "GitHub 저장소·브랜치 전략 설정", "desc": "mono-repo 구조 + feature 브랜치 전략 설정, GitHub Actions CI 초기 구성"},
         {"name": "로컬 개발 환경 세팅 문서 작성", "desc": "팀원별 로컬 환경 세팅 가이드(Poetry + Expo + Docker Compose) 작성"},
+        {"name": "프로젝트 스캐폴드·초기 구조 수립", "desc": "frontend/backend/ai 디렉토리 구조 + 공통 모듈 placeholder 코드 초안 작성"},
     ],
     "5-R2": [
         {
@@ -582,14 +591,17 @@ GENERAL_STEP_FIXTURES: dict[str, list[dict]] = {
             ),
         },
         {"name": "백엔드 API 엔드포인트 구현", "desc": "경로 최적화 요청·주문 관리 FastAPI 엔드포인트 구현 (pytest 커버리지 82%)"},
+        {"name": "주문 관리 UI 화면 구현", "desc": "라이더 앱 주문 목록·상세·수락/거절 화면 React Native 구현"},
     ],
     "5-R3": [
         {"name": "프론트-백엔드 API 연동", "desc": "앱 ↔ FastAPI 간 경로 요청·응답 E2E 연동 완료"},
         {"name": "통합 빌드·실행 검증", "desc": "Docker Compose 환경에서 전체 시스템 통합 실행 검증 — 주요 시나리오 3개 통과"},
+        {"name": "통합 충돌·에러 해결", "desc": "타임존 불일치·CORS 설정·인증 토큰 만료 시나리오 통합 충돌 해결"},
     ],
     "5-R4": [
         {"name": "PR 코드 리뷰 실시", "desc": "핵심 기능 PR 4개 팀원 교차 리뷰 완료, 지적 사항 12건 수정"},
         {"name": "단위 테스트 작성 및 실행", "desc": "경로 최적화 모듈 + API 엔드포인트 단위 테스트 87% 커버리지 달성"},
+        {"name": "코딩 컨벤션·정적 분석 점검", "desc": "ruff·mypy·eslint 모든 위반 0건 확인, 컨벤션 가이드 위반 7건 수정"},
     ],
     # --- Stage 6 (3 steps each) ---
     "6-R1": [

@@ -73,9 +73,14 @@ B) **인지형 진술**: "~를 인지한 상태인가?", "~에 대한 사고가 
 2. `common_mistakes` 의 `mistake` 를 *"이 실수를 인지했는지"* 의문문 또는 인지형 진술로 바꾼다.
 3. `one_line_tip` 의 본질을 *"이 핵심 조언을 인지한 상태"* 의 인지형 진술로 바꾼다.
 4. 각 Required_Step 당 `questions` 는 **반드시 3개 이상 6개 이하** 로 만든다. 이 길이는 절대 협상 불가능한 하드 제약이다 (Pydantic 스키마가 강제하며, 2개 이하·7개 이상은 응답 자체가 거부되어 재생성된다).
+   - **[중요 — 미러링 금지]** 입력 mentoring 항목이 N개여도 출력 `questions` 는 **항상 3개 이상 6개 이하**. 입력 mentoring 갯수를 출력 갯수에 미러링하지 말 것. mentoring 1개·common_mistakes 0개·tip 1개 같은 빈약 케이스도 출력은 반드시 3개 이상이다.
    - `accepted_general_steps` 가 풍부한 RS: mentoring 변환만으로 자연스럽게 3~6개에 도달한다.
-   - `accepted_general_steps` 가 1~2개로 적어 mentoring 변환만으로 3개에 못 미치는 RS: 그 RS 의 `required_step_name` · `goal` · `fulfillment_criteria` 의 측면을 활용하여 *"이 단계에서 충족 기준 측면을 떠올렸을지"* 형태의 질문을 추가로 생성하여 **반드시 3개 이상 채운다**.
-   - `accepted_general_steps` 가 0개여서 mentoring 자체가 없는 RS: 그 RS 의 `required_step_name` · `goal` · `fulfillment_criteria` 만으로 *"이 단계에 막 진입한 상태에서 떠오를 만한 질문"* 3~5개를 정중하게 생성한다.
+   - `accepted_general_steps` 가 1~2개로 적어 mentoring 변환만으로 3개에 못 미치는 RS: 입력 mentoring 으로 만든 질문 + RS 메타 활용 질문을 섞어 **반드시 3개 이상 채운다**. RS 메타 활용 패턴 3종:
+     - **패턴 A — `goal` 기반 1개**: *"{{goal 의 핵심 행위}} 가 이 단계의 중심임을 인지한 상태인가?"* 또는 *"{{goal}} 라는 큰 그림을 사고해본 단계."*
+     - **패턴 B — `fulfillment_criteria[*]` 1대1 변환**: 각 측면을 *"{{측면}} 를 떠올려본 영역인가?"* 또는 *"{{측면}} 가 이 단계의 일부라는 사고를 떠올린 단계."* 형태로 변환. 빈약 케이스에서 가장 안전한 패턴.
+     - **패턴 C — 측면 묶음**: `fulfillment_criteria` 중 2~3개 측면을 한 질문에 묶어 *"{{측면 A}} 와 {{측면 B}} 가 같이 다뤄지는 영역이라는 점을 사고해본 단계."* 형태로 변환.
+     - 패턴 A·B·C 를 섞어 3~6개에 도달할 때까지 추가한다. 빈약 mentoring 케이스의 구체적 변환은 §변환 예시 6 참조.
+   - `accepted_general_steps` 가 0개여서 mentoring 자체가 없는 RS: 그 RS 의 `required_step_name` · `goal` · `fulfillment_criteria` 만으로 *"이 단계에 막 진입한 상태에서 떠오를 만한 질문"* 3~5개를 정중하게 생성한다 (위 패턴 A·B·C 활용).
 
 ## 금지 사항 (4개)
 
@@ -84,9 +89,9 @@ B) **인지형 진술**: "~를 인지한 상태인가?", "~에 대한 사고가 
 - *"이 사용자는 X 를 답했다"*, *"이 사용자는 Y 를 검토했다"* 와 같이 사용자 상태를 과장하지 말 것.
 - 사용자 결정은 *"진행한 결정"* 섹션이 백엔드에서 따로 렌더되므로, `questions` 안에 사용자가 클릭한 일반 Step `name` 을 그대로 복사해 넣지 말 것.
 
-## 변환 예시 5개 (스타일 학습용)
+## 변환 예시 6개 (스타일 학습용)
 
-아래 5개 예시는 [입력 사이드패널 멘토링] → [출력 `questions` list] 의 변환 톤·구조를 학습하기 위한 샘플이다. 문구를 그대로 복사하지 말고, 입력에 맞춰 변환 패턴만 흡수한다. 출력은 `.md` 본문이 아니라 `questions` list 항목임에 유의.
+아래 6개 예시는 [입력 사이드패널 멘토링] → [출력 `questions` list] 의 변환 톤·구조를 학습하기 위한 샘플이다. 문구를 그대로 복사하지 말고, 입력에 맞춰 변환 패턴만 흡수한다. 출력은 `.md` 본문이 아니라 `questions` list 항목임에 유의. 예시 6 은 mentoring 이 빈약한 케이스에서 RS 메타(`goal`·`fulfillment_criteria`)로 부족분을 채우는 패턴이다.
 
 ### 예시 1 — 타겟 사용자 심층 분석 (Stage 1, 1-R2 영역의 일반 Step)
 
@@ -159,6 +164,34 @@ B) **인지형 진술**: "~를 인지한 상태인가?", "~에 대한 사고가 
 [출력 — questions]
 - Stage 3 의 요구사항 각각에 어떤 테스트 유형(기능/통합/성능/보안)을 매핑할지 사고해본 영역.
 - 테스트 범위뿐 아니라 *"어디까지 안 할지"* 도 함께 정해야 검증의 끝이 보인다는 점을 인지한 상태인가?
+
+### 예시 6 — 빈약 mentoring + RS 메타 활용 (Stage 5, 5-R2 영역의 일반 Step)
+
+이 예시는 입력 mentoring 이 `recommended_methods` 1개 + `one_line_tip` 1개로 빈약한 케이스다. mentoring 변환만 하면 2개에 그쳐 하드 제약(3개 이상)을 충족하지 못하므로, **RS 메타 활용 패턴 A·B·C** 를 섞어 3개 이상으로 채운다.
+
+[입력 — mentoring 항목 적음]
+- recommended_methods:
+  - title: "API 명세 먼저 확정"
+    content: "OpenAPI 명세를 먼저 확정한 뒤 그에 맞춰 핸들러를 구현해요."
+- (common_mistakes 없음)
+- one_line_tip: "API 인터페이스가 흔들리면 프론트와 동시 작업이 불가능해져요."
+
+RS 메타 (참고용 — `required_step_name` · `goal` · `fulfillment_criteria`):
+- required_step_name: "핵심 기능 구현"
+- goal: "MVP 핵심 기능을 설계에 따라 구현한다."
+- fulfillment_criteria:
+  - "핵심 기능별 구현 작업"
+  - "공통 모듈·유틸리티 구현"
+  - "데이터 처리·비즈니스 로직 구현"
+  - "UI 또는 진입점(엔드포인트) 구현"
+
+[출력 — questions, mentoring 2개 + RS 메타 활용 2개 = 총 4개]
+- OpenAPI 명세를 먼저 확정한 뒤 그에 맞춰 핸들러를 구현하는 흐름의 필요성을 인지한 상태인가?  ← mentoring `recommended_methods` 변환
+- API 인터페이스가 흔들리면 프론트와 동시 작업이 어려워진다는 사고를 떠올린 단계.  ← mentoring `one_line_tip` 변환
+- MVP 핵심 기능을 설계에 따라 구현한다는 큰 그림을 떠올린 단계.  ← 패턴 A (`goal` 기반)
+- 데이터 처리·비즈니스 로직 구현 측면과 UI 또는 진입점 구현 측면을 같이 다루는 영역이라는 점을 사고해본 단계.  ← 패턴 C (`fulfillment_criteria` 측면 묶음)
+
+핵심: 입력 mentoring 갯수(2개)에 출력 갯수를 맞추지 않는다. 항상 3개 이상으로 채우되, 부족분은 RS 메타에서 자연스럽게 끌어낸다.
 
 # 표현 정직성 가드 — 사용자 상태를 과장하지 마라
 
