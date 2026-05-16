@@ -1,0 +1,280 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 14, 60, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: #fff;
+  width: 520px;
+  max-height: 80vh;
+  border-radius: 16px;
+  padding: 24px 28px 20px;
+  box-shadow: 0 16px 40px rgba(41, 28, 128, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.titleWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleIcon {
+  font-size: 20px;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #2A1F66;
+  margin: 0;
+}
+
+.helpIcon {
+  color: #F2B544;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.helpIcon:hover {
+  color: #d29a31;
+}
+
+.helpWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.helpBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.helpTooltip {
+  margin-left: 190px;
+  position: absolute;
+  top: 9px;
+  transform: translateX(-50%);
+  background: #fff;
+  /* border: 1px solid #E0DAF5; */
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: #2A1F66;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0px 0px 16px rgba(149, 140, 140, 0.12);
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.helpTooltipOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  margin-bottom: 10px;
+}
+
+.closeBtn:hover {
+  color: var(--color-text);
+}
+
+.controlRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 4px 12px;
+  border-bottom: 1px solid #ECE9F9;
+  margin-bottom: 8px;
+}
+
+.selectAllLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: #2A1F66;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.count {
+  font-size: 12.5px;
+  color: #6E5BFD;
+  font-weight: 500;
+}
+
+.tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 2px 8px;
+  min-height: 120px;
+}
+
+.placeholder, .placeholderError {
+  font-size: 13px;
+  color: #8B82B0;
+  text-align: center;
+  padding: 24px 0;
+}
+.placeholderError { color: #E26B6B; }
+
+.stageBlock {
+  margin-bottom: 4px;
+}
+
+.stageHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+}
+
+.stageHeader.disabled {
+  opacity: 0.45;
+}
+
+.stageToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #3c2ab0;
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+}
+.chevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+.stageName {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.itemList {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 4px 32px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  font-size: 13px;
+  color: #2A1F66;
+}
+
+.item.disabled {
+  color: #B3ACD0;
+}
+
+.itemName {
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 14px;
+  border-top: 1px solid #ECE9F9;
+}
+
+.downloadBtn {
+  background: #6E5BFD;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 9px 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, opacity 0.15s;
+}
+.downloadBtn:hover:not(:disabled) {
+  background: #5C4AE0;
+}
+.downloadBtn:disabled {
+  background: #C5BDFB;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.arrow {
+  font-weight: 500;
+}
+
+/* 커스텀 체크박스 */
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #C5BDFB;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.checkbox:hover:not(:disabled) {
+  border-color: #6E5BFD;
+}
+.checkbox.checked {
+  background: #6E5BFD;
+  border-color: #6E5BFD;
+}
+.checkbox.checkboxDisabled {
+  cursor: not-allowed;
+  background: #F4F1FD;
+  border-color: #ECE9F9;
+}
+.checkIcon {
+  color: #fff;
+}
