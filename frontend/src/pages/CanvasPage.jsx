@@ -28,7 +28,7 @@ import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 import { 
   REQUIRED_STEPS_BY_STAGE, STAGE_NAMES,
   STAGE_ENGLISH, X_GAP, Y_GAP, flattenTree, 
-  getStageProgressFromTree, findRequiredStep, 
+  getStageProgressFromTree, findRequiredStep, findAcceptedLeaf, 
   getLatestActiveStage, predictGhostPositions
 } from '../utils/canvasUtils'
 
@@ -457,12 +457,17 @@ export default function CanvasPage() {
       }
     })
 
-    const acceptedRequiredNode = n.find(
-      (node) => node.type === 'requiredStepNode' && node.data.status === 'ACCEPTED'
-    )
-    if (acceptedRequiredNode) {
-      currentRequiredStepName.current = acceptedRequiredNode.data.label
+    // 현재 진행 경로의 leaf로부터 소속 RS를 추적
+    const leafAccepted = findAcceptedLeaf(n, e)
+    let activeRS = null
+    if (leafAccepted) {
+      if (leafAccepted.type === 'requiredStepNode') {
+        activeRS = leafAccepted
+      } else {
+        activeRS = findRequiredStep(leafAccepted.id, n, e)
+      }
     }
+    currentRequiredStepName.current = activeRS?.data?.label ?? null
 
     if (animateNew) {
       n.filter((node) =>
