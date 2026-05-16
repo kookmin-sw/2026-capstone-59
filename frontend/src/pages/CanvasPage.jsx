@@ -616,12 +616,41 @@ export default function CanvasPage() {
       : 'locked',
   }))
 
+  function focusOnNode(node) {
+    if (!rfInstance || !node?.position) return
+    const wrap = canvasWrapperRef.current
+    const rect = wrap?.getBoundingClientRect()
+    if (!rect) return
+
+    const NODE_W = 180
+    const NODE_H = node.type === 'requiredStepNode' ? 120 : 70
+    const cx = node.position.x + NODE_W / 2
+    const cy = node.position.y + NODE_H / 2
+
+    // SidePanel overlay 폭을 빼서 가시 영역의 중심 계산
+    const SIDE_PANEL_W = 400 + 5
+    const visibleW = Math.max(rect.width - SIDE_PANEL_W, rect.width * 0.5)
+    const screenCenterX = visibleW / 2
+    const screenCenterY = rect.height / 2
+
+    const zoom = rfInstance.getZoom()
+    rfInstance.setViewport(
+      {
+        x: screenCenterX - cx * zoom,
+        y: screenCenterY - cy * zoom,
+        zoom,
+      },
+      { duration: 450 }
+    )
+  }
+
   async function handleNodeClick(event, node) {
     if (node.type === 'ghostNode') return
     if (selectedStep?.id === node.id) return
     clearStreamCallbacks()
     setSelectedStep(node)
     setStreamingText(null)
+    focusOnNode(node)
 
     if (detailCacheRef.current[node.id]) {
       setStepDetail(detailCacheRef.current[node.id])
