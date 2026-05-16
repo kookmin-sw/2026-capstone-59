@@ -369,3 +369,7 @@
 .revokeBtn:hover {
   background: #d4d4d4;
 }
+
+:global(.react-flow__node) {
+  transition: transform 0.3s ease;
+}
