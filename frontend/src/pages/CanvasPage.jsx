@@ -16,13 +16,17 @@ import GhostNode from '../components/canvas/GhostNode'
 import GhostEdge from '../components/canvas/GhostEdge'
 import NewEdge from '../components/canvas/NewEdge'
 import OnboardingTour from '../components/OnboardingTour'
+import MdExportModal from '../components/canvas/MdExportModal'
+import DownloadNotification from '../components/canvas/DownloadNotification'
 
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep } from '../api/step'
 import { createShare, deleteShare, getShareStatus } from '../api/projects'
+import { createDesignExportStream } from '../api/exports'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
 import { 
+  REQUIRED_STEPS_BY_STAGE, STAGE_NAMES,
   STAGE_ENGLISH, X_GAP, Y_GAP, flattenTree, 
   getStageProgressFromTree, findRequiredStep, 
   getLatestActiveStage, predictGhostPositions
@@ -69,6 +73,10 @@ export default function CanvasPage() {
   const [shareUrl, setShareUrl] = useState('')
   const [shareBusy, setShareBusy] = useState(false) // 공유 / 그만하기 버튼 클릭 중복 방지
   const [shareCopied, setShareCopied] = useState(false)
+
+  const [mdExportOpen, setMdExportOpen] = useState(false)
+  const [downloadStatus, setDownloadStatus] = useState(null)  // null | 'downloading' | 'complete' | 'error'
+  const exportStreamRef = useRef(null)
 
   const lastCompletedRequiredStepRef = useRef(null)
   const timerRef = useRef(null)
@@ -1101,6 +1109,58 @@ export default function CanvasPage() {
     }
   }
 
+  function handleMdExportOpen() {
+    setMdExportOpen(true)
+  }
+
+  function handleMdExportClose() {
+    setMdExportOpen(false)
+  }
+
+  function handleDownloadNotificationClose() {
+    setDownloadStatus(null)
+  }
+
+  function handleStartExport(selectedStepIds) {
+    setMdExportOpen(false)
+    setDownloadStatus('downloading')
+
+    // 이전 스트림 정리
+    exportStreamRef.current?.abort?.()
+
+    const stream = createDesignExportStream(projectId, selectedStepIds)
+    exportStreamRef.current = stream
+
+    stream.start({
+      onComplete: (data) => {
+        try {
+          const markdown = data?.markdown ?? ''
+          const filename = data?.filename ?? `design_${new Date().toISOString().slice(0, 10)}.md`
+
+          const blob = new Blob([markdown], { type: 'text/markdown' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = filename
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+
+          setDownloadStatus('complete')
+        } catch {
+          setDownloadStatus('error')
+        } finally {
+          exportStreamRef.current = null
+        }
+      },
+      onError: () => {
+        setDownloadStatus('error')
+        exportStreamRef.current = null
+      },
+    })
+  }
+
   const selectedHasChildren = edges.some((e) => e.source === selectedStep?.id)
 
   return (
@@ -1112,6 +1172,12 @@ export default function CanvasPage() {
           <span className={styles.projectName}>{projectName}</span>
         </div>
         <div className={styles.headerRight}>
+        <button
+          className={styles.shareBtn}
+          onClick={handleMdExportOpen}
+        >
+          .md로 내보내기
+        </button>
         <button
           className={styles.shareBtn}
           data-tour="canvas-share"
@@ -1311,6 +1377,19 @@ export default function CanvasPage() {
             </div>
           </div>
         )}
+
+        {mdExportOpen && (
+          <MdExportModal
+            projectId={projectId}
+            onClose={handleMdExportClose}
+            onDownload={handleStartExport}
+          />
+        )}
+
+        <DownloadNotification
+          status={downloadStatus}
+          onClose={handleDownloadNotificationClose}
+        />
       </div>
 
       {/* 첫 진입 가이드 투어 */}

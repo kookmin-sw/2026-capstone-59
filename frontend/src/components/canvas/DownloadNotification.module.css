@@ -1,0 +1,98 @@
+.wrapper {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1100;
+  width: 320px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(135, 135, 135, 0.18);
+  padding: 14px 16px;
+  border: 1px solid #ECE9F9;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconWrap {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sparkleIcon {
+  width: 20px;
+  height: 20px;
+  color: #6E5BFD;
+  animation: spin 1.6s linear infinite;
+}
+
+.completeIcon {
+  width: 20px;
+  height: 20px;
+  color: #4CAF8E;
+}
+
+.errorIcon {
+  width: 20px;
+  height: 20px;
+  color: #E26B6B;
+}
+
+.message {
+  flex: 1;
+  font-size: 13.5px;
+  color: #2A1F66;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9088B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.closeBtn:hover {
+  color: #3c2ab0;
+}
+
+.progressTrack {
+  margin-top: 10px;
+  width: 100%;
+  height: 3px;
+  background: #ECE9F9;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressBar {
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, #C5BDFB, #6E5BFD, #C5BDFB);
+  background-size: 200% 100%;
+  border-radius: 2px;
+  animation: slide 1.4s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slide {
+  0%   { transform: translateX(-100%); background-position: 0% 50%; }
+  100% { transform: translateX(250%); background-position: 100% 50%; }
+}
