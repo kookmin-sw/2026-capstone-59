@@ -3,9 +3,9 @@ import { motion } from 'framer-motion'
 import styles from './RequiredStepNode.module.css'
 
 export default function RequiredStepNode({ data }) {
-  const { label, status, isNew = false, isExiting = false, isRearented = false } = data
+  const { label, status, isNew = false, isExiting = false, isReparented = false } = data
 
-  const shouldGrow = isNew || isRearented
+  const shouldGrow = isNew || isReparented
 
   return (
     <motion.div
