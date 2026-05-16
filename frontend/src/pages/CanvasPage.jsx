@@ -221,18 +221,21 @@ export default function CanvasPage() {
       type: 'ghostEdge',
     }))
 
-    // 기존 노드 새 Dagre 위치로 이동 (단, sibling 필수는 옛 자리 유지)
     setNodes(nds => [
       ...nds
         .filter(n => n.type !== 'ghostNode')
-        .map(n => {
-          if (n.id === siblingRequiredId) {
-            return { ...n, data: { ...n.data, isExiting: true } }
-          }
-          return existingPositions.has(n.id)
-            ? { ...n, position: existingPositions.get(n.id) }
-            : n
-        }),
+        .map(n =>
+          existingPositions.has(n.id)
+            ? {
+              ...n,
+              position: existingPositions.get(n.id),
+              data: {
+                ...n.data,
+                isReparenting: n.id === siblingRequiredId,
+              },
+            }
+          : n
+        ),
       ...ghostNodes
     ])
     setEdges(eds => [
