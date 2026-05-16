@@ -224,11 +224,12 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
     requiredSlotId = fakeRequiredId
   }
 
-  const hasParent = new Set(
-    realEdges
-      .filter(e => e.target !== siblingRequiredId)
-      .map(e => e.target)
-  )
+  const hasParent = new Set()
+  childrenMap.forEach((children) => {
+    children.forEach((childId) => {
+      hasParent.add(childId)
+    })
+  })
   const roots = realNodes.filter(n => !hasParent.has(n.id))
   const nodeMap = new Map(realNodes.map(n => [n.id, n]))
 
