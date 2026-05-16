@@ -3,7 +3,7 @@ from typing import AsyncIterator
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from ai import generate_steps, judge_required_step, generate_side_panel, generate_side_panel_stream
+from ai import generate_steps, judge_required_step, generate_side_panel, generate_side_panel_stream, generate_design_export
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
 
@@ -68,3 +68,17 @@ async def call_side_panel_stream(input_data) -> AsyncIterator[str]:
         custom_data_source_id=settings.BEDROCK_CUSTOM_DATA_SOURCE_ID or None,
     ):
         yield chunk
+
+
+
+async def call_design_export(input_data):
+    logger.debug("ai: invoking generate_design_export")
+    try:
+        return await generate_design_export(
+            input_data,
+            bedrock_runtime,
+            settings.BEDROCK_MODEL_ID,
+        )
+    except Exception:
+        logger.error("ai: design_export invocation failed", exc_info=True)
+        raise
