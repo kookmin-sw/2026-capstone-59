@@ -621,6 +621,7 @@ export default function CanvasPage() {
     if (node.type === 'ghostNode') return
     if (selectedStep?.id === node.id) return
     clearStreamCallbacks()
+    clearTyping()
     setSelectedStep(node)
     setStreamingText(null)
     focusOnNode(node)
