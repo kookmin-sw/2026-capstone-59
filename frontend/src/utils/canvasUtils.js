@@ -57,15 +57,22 @@ export function flattenTree(steps, stageSequence) {
   })
   g.setDefaultEdgeLabel(() => ({}))
 
-  const meta = new Map() // step_id → step (원본 데이터 보관)
+  const meta = new Map()
+
+  // 부모 → 자식 순서 (원본 트리 순서 보존용)
+  const parentToOrderedChildren = new Map()
 
   function walk(node, parentId) {
     meta.set(node.step_id, node)
     g.setNode(node.step_id, { width: DAGRE_NODE_W, height: DAGRE_NODE_H })
-    if (parentId) g.setEdge(parentId, node.step_id)
+    if (parentId) {
+      g.setEdge(parentId, node.step_id)
+      if (!parentToOrderedChildren.has(parentId)) {
+        parentToOrderedChildren.set(parentId, [])
+      }
+      parentToOrderedChildren.get(parentId).push(node.step_id)
+    }
 
-    // 일반 Step 을 먼저 추가하고 Required Step 을 마지막에 추가해
-    // Dagre 가 형제 순서를 유지하면서 정렬하도록 한다.
     const children = node.children ?? []
     const regular = children.filter(c => !c.is_required)
     const required = children.filter(c => c.is_required)
@@ -77,13 +84,53 @@ export function flattenTree(steps, stageSequence) {
 
   dagre.layout(g)
 
+  // 후처리: 각 부모의 자식들을 원본 순서대로 Y 재배열 (subtree 전체 시프트)
+  function getDescendants(nodeId) {
+    const result = [nodeId]
+    const queue = [nodeId]
+    const visited = new Set([nodeId])
+    while (queue.length > 0) {
+      const cur = queue.shift()
+      const successors = g.successors(cur) ?? []
+      for (const next of successors) {
+        if (!visited.has(next)) {
+          visited.add(next)
+          result.push(next)
+          queue.push(next)
+        }
+      }
+    }
+    return result
+  }
+
+  parentToOrderedChildren.forEach((childIds) => {
+    if (childIds.length <= 1) return
+
+    // Dagre가 배치한 현재 Y 슬롯들 (정렬해서 가용 슬롯으로 사용)
+    const availableYs = childIds
+      .map(id => g.node(id).y)
+      .sort((a, b) => a - b)
+
+    // 원본 순서대로 자식들에게 Y 슬롯 재할당
+    childIds.forEach((id, i) => {
+      const currentY = g.node(id).y
+      const targetY = availableYs[i]
+      if (currentY !== targetY) {
+        const deltaY = targetY - currentY
+        // 자식 + 그 subtree 전체를 deltaY만큼 시프트
+        getDescendants(id).forEach(descId => {
+          g.node(descId).y += deltaY
+        })
+      }
+    })
+  })
+
   const nodes = g.nodes().map(id => {
     const layoutNode = g.node(id)
     const stepData = meta.get(id)
     return {
       id,
       type: stepData.is_required ? 'requiredStepNode' : 'stepNode',
-      // Dagre 는 노드 중심 좌표를 주므로 React Flow 의 좌상단 기준으로 변환
       position: {
         x: layoutNode.x - DAGRE_NODE_W / 2,
         y: layoutNode.y - DAGRE_NODE_H / 2,
