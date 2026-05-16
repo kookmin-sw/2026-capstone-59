@@ -224,14 +224,23 @@ export default function CanvasPage() {
   }
 
   function removeGhostNodes() {
+    // 고스트 노드 fade out
     setNodes(nds => nds.map(n =>
       n.type === 'ghostNode'
         ? { ...n, data: { ...n.data, isExiting: true } }
         : n
     ))
+
     setTimeout(() => {
-      setNodes(nds => nds.filter(n => n.type !== 'ghostNode'))
+      const saved = savedPositionsRef.current
+      setNodes(nds =>
+        nds
+          .filter(n => n.type !== 'ghostNode')
+          .map(n => saved?.has(n.id) ? { ...n, position: saved.get(n.id) } : n ))
+      
       setEdges(eds => eds.filter(e => e.type !== 'ghostEdge'))
+      savedPositionsRef.current = null
+      ghostPositionsRef.current = []
     }, 300)
   }
 
