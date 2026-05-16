@@ -5,6 +5,7 @@ from ai.services import (
     generate_steps,
     judge_required_step,
     generate_side_panel_stream,
+    generate_design_export,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "judge_required_step",
     "generate_side_panel",
     "generate_side_panel_stream",
+    "generate_design_export",
 ]
