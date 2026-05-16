@@ -10,6 +10,7 @@ from ai.schemas.design_export import DesignExportInput, DesignExportOutput, RSQu
 def render(
     input_data: DesignExportInput,
     ai_output: DesignExportOutput,
+    stage_seq_to_name: dict[int, str],
 ) -> str:
     ctx = input_data.project_context
     constraints_str = (
@@ -65,7 +66,8 @@ def render(
     lines.append("")
 
     for stage_seq in seen_stage_seqs:
-        lines.append(f"### Stage {stage_seq}")
+        stage_name = stage_seq_to_name.get(stage_seq, "")
+        lines.append(f"### Stage {stage_seq} — {stage_name}")
         lines.append("")
         for rs in stage_rs_map[stage_seq]:
             lines.append(f"#### {rs.required_step_id} {rs.required_step_name}")
