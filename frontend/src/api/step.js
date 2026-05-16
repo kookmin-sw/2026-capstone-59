@@ -1,40 +1,7 @@
-import axios from 'axios'
+import { createApi } from './_client'
 
-function getCsrfToken() {
-  return document.cookie
-    .split('; ')
-    .find(row => row.startsWith('csrf_token='))
-    ?.split('=')[1]
-}
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  withCredentials: true,
-})
-
-const aiApi = axios.create({
-  baseURL: import.meta.env.VITE_AI_URL || '/ai',
-  withCredentials: true,
-})
-
-const addCsrfInterceptor = (instance) => {
-  instance.interceptors.request.use((config) => {
-    const mutatingMethods = ['post', 'put', 'patch', 'delete']
-    if (mutatingMethods.includes(config.method?.toLowerCase())) {
-      const csrfToken = getCsrfToken()
-      config.headers = config.headers ?? {}
-      if (csrfToken) config.headers['X-CSRF-Token'] = csrfToken
-    }
-    return config
-  })
-  instance.interceptors.response.use(
-    (res) => res.data.data,
-    (err) => Promise.reject(err.response?.data?.error ?? err)
-  )
-}
-
-addCsrfInterceptor(api)
-addCsrfInterceptor(aiApi)
+const api = createApi() // Business Lambda (/api)
+const aiApi = createApi(import.meta.env.VITE_AI_URL || '/ai') // AI Lambda (/ai)
 
 export const getStepTree = (projectId, stageId) =>
   api.get('/steps/tree', { params: { project_id: projectId, stage_id: stageId } })
