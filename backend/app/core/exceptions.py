@@ -174,3 +174,35 @@ class ConstraintsLimitError(PocoError):
             message=message,
             status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
+
+class DesignExportEmptySelectionError(PocoError):
+    def __init__(self, message: str = "선택된 Required Step이 없습니다."):
+        super().__init__(
+            code="DESIGN_EXPORT_EMPTY_SELECTION",
+            message=message,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+        )
+
+class DesignExportInactiveStepError(PocoError):
+    def __init__(self, message: str = "비활성 Required Step이 포함되어 있습니다."):
+        super().__init__(
+            code="DESIGN_EXPORT_INACTIVE_STEP_SELECTED",
+            message=message,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+        )
+
+class DesignExportInvalidStepIdError(PocoError):
+    def __init__(self, message: str = "잘못된 Required Step ID가 포함되어 있습니다."):
+        super().__init__(
+            code="DESIGN_EXPORT_INVALID_STEP_ID",
+            message=message,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+        )
+
+class DesignExportRateLimitError(PocoError):
+    def __init__(self, message: str = "요청이 너무 잦습니다. 10초 후 다시 시도해주세요."):
+        super().__init__(
+            code="DESIGN_EXPORT_RATE_LIMITED",
+            message=message,
+            status_code=http_status.HTTP_429_TOO_MANY_REQUESTS,
+        )
