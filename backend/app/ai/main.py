@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
-from app.ai.routers import steps
+from app.ai.routers import steps, projects
 from app.core import exception_handlers
 from app.core.auth.csrf import verify_csrf
 from app.core.auth.dependencies import get_current_user_id
@@ -30,6 +30,11 @@ app.include_router(
     dependencies=[Depends(get_current_user_id), Depends(verify_csrf)],
 )
 
+app.include_router(
+    projects.router,
+    tags=["ai"],
+    dependencies=[Depends(get_current_user_id), Depends(verify_csrf)],
+)
 
 @app.get("/health")
 def health() -> HealthResponse:
