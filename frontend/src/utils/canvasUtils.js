@@ -1,7 +1,6 @@
-import dagre from '@dagrejs/dagre'
+import { flextree } from 'd3-flextree'
 
-// 기존 X_GAP/Y_GAP 은 CanvasPage 의 ghost 노드(생성 애니메이션) 좌표 계산에서 사용되므로 유지.
-// flattenTree 내부에서는 더 이상 사용하지 않고, Dagre 의 ranksep/nodesep 으로 대체된다.
+// 기존 X_GAP/Y_GAP 은 CanvasPage 의 ghost 노드 좌표 계산에서 사용되므로 유지.
 export const X_GAP = 350
 export const Y_GAP = 170
 
@@ -47,177 +46,109 @@ export function makeEdge(sourceId, targetId, solid = false) {
   }
 }
 
-// Dagre 레이아웃 파라미터
-// - DAGRE_NODE_W/H 는 시각용 노드의 대략적 bounding box (StepNode 180w·~70h, RequiredStepNode 180w·120h)
-// - RANKSEP 은 깊이(랭크) 사이 간격, NODESEP 은 같은 깊이 형제 사이 간격
-// - 형제 간 노드 중심 거리 ≈ DAGRE_NODE_H + NODESEP
+// ===== Tidy tree 레이아웃 (d3-flextree 기반) =====
+// 노드 타입별 실제 크기를 d3-flextree에 알려서 겹침 없이 컴팩트하게 배치.
+// Walker's 알고리즘 기반이라 자식 순서가 자동으로 보존되고, 얕은 가지가
+// 깊은 가지의 빈 공간에 자연스럽게 배치됨.
 
-const DAGRE_STEP_NODE_W = 200
-const DAGRE_STEP_NODE_H = 90
-const DAGRE_REQUIRED_NODE_H = 130
-const DAGRE_RANKSEP = 150
-const DAGRE_NODESEP = 36
+const NODE_W = 200
+const STEP_H = 85
+const REQUIRED_H = 130
+
+const LEVEL_GAP = 150
+const SIBLING_GAP = 45
+const MARGIN_X = 40
+const MARGIN_Y = 40
 
 function nodeHeightOf(stepData) {
-  return stepData?.is_required ? DAGRE_REQUIRED_NODE_H : DAGRE_STEP_NODE_H
+  return stepData?.is_required ? REQUIRED_H : STEP_H
 }
 
-function nodeWidthOf() {
-  return DAGRE_STEP_NODE_W
+function normalizeChildren(children = []) {
+  const regular = children.filter((c) => !c.is_required)
+  const required = children.filter((c) => c.is_required)
+  return [...regular, ...required]
 }
 
-/**
- * Step 트리를 Dagre 자동 레이아웃으로 평탄화한다.
- * - 좌→우(LR) 트리. 깊이가 같은 형제는 일정 간격(NODESEP)만 유지하므로
- *   자식이 늘어나도 상위 노드가 과도하게 벌어지지 않는다.
- * - Required Step 의 형제 정렬 우선순위는 build 순서(=children 배열 순서) 가 영향을 주며,
- *   기존처럼 일반 Step 을 먼저 배치한 뒤 Required Step 을 마지막에 추가해 시각적 흐름을 맞춘다.
- */
+function normalize(node) {
+  return {
+    ...node,
+    children: normalizeChildren(node.children ?? []).map(normalize),
+  }
+}
 
-export function flattenTree(steps, stageSequence) {
+function layoutOrderedTree(steps) {
   if (!steps?.length) return { nodes: [], edges: [] }
 
-  const g = new dagre.graphlib.Graph()
-  g.setGraph({
-    rankdir: 'LR',
-    nodesep: DAGRE_NODESEP,
-    ranksep: DAGRE_RANKSEP,
-    marginx: 40,
-    marginy: 40,
-  })
-  g.setDefaultEdgeLabel(() => ({}))
-
-  const meta = new Map()
-  const parentToOrderedChildren = new Map()
-
-  function walk(node, parentId) {
-    meta.set(node.step_id, node)
-
-    g.setNode(node.step_id, {
-      width: nodeWidthOf(node),
-      height: nodeHeightOf(node),
-    })
-
-    if (parentId) {
-      g.setEdge(parentId, node.step_id)
-      if (!parentToOrderedChildren.has(parentId)) {
-        parentToOrderedChildren.set(parentId, [])
-      }
-      parentToOrderedChildren.get(parentId).push(node.step_id)
-    }
-
-    const children = node.children ?? []
-    const regular = children.filter((c) => !c.is_required)
-    const required = children.filter((c) => c.is_required)
-
-    regular.forEach((c) => walk(c, node.step_id))
-    required.forEach((c) => walk(c, node.step_id))
-  }
-
-  steps.forEach((root) => walk(root, null))
-
-  dagre.layout(g)
-
-  function getDescendants(nodeId) {
-    const result = [nodeId]
-    const queue = [nodeId]
-    const visited = new Set([nodeId])
-
-    while (queue.length > 0) {
-      const cur = queue.shift()
-      const successors = g.successors(cur) ?? []
-
-      for (const next of successors) {
-        if (!visited.has(next)) {
-          visited.add(next)
-          result.push(next)
-          queue.push(next)
-        }
-      }
-    }
-
-    return result
-  }
-
-  function getHeightById(id) {
-    return nodeHeightOf(meta.get(id))
-  }
-
-  parentToOrderedChildren.forEach((childIds) => {
-    if (childIds.length <= 1) return
-
-    const subtreeInfos = childIds.map((id) => {
-      const descendants = getDescendants(id)
-      const tops = descendants.map((d) => g.node(d).y - getHeightById(d) / 2)
-      const bottoms = descendants.map((d) => g.node(d).y + getHeightById(d) / 2)
-      const top = Math.min(...tops)
-      const bottom = Math.max(...bottoms)
-
-      return {
-        id,
-        top,
-        bottom,
-        height: bottom - top,
-      }
-    })
-
-    const subtreeMap = new Map(subtreeInfos.map((info) => [info.id, info]))
-    const totalTop = Math.min(...subtreeInfos.map((s) => s.top))
-    const totalBottom = Math.max(...subtreeInfos.map((s) => s.bottom))
-    const totalHeight = subtreeInfos.reduce((sum, s) => sum + s.height, 0)
-    const totalSpace = totalBottom - totalTop
-
-    const gap =
-      childIds.length > 1
-        ? Math.max(DAGRE_NODESEP, (totalSpace - totalHeight) / (childIds.length - 1))
-        : 0
-
-    let currentTop = totalTop
-
-    childIds.forEach((id) => {
-      const subtree = subtreeMap.get(id)
-      const deltaY = currentTop - subtree.top
-
-      if (deltaY !== 0) {
-        getDescendants(id).forEach((descId) => {
-          g.node(descId).y += deltaY
-        })
+  // 가상 루트로 감싸서 멀티 루트 지원
+  const rootData = steps.length === 1
+    ? normalize(steps[0])
+    : {
+        step_id: '__virtual_root__',
+        name: '',
+        is_required: false,
+        __virtual: true,
+        children: steps.map(normalize),
       }
 
-      currentTop += subtree.height + gap
-    })
+  const layout = flextree({
+    nodeSize: (node) => [
+      nodeHeightOf(node.data) + SIBLING_GAP, // 수직 spread (sibling 간격 포함)
+      NODE_W + LEVEL_GAP,                     // 수평 depth (level 간격 포함)
+    ],
+    spacing: 0,
   })
 
-  const nodes = g.nodes().map((id) => {
-    const layoutNode = g.node(id)
-    const stepData = meta.get(id)
-    const h = nodeHeightOf(stepData)
-    const w = nodeWidthOf(stepData)
+  const tree = layout.hierarchy(rootData)
+  layout(tree)
 
-    return {
-      id,
-      type: stepData.is_required ? 'requiredStepNode' : 'stepNode',
+  const positioned = []
+  const edges = []
+
+  tree.each((node) => {
+    if (node.data.__virtual) return
+
+    const data = node.data
+    const h = nodeHeightOf(data)
+
+    positioned.push({
+      id: data.step_id,
+      type: data.is_required ? 'requiredStepNode' : 'stepNode',
       position: {
-        x: layoutNode.x - w / 2,
-        y: layoutNode.y - h / 2,
+        x: MARGIN_X + node.y,            // d3 y = 우리의 x (depth)
+        y: MARGIN_Y + node.x - h / 2,    // d3 x = 우리의 y (spread), 중심→top 변환
       },
       data: {
-        label: stepData.name,
-        status: stepData.status,
-        is_required: stepData.is_required,
-        stageNumber: stageSequence,
-        step_id: stepData.step_id,
-        keep: stepData.is_keep ?? false,
+        label: data.name,
+        status: data.status,
+        is_required: data.is_required,
+        stageNumber: data.stageNumber,
+        step_id: data.step_id,
+        keep: data.is_keep ?? false,
       },
+    })
+
+    if (node.parent && !node.parent.data.__virtual) {
+      edges.push(makeEdge(
+        node.parent.data.step_id,
+        data.step_id,
+        data.status === 'ACCEPTED'
+      ))
     }
   })
 
-  const edges = g.edges().map((e) => {
-    const child = meta.get(e.w)
-    return makeEdge(e.v, e.w, child?.status === 'ACCEPTED')
+  return { nodes: positioned, edges }
+}
+
+export function flattenTree(steps, stageSequence) {
+  const withStage = (node) => ({
+    ...node,
+    stageNumber: stageSequence,
+    children: (node.children ?? []).map(withStage),
   })
 
-  return { nodes, edges }
+  const normalized = (steps ?? []).map(withStage)
+  return layoutOrderedTree(normalized)
 }
 
 export function getStageProgressFromTree(nodes, edges) {
@@ -262,8 +193,8 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
       .filter(e => e.source === acceptedParentId && e.target !== acceptedNodeId)
       .map(e => e.target)
     const siblingReq = realNodes.find(
-      n => siblingIds.includes(n.id) 
-        && n.type === 'requiredStepNode' 
+      n => siblingIds.includes(n.id)
+        && n.type === 'requiredStepNode'
         && n.data?.status === 'READY'
     )
     siblingRequiredId = siblingReq?.id ?? null
@@ -273,7 +204,7 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
   const childrenMap = new Map()
   realNodes.forEach(n => childrenMap.set(n.id, []))
   realEdges.forEach(e => {
-    if (e.target === siblingRequiredId) return  // 옛 부모와의 연결 끊기
+    if (e.target === siblingRequiredId) return
     childrenMap.get(e.source)?.push(e.target)
   })
 
@@ -282,7 +213,6 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
   fakeIds.forEach(id => childrenMap.set(id, []))
   childrenMap.get(acceptedNodeId)?.push(...fakeIds)
 
-  // 필수 슬롯: sibling required가 있으면 그걸, 없으면 가짜 필수 추가
   const fakeRequiredId = '__gpR'
   let requiredSlotId
   if (siblingRequiredId) {
@@ -328,7 +258,6 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
 
   const requiredSlot = layoutNodes.find(n => n.id === requiredSlotId)?.position ?? null
 
-  // existingPositions: 실제 존재하는 노드만 (가짜 제외)
   const existingPositions = new Map(
     layoutNodes
       .filter(n => !fakeSet.has(n.id))
