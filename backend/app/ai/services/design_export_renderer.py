@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 
 from ai.schemas.design_export import DesignExportInput, DesignExportOutput, RSQuestions
 
@@ -109,7 +111,7 @@ def render(
     lines.append("")
     lines.append("---")
     lines.append("")
-    generated_at = datetime.now(timezone.utc)
+    generated_at = datetime.now(KST)
     lines.append(f"생성: {generated_at:%Y-%m-%d %H:%M} (KST) / 도구: Poco")
 
     return "\n".join(lines)

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
 from uuid import UUID
 
 from fastapi import Depends
@@ -65,8 +67,9 @@ async def design_export_stream(
             yield f"event: error\ndata: {json.dumps({'code': 'DESIGN_EXPORT_INVALID_OUTPUT'})}\n\n"
             return
 
+        now_kst = datetime.now(KST)
         md = design_export_renderer.render(input_data, ai_output)
-        filename = f"design_{datetime.now(timezone.utc):%Y-%m-%d}.md"
+        filename = f"design_{now_kst:%Y-%m-%d_%H-%M}.md"
         yield f"event: complete\ndata: {json.dumps({'markdown': md, 'filename': filename}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
