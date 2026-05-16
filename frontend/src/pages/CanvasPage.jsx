@@ -85,6 +85,7 @@ export default function CanvasPage() {
   const canvasWrapperRef = useRef(null)
   const ghostPositionsRef = useRef([])
   const savedPositionsRef = useRef(null)
+  const movedPositionsRef = useRef(null)
 
   // 첫 진입 가이드 투어 (캔버스)
   const [tourOpen, setTourOpen] = useState(false)
@@ -176,38 +177,73 @@ export default function CanvasPage() {
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds))
 
   function addGhostNodes(acceptedNode) {
-    const { id, position } = acceptedNode
-    const ghostX = position.x + X_GAP
-    const offsets = [-Y_GAP * 0.6, 0, Y_GAP * 0.6]
-    const ghostNodes = offsets.map((dy, i) => ({
+    const stage = stages.find(s => s.stage_id === selectedStageId)
+    const { ghostPositions, existingPositions } = predictGhostPositions(
+      acceptedNode.id,
+      nodes,
+      edges,
+      stage?.stage_sequence
+    )
+
+    // 실패 시 복원용으로 현재 위치 저장
+    savedPositionsRef.current = new Map(
+      nodes.filter(n => n.type !== 'ghostNode').map(n => [n.id, n.position])
+    )
+
+    ghostPositionsRef.current = ghostPositions
+    movedPositionsRef.current = existingPositions
+
+    const ghostNodes = ghostPositions.map((pos, i) => ({
       id: `ghost-${i}`,
       type: 'ghostNode',
-      position: { x: ghostX, y: position.y + dy + 3 },
+      position: pos,
       data: {},
       selectable: false,
       draggable: false,
     }))
 
-    const ghostEdges = offsets.map((_, i) => ({
+    const ghostEdges = ghostPositions.map((_, i) => ({
       id: `ghost-edge-${i}`,
-      source: id,
+      source: acceptedNode.id,
       target: `ghost-${i}`,
       type: 'ghostEdge',
     }))
 
-    setNodes(nds => [...nds, ...ghostNodes])
-    setEdges(eds => [...eds, ...ghostEdges])
+    // 기존 노드 새 Dagre 위치로 이동 및 고스트 추가
+    setNodes(nds => [
+      ...nds
+        .filter(n => n.type !== 'ghostNode')
+        .map(n => existingPositions.has(n.id)
+          ? { ...n, position: existingPositions.get(n.id) }
+          : n
+        ),
+      ...ghostNodes
+    ])
+    setEdges(eds => [
+      ...eds.filter(e => e.type !== 'ghostEdge'),
+      ...ghostEdges
+    ])
   }
 
   function removeGhostNodes() {
+    // 고스트 노드 fade out
     setNodes(nds => nds.map(n =>
       n.type === 'ghostNode'
         ? { ...n, data: { ...n.data, isExiting: true } }
         : n
     ))
+
     setTimeout(() => {
-      setNodes(nds => nds.filter(n => n.type !== 'ghostNode'))
+      const saved = savedPositionsRef.current
+      setNodes(nds =>
+        nds
+          .filter(n => n.type !== 'ghostNode')
+          .map(n => saved?.has(n.id) ? { ...n, position: saved.get(n.id) } : n ))
+      
       setEdges(eds => eds.filter(e => e.type !== 'ghostEdge'))
+      savedPositionsRef.current = null
+      ghostPositionsRef.current = []
+      movedPositionsRef.current = null
     }, 300)
   }
 
@@ -350,12 +386,46 @@ export default function CanvasPage() {
     const hasProgress = getStageProgressFromTree(n, e)
     stageHasProgressRef.current[stageId] = hasProgress
 
-    const processedNodes = animateNew
-      ? n.map(node => ({
+    let processedNodes
+    if (animateNew) {
+      // 기존 노드 현재 위치
+      // addGhostNodes에서 이동시킨 위치를 ref에서 읽어옴 (클로저 stale 방지)
+      const currentPositions = movedPositionsRef.current ?? new Map(
+        nodes.filter(n => n.type !== 'ghostNode').map(n => [n.id, n.position])
+      )
+      movedPositionsRef.current = null
+
+      const savedGhostPos = ghostPositionsRef.current
+      ghostPositionsRef.current = []
+      savedPositionsRef.current = null
+
+      const newRegularNodes = n
+        .filter(node => !existingIds.has(node.id) && node.type !== 'requiredStepNode')
+        .sort((a, b) => a.position.y - b.position.y)
+      
+      const ghostPosMap = new Map()
+      newRegularNodes.forEach((node, i) => {
+        if (i < savedGhostPos.length) ghostPosMap.set(node.id, savedGhostPos[i])
+      })
+
+      processedNodes = n.map(node => {
+        let position
+        if (ghostPosMap.has(node.id)) {
+          position = ghostPosMap.get(node.id) // 새 노드 => 고스트 위치로
+        } else if (currentPositions.has(node.id)) { // 기존 노드 => 현재 위치 유치
+          position = currentPositions.get(node.id)
+        } else {
+          position = node.position // 그 외 Degre 위치
+        }
+        return {
           ...node,
-          data: { ...node.data, isNew: !existingIds.has(node.id) }
-        }))
-      : n
+          position,
+          data: { ...node.data, isNew: !existingIds.has(node.id) },
+        }
+      })
+    } else {
+      processedNodes = n
+    }
 
     setNodes(processedNodes)
     const processedEdges = animateNew
@@ -367,7 +437,6 @@ export default function CanvasPage() {
       : e
 
     setEdges(processedEdges)
-
 
     const newNodeIds = new Set(n.map((node) => node.id))
     streamBuffers.current.forEach((buf, id) => {
