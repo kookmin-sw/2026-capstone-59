@@ -109,24 +109,32 @@ export function flattenTree(steps, stageSequence) {
     const subtreeInfos = childIds.map(id => {
       const descendants = getDescendants(id)
       const ys = descendants.map(d => g.node(d).y)
-      const minY = Math.min(...ys)
-      const maxY = Math.max(...ys)
-      return { id, minY, maxY, height: maxY - minY }
+      const centerMinY = Math.min(...ys)
+      const centerMaxY = Math.max(...ys)
+      return {
+        id,
+        top: centerMinY - DAGRE_NODE_H / 2,        // bounding box 상단
+        bottom: centerMaxY + DAGRE_NODE_H / 2,     // bounding box 하단
+        height: (centerMaxY - centerMinY) + DAGRE_NODE_H,
+        centerMinY,                                 // delta 계산용
+      }
     })
 
-    const totalMinY = Math.min(...subtreeInfos.map(s => s.minY))
-    const totalMaxY = Math.max(...subtreeInfos.map(s => s.maxY))
-
+    const totalTop = Math.min(...subtreeInfos.map(s => s.top))
+    const totalBottom = Math.max(...subtreeInfos.map(s => s.bottom))
     const totalHeight = subtreeInfos.reduce((sum, s) => sum + s.height, 0)
-    const totalSpace = totalMaxY - totalMinY
+    const totalSpace = totalBottom - totalTop
+
+    // 안전장치: 최소 NODESEP만큼은 띄움
     const gap = childIds.length > 1
-      ? (totalSpace - totalHeight) / (childIds.length - 1)
+      ? Math.max(DAGRE_NODESEP, (totalSpace - totalHeight) / (childIds.length - 1))
       : 0
 
-    let currentTop = totalMinY
+    let currentTop = totalTop
     childIds.forEach((id) => {
       const s = subtreeInfos.find(info => info.id === id)
-      const deltaY = currentTop - s.minY
+      // currentTop은 bounding box top. 첫 노드 center는 currentTop + NODE_H/2
+      const deltaY = (currentTop + DAGRE_NODE_H / 2) - s.centerMinY
       if (deltaY !== 0) {
         getDescendants(id).forEach(descId => {
           g.node(descId).y += deltaY
