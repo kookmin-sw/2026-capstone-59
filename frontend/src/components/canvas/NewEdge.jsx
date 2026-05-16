@@ -18,9 +18,9 @@ export default function NewEdge({
       stroke={style.stroke ?? '#291C80'}
       strokeWidth={style.strokeWidth ?? 1.5}
       strokeDasharray={style.strokeDasharray}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
+      initial={{ pathLength: 0, opacity: 0 }}
+      animate={{ pathLength: 1, opacity: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
     />
   )
 }
