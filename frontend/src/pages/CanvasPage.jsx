@@ -228,7 +228,15 @@ export default function CanvasPage() {
       ...ghostNodes
     ])
     setEdges(eds => [
-      ...eds.filter(e => e.type !== 'ghostEdge'),
+      ...eds.filter(e => e.type !== 'ghostEdge').map(e => {
+        if (siblingRequiredId && e.target === siblingRequiredId) {
+          return {
+            ...e,
+            style: { ...e.style, opacity: 0, transition: 'opacity 0.3s' }
+          }
+        }
+        return e
+      }),
       ...ghostEdges
     ])
   }
