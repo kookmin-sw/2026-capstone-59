@@ -135,3 +135,52 @@ export function getLatestActiveStage(stageList) {
       )
     : null
 }
+
+export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSequence) {
+  const realNodes = rfNodes.filter(n => n.type !== 'ghostNode')
+  const realEdges = rfEdges.filter(e => e.type !== 'ghostEdge')
+
+  const childrenMap = new Map()
+  realNodes.forEach(n => childrenMap.set(n.id, []))
+  realEdges.forEach(e => {
+    childrenMap.get(e.source)?.push(e.target)
+  })
+
+  const fakeIds = ['__gp0', '__gp1', '__gp2']
+  fakeIds.forEach(id => childrenMap.set(id, []))
+  childrenMap.get(acceptedNodeId)?.push(...fakeIds)
+
+  const hasParent = new Set(realEdges.map(e => e.target))
+  const roots = realNodes.filter(n => !hasParent.has(n.id))
+  const nodeMap = new Map(realNodes.map(n => [n.id, n]))
+
+  function buildStep(nodeId) {
+    const isFake = fakeIds.includes(nodeId)
+    const node = nodeMap.get(nodeId)
+    return {
+      step_id: nodeId,
+      name: isFake ? '' : (node?.data?.label ?? ''),
+      status: isFake ? 'READY' : (node?.data?.status ?? 'READY'),
+      is_required: isFake ? false : (node?.type === 'requiredStepNode'),
+      is_keep: false,
+      children: (childrenMap.get(nodeId) ?? []).map(buildStep),
+    }
+  }
+
+  const steps = roots.map(r => buildStep(r.id))
+  const { nodes: layoutNodes } = flattenTree(steps, stageSequence)
+
+  const fakeSet = new Set(fakeIds)
+
+  const ghostPositions = fakeIds
+    .map(id => layoutNodes.find(n => n.id === id)?.position)
+    .filter(Boolean)
+
+  const existingPositions = new Map(
+    layoutNodes
+      .filter(n => !fakeSet.has(n.id))
+      .map(n => [n.id, n.position])
+  )
+
+  return { ghostPositions, existingPositions }
+}
