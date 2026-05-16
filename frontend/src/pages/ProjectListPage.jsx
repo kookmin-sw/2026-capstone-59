@@ -527,7 +527,7 @@ export default function ProjectListPage() {
                   {infoModal.duration_month === 0
                     ? '기간 없음'
                     : infoModal.duration_month
-                    ? `${infoModal.duration_month}개월`
+                    ? `약 ${infoModal.duration_month}개월`
                     : '-'}
                   {isEditing && <span className={styles.lockBadge}>🔒</span>}
                 </span>

@@ -4,7 +4,7 @@ import { createProject } from '../api/projects'
 import styles from './CreateProjectPage.module.css'
 
 const durations = Array.from({ length: 12 }, (_, i) => i + 1)
-const members = Array.from({ length: 20 }, (_, i) => i + 1)
+const members = Array.from({ length: 10 }, (_, i) => i + 1)
 
 export default function CreateProjectPage() {
   const navigate = useNavigate()
@@ -107,7 +107,7 @@ export default function CreateProjectPage() {
               <div className={styles.field}>
                 <label className={styles.label}>프로젝트 인원 <span className={styles.required}>*</span></label>
                 <select className={styles.select} required value={memberCount} onChange={(e) => setMemberCount(e.target.value)}>
-                  <option value="" disabled>1 ~ 20명</option>
+                  <option value="" disabled>1 ~ 10명</option>
                   {members.map((m) => <option key={m} value={m}>{m}명</option>)}
                 </select>
               </div>
@@ -124,7 +124,7 @@ export default function CreateProjectPage() {
                     onChange={(e) => setDurationMonth(e.target.value)}
                   >
                     <option value="" disabled>1 ~ 12개월</option>
-                    {durations.map((d) => <option key={d} value={d}>{d}개월</option>)}
+                    {durations.map((d) => <option key={d} value={d}>약 {d}개월</option>)}
                   </select>
                   <label className={styles.checkboxLabel}>
                     <input
