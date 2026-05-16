@@ -15,6 +15,15 @@ from ai.schemas.common import (
     StageInfo,
     StepInfo,
 )
+from ai.schemas.design_export import (
+    AcceptedStepForAI,
+    DesignExportInput,
+    DesignExportOutput,
+    ProjectContextForAI,
+    RequiredStepForAI,
+    RSQuestions,
+    SidePanelMentoring,
+)
 from ai.schemas.generate import GenerateInput, GenerateOutput
 from ai.schemas.side_panel import SidePanelInput, SidePanelOutput
 
@@ -41,4 +50,12 @@ __all__ = [
     # side_panel
     "SidePanelInput",
     "SidePanelOutput",
+    # design_export (v1.4 Z+)
+    "ProjectContextForAI",
+    "RequiredStepForAI",
+    "AcceptedStepForAI",
+    "RSQuestions",
+    "DesignExportInput",
+    "DesignExportOutput",
+    "SidePanelMentoring",
 ]

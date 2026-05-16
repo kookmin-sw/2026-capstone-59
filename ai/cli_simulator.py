@@ -1,8 +1,9 @@
-"""터미널 기반 Stage 1 R1~R4 수동 테스트 시뮬레이터.
+"""터미널 기반 AI 시나리오 수동 테스트 시뮬레이터.
 
 실행: ``python -m ai.cli_simulator``
 
-실제 Bedrock API를 호출하여 generate → accept → side_panel 흐름을 모사한다.
+실제 Bedrock API를 호출하여 generate → accept → side_panel 흐름,
+또는 design-export 시나리오를 모사한다.
 인메모리 상태만 유지하며 DB는 사용하지 않는다.
 """
 
@@ -11,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import sys
+import time
 import uuid
 from typing import Optional
 
@@ -19,18 +21,34 @@ import boto3
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
 from ai.config import ai_settings
+from ai.exceptions import (
+    AIGenerationFailedError,
+    BedrockAPIError,
+    OutputViolatesHonestyGuardError,
+)
 from ai.fixtures.required_steps import stage_1_required_steps
 from ai.schemas.accept import AcceptInput
 from ai.schemas.common import (
+    CommonMistake,
     DecisionHistoryItem,
+    MentoringContent,
     ProjectInfo,
+    RecommendedMethod,
     RequiredStepInfo,
     RequiredStepStatus,
     StageInfo,
     StepInfo,
 )
+from ai.schemas.design_export import (
+    AcceptedStepForAI,
+    DesignExportInput,
+    DesignExportOutput,
+    ProjectContextForAI,
+    RequiredStepForAI,
+)
 from ai.schemas.generate import GenerateInput, GenerateOutput
 from ai.schemas.side_panel import SidePanelInput, SidePanelOutput
+from ai.services import generate_design_export
 from ai.services.required_step_judge import RequiredStepJudge
 from ai.services.side_panel_generator import SidePanelGenerator
 from ai.services.step_generator import StepGenerator
@@ -384,23 +402,286 @@ def _setup_logging() -> None:
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
+# ---------------------------------------------------------------------------
+# design-export — fixture 데이터
+# ---------------------------------------------------------------------------
+
+_QUICK_MENTORING = MentoringContent(
+    description="타겟 사용자를 파악하는 자리예요.",
+    recommended_methods=[
+        RecommendedMethod(
+            title="타겟 사용자 인터뷰",
+            content="5~10명의 타겟 사용자를 만나 현재 행동·맥락을 들어요.",
+        ),
+        RecommendedMethod(
+            title="공개 설문",
+            content="구글폼으로 30명 이상 대상 빠른 데이터 수집이 가능해요.",
+        ),
+    ],
+    common_mistakes=[
+        CommonMistake(
+            mistake="친한 사람만 인터뷰하기",
+            bad_example="친구 3명에게 물어봤다.",
+            good_example="다양한 상황의 사용자 5명을 인터뷰했다.",
+        ),
+    ],
+    one_line_tip="타겟 사용자의 '하루'를 알면 페르소나가 살아 있어요.",
+)
+
+
+def _design_export_quick_input() -> DesignExportInput:
+    """빠른 모드 fixture — 즉시 실행 가능한 Stage 1 R2 데이터 (v1.4 Z+)."""
+    project_context = ProjectContextForAI(
+        name="스터디 매칭 앱",
+        description="대학생용 스터디 매칭 플랫폼",
+        duration_months=3,
+        member_count=4,
+        constraints=["React + FastAPI", "AWS 프리 티어"],
+        initial_prompt="학과 선후배가 스터디를 쉽게 구성할 수 있는 앱을 만들고 싶음",
+    )
+    accepted_steps = [
+        AcceptedStepForAI(
+            name="타겟 사용자 인터뷰 계획",
+            description="1차 타겟 사용자군 특성 정의 활동",
+            sidepanel_mentoring=_QUICK_MENTORING,
+        ),
+        AcceptedStepForAI(
+            name="경쟁 서비스 조사",
+            description="에브리타임·카카오오픈채팅 등 기존 대안 분석",
+            sidepanel_mentoring=None,
+        ),
+        AcceptedStepForAI(
+            name="사용자 검증 설문 설계",
+            description="30명 대상 구글폼 설문 항목 정의",
+            sidepanel_mentoring=None,
+        ),
+    ]
+    required_step = RequiredStepForAI(
+        required_step_id="1-R2",
+        required_step_name="대상 사용자 파악",
+        goal="정의된 문제로 불편을 겪는 구체적 사용자군을 식별한다.",
+        fulfillment_criteria=[
+            "1차 타겟 사용자군의 특성 정의",
+            "사용자의 현재 행동·습관·맥락 파악",
+            "사용자 검증 활동",
+        ],
+        accepted_general_steps=accepted_steps,
+    )
+    return DesignExportInput(
+        project_context=project_context,
+        selected_required_steps=[required_step],
+    )
+
+
+def _design_export_detailed_input() -> DesignExportInput:
+    """상세 모드 — 사용자 입력으로 ProjectContext + RS 수 선택 (v1.4 Z+)."""
+    _section("design-export — 상세 입력")
+    initial_prompt = _input_required("초기 아이디어: ")
+    duration_months = _input_int("기간 (개월): ", minimum=1)
+    member_count = _input_int("인원 (명): ", minimum=1)
+    name = _input_optional("프로젝트 이름 (선택): ")
+    _constraints_raw = _input_optional("제약사항 (콤마 구분, 선택): ")
+    constraints = (
+        [c.strip() for c in _constraints_raw.split(",") if c.strip()]
+        if _constraints_raw
+        else None
+    )
+    project_context = ProjectContextForAI(
+        name=name,
+        duration_months=duration_months,
+        member_count=member_count,
+        constraints=constraints,
+        initial_prompt=initial_prompt,
+    )
+
+    num_rs = _input_choice("선택할 Required_Step 수 (1~3): ", range(1, 4))
+    selected_required_steps: list[RequiredStepForAI] = []
+    stage_names = [
+        "아이디어 구체화", "프로젝트 계획", "요구사항 정의",
+        "설계", "개발", "테스트 및 검증",
+    ]
+    for rs_idx in range(num_rs):
+        seq = _input_choice(
+            f"  RS{rs_idx + 1} — Stage 번호 (1~6): ", range(1, 7)
+        )
+        num_as = _input_choice(
+            f"  RS{rs_idx + 1} — accepted_general_steps 수 (0~3): ",
+            range(0, 4),
+        )
+        accepted: list[AcceptedStepForAI] = []
+        for as_idx in range(num_as):
+            accepted.append(
+                AcceptedStepForAI(
+                    name=f"Step {seq}-{rs_idx + 1}-{as_idx + 1}",
+                    description="(시뮬레이터 자동 생성)",
+                    sidepanel_mentoring=None,
+                )
+            )
+        selected_required_steps.append(
+            RequiredStepForAI(
+                required_step_id=f"{seq}-R{rs_idx + 1}",
+                required_step_name=f"{stage_names[seq - 1]} 필수 Step {rs_idx + 1}",
+                goal="(시뮬레이터 자동 생성)",
+                fulfillment_criteria=["기준 1", "기준 2"],
+                accepted_general_steps=accepted,
+            )
+        )
+
+    return DesignExportInput(
+        project_context=project_context,
+        selected_required_steps=selected_required_steps,
+    )
+
+
+def _build_design_export_bedrock() -> object:
+    """design-export용 bedrock-runtime 클라이언트 생성."""
+    return boto3.client("bedrock-runtime", region_name=ai_settings.AWS_REGION)
+
+
+def _print_design_export_header(input_data: DesignExportInput) -> None:
+    _section("design-export 시나리오 시작")
+    ctx = input_data.project_context
+    total_as = sum(
+        len(rs.accepted_general_steps) for rs in input_data.selected_required_steps
+    )
+    print(f"  이름          : {ctx.name or '(미입력)'}")
+    print(f"  인원·기간     : {ctx.member_count}명 / {ctx.duration_months}개월")
+    print(f"  Required_Step : {len(input_data.selected_required_steps)}개")
+    print(f"  accepted steps: {total_as}개")
+
+
+def _print_design_export_result(result: DesignExportOutput) -> None:
+    """AI 생성 결과(questions_per_rs + core_summary)를 터미널에 출력."""
+    _section("AI 생성 결과 (v1.4 Z+)")
+
+    print()
+    print("  [RS별 What·Why 질문]")
+    _hr()
+    for rs_q in result.questions_per_rs:
+        print(f"  • {rs_q.required_step_id}")
+        for i, q in enumerate(rs_q.questions, start=1):
+            print(f"    {i}. {q}")
+        print()
+
+    print("  [핵심 What·Why 정리]")
+    _hr()
+    for item in result.core_summary:
+        print(f"  - {item}")
+    print()
+
+    _ok("검증 PASS (금지 표현 0건, required_step_id 매칭 정상)")
+    _hr()
+
+
+async def _run_design_export(input_data: DesignExportInput) -> None:
+    """design-export 시나리오 실행 — Bedrock 호출 + 결과 출력 (v1.4 Z+)."""
+    bedrock_runtime = _build_design_export_bedrock()
+
+    _wait("프롬프트 렌더 + Bedrock 호출 중...")
+    t_start = time.perf_counter()
+    try:
+        result = await generate_design_export(
+            input_data=input_data,
+            bedrock_runtime_client=bedrock_runtime,
+            model_id=ai_settings.MODEL_ID,
+        )
+    except OutputViolatesHonestyGuardError as exc:
+        elapsed = time.perf_counter() - t_start
+        _fail(f"검증 실패 (HONESTY)  [{elapsed:.2f}s]")
+        phrase = exc.details.get("banned_phrase", "(알 수 없음)")
+        print(f"  banned_phrase: {phrase!r}")
+        expected = exc.details.get("expected")
+        actual = exc.details.get("actual")
+        if expected is not None and actual is not None:
+            print(f"  expected IDs: {expected}")
+            print(f"  actual IDs  : {actual}")
+        print("  → 프롬프트 강화 또는 max_tokens 재검토 필요.")
+        return
+    except BedrockAPIError as exc:
+        elapsed = time.perf_counter() - t_start
+        _fail(f"Bedrock API 오류  [{elapsed:.2f}s]: {exc.message}")
+        return
+    except AIGenerationFailedError as exc:
+        elapsed = time.perf_counter() - t_start
+        _fail(f"AI 생성 실패  [{elapsed:.2f}s]: {exc.message}")
+        return
+
+    elapsed = time.perf_counter() - t_start
+    total_questions = sum(len(rs_q.questions) for rs_q in result.questions_per_rs)
+
+    print()
+    _hr()
+    print("  [응답 수신]")
+    print(f"  응답 시간       : {elapsed:.2f}s")
+    print(f"  RS 수           : {len(result.questions_per_rs)}개")
+    print(f"  질문 총 수      : {total_questions}개")
+    print(f"  핵심 정리 수    : {len(result.core_summary)}개")
+    _hr()
+
+    _print_design_export_result(result)
+
+
+# ---------------------------------------------------------------------------
+# 메인 루프
+# ---------------------------------------------------------------------------
+
+
 def main() -> None:
-    """엔트리포인트 — 인터랙티브 Stage 1 시뮬레이션."""
+    """엔트리포인트 — 시나리오 선택 후 실행."""
     _setup_logging()
 
-    _section("Poco AI 시뮬레이터 — Stage 1 (R1~R4)")
+    _section("Poco AI 시뮬레이터")
     print(f"  AWS_REGION : {ai_settings.AWS_REGION}")
     print(f"  MODEL_ID   : {ai_settings.MODEL_ID}")
     print(f"  KB_ID      : {ai_settings.KB_ID or '(미설정 — RAG는 빈 결과 폴백)'}")
 
+    print()
+    print("  시나리오 선택:")
+    print("  1. Stage 1 (R1~R4) 시뮬레이션 [generate → accept → side_panel]")
+    print("  2. design-export 시나리오 [사고 궤적 .md 생성]")
+    scenario = _input_choice("번호: ", range(1, 3))
+
+    if scenario == 1:
+        _run_stage1_scenario()
+    else:
+        _run_design_export_scenario()
+
+
+def _run_stage1_scenario() -> None:
+    """기존 Stage 1 R1~R4 시뮬레이션 진입점."""
+    _section("Poco AI 시뮬레이터 — Stage 1 (R1~R4)")
     project = _build_project_info()
     step_gen, judge, side_panel_gen = _build_services()
-
     try:
         asyncio.run(_run(project, step_gen, judge, side_panel_gen))
     except KeyboardInterrupt:
         print()
         _info("사용자 중단")
+
+
+def _run_design_export_scenario() -> None:
+    """design-export 시나리오 진입점."""
+    print()
+    print("  입력 모드 선택:")
+    print("  1. 빠른 모드 (사전 fixture — 즉시 실행)")
+    print("  2. 상세 모드 (직접 입력)")
+    mode = _input_choice("번호: ", range(1, 3))
+
+    if mode == 1:
+        input_data = _design_export_quick_input()
+    else:
+        input_data = _design_export_detailed_input()
+
+    _print_design_export_header(input_data)
+
+    try:
+        asyncio.run(_run_design_export(input_data))
+    except KeyboardInterrupt:
+        print()
+        _info("사용자 중단")
+
+    if _input_yes_no("다시 실행? (y/N): "):
+        _run_design_export_scenario()
 
 
 if __name__ == "__main__":

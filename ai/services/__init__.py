@@ -1,6 +1,6 @@
-"""ai/services — generate, accept, side_panel 오케스트레이터.
+"""ai/services — generate, accept, side_panel, design_export 오케스트레이터.
 
-백엔드(Lambda)가 호출하는 3개 public async 함수를 노출한다.
+백엔드(Lambda)가 호출하는 5개 public async 함수를 노출한다.
 백엔드는 IAM Role 기반으로 boto3 클라이언트를 미리 만들어 주입하며,
 이 모듈은 LLMClient/RAGClient를 wrapping해 실제 시나리오 서비스를 구동한다.
 
@@ -25,8 +25,10 @@ from typing import Any, AsyncIterator, Optional
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
 from ai.schemas.accept import AcceptInput, AcceptOutput
+from ai.schemas.design_export import DesignExportInput, DesignExportOutput
 from ai.schemas.generate import GenerateInput, GenerateOutput
 from ai.schemas.side_panel import SidePanelInput, SidePanelOutput
+from ai.services.design_export_generator import DesignExportGenerator
 from ai.services.required_step_judge import RequiredStepJudge
 from ai.services.side_panel_generator import SidePanelGenerator
 from ai.services.step_generator import StepGenerator
@@ -116,9 +118,26 @@ async def generate_side_panel_stream(
         yield chunk
 
 
+async def generate_design_export(
+    input_data: DesignExportInput,
+    bedrock_runtime_client: Any,
+    model_id: str,
+) -> DesignExportOutput:
+    """design-export 시나리오 — Poco 사고 궤적 .md 본문 생성.
+
+    백엔드가 RDS에서 모은 Project_Info + 선택된 Required_Step 영역의
+    진행 데이터를 받아, Bedrock Claude Haiku 4.5 동기 호출로 .md 본문을
+    생성한다. RAG 미사용 (Req 15.5).
+    """
+    llm = LLMClient(bedrock_client=bedrock_runtime_client, model_id=model_id)
+    service = DesignExportGenerator(llm=llm)
+    return await service.generate_design_export(input_data)
+
+
 __all__ = [
     "generate_steps",
     "judge_required_step",
     "generate_side_panel",
     "generate_side_panel_stream",
+    "generate_design_export",
 ]
