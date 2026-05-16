@@ -500,28 +500,16 @@ export default function CanvasPage() {
       currentRequiredStepName.current = acceptedRequiredNode.data.label
     }
 
-    n.filter((node) =>
-      node.data.status === 'READY' &&
-      node.type !== 'requiredStepNode' &&
-      !streamBuffers.current.has(node.id)
-    ).forEach(async (node) => {
-      try {
-        const detail = await getStepDetail(node.id)
-        if (!detail?.mentoring) {
-          startNodeStream(node.id)
-        } else {
-          streamBuffers.current.set(node.id, {
-            text: detail.mentoring,
-            isDone: true,
-            stream: null,
-            onUpdate: null,
-            onComplete: null,
-          })
-        }
-      } catch {
-        startNodeStream(node.id)
-      }
-    })
+    if (animateNew) {
+      n.filter((node) =>
+        !existingIds.has(node.id) &&                  // 새로 생긴 노드만
+        node.data.status === 'READY' &&
+        node.type !== 'requiredStepNode' &&
+        !streamBuffers.current.has(node.id)
+      ).forEach((node) => {
+        startNodeStream(node.id)                      // 스트리밍만 시작 (getStepDetail X)
+      })
+    }
     
     if (!hasProgress && autoOpenedStageRef.current !== stageId) {
       const firstRequired = n.find(
