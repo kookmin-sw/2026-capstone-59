@@ -479,7 +479,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
         </button>
       </div>
 
-      <div className={styles.titleSection}>
+      <div className={styles.titleSection} data-tour="sidepanel-title">
         <h2 className={styles.stepName}>{name}</h2>
         {isRequired && <span className={styles.requiredBadge}>필수 STEP</span>}
       </div>
@@ -488,6 +488,7 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
         {tabs.map((tab) => (
           <button
             key={tab}
+            data-tour={`sidepanel-tab-${tab}`}
             className={`${styles.tab} ${activeTab === tab ? styles.activeTab : ''}`}
             onClick={() => setActiveTab(tab)}
           >
@@ -555,7 +556,12 @@ export default function SidePanel({ step, detail, streamingText, isOpen, onClose
 
       <div className={styles.footer}>
         {(status !== 'ACCEPTED' && !hasChildren && onAccept) && (
-          <button className={styles.acceptBtn} onClick={onAccept} disabled={isAccepting}>
+          <button
+            data-tour="sidepanel-accept"
+            className={styles.acceptBtn}
+            onClick={onAccept}
+            disabled={isAccepting}
+          >
             <HiCheck size={15} />
             accept
           </button>
