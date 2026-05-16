@@ -194,7 +194,7 @@ export default function CanvasPage() {
     const ghostNodes = ghostPositions.map((pos, i) => ({
       id: `ghost-${i}`,
       type: 'ghostNode',
-      position: { pos },
+      position: pos,
       data: {},
       selectable: false,
       draggable: false,
@@ -383,12 +383,44 @@ export default function CanvasPage() {
     const hasProgress = getStageProgressFromTree(n, e)
     stageHasProgressRef.current[stageId] = hasProgress
 
-    const processedNodes = animateNew
-      ? n.map(node => ({
+    let processedNodes
+    if (animateNew) {
+      // 기존 노드 현재 위치
+      const currentPositions = new Map(
+        nodes.filter(n => n.type !== 'ghostNode').map(n => [n.id, n.position])
+      )
+
+      const savedGhostPos = ghostPositionsRef.current
+      ghostPositionsRef.current = []
+      savedPositionsRef.current = null
+
+      const newRegularNodes = n
+        .filter(node => !existingIds.has(node.id) && node.type !== 'requiredStepNode')
+        .sort((a, b) => a.position.y - b.position.y)
+      
+      const ghostPosMap = new Map()
+      newRegularNodes.forEach((node, i) => {
+        if (i < savedGhostPos.length) ghostPosMap.set(node.id, savedGhostPos[i])
+      })
+
+      processedNodes = n.map(node => {
+        let position
+        if (ghostPosMap.has(node.id)) {
+          position = ghostPosMap.get(node.id) // 새 노드 => 고스트 위치로
+        } else if (currentPositions.has(node.id)) { // 기존 노드 => 현재 위치 유치
+          position = currentPositions.get(node.id)
+        } else {
+          position = node.position // 그 외 Degre 위치
+        }
+        return {
           ...node,
-          data: { ...node.data, isNew: !existingIds.has(node.id) }
-        }))
-      : n
+          position,
+          data: { ...node.data, isNew: !existingIds.has(node.id) },
+        }
+      })
+    } else {
+      processedNodes = n
+    }
 
     setNodes(processedNodes)
     const processedEdges = animateNew
@@ -400,7 +432,6 @@ export default function CanvasPage() {
       : e
 
     setEdges(processedEdges)
-
 
     const newNodeIds = new Set(n.map((node) => node.id))
     streamBuffers.current.forEach((buf, id) => {
