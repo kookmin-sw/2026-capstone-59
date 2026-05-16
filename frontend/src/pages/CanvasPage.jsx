@@ -218,7 +218,9 @@ export default function CanvasPage() {
       ...nds
         .filter(n => n.type !== 'ghostNode')
         .map(n => {
-          if (n.id === siblingRequiredId) return n  // 옛 필수는 아직 안 움직임
+          if (n.id === siblingRequiredId) {
+            return { ...n, data: { ...n.data, isExiting: true } }
+          }
           return existingPositions.has(n.id)
             ? { ...n, position: existingPositions.get(n.id) }
             : n
@@ -423,10 +425,13 @@ export default function CanvasPage() {
 
         processedNodes = n.map(node => {
           let position
+          let extraData = {}
+
           if (ghostPosMap.has(node.id)) {
             position = ghostPosMap.get(node.id)                          // 새 일반 노드 → 고스트 위치
           } else if (siblingReqId && node.id === siblingReqId && reqSlot) {
-            position = reqSlot                                            // reparent된 필수 → 필수 슬롯
+            position = reqSlot  
+            extraData.isReparented = true // 이월된 필수 표시                                          // reparent된 필수 → 필수 슬롯
           } else if (!existingIds.has(node.id) && node.type === 'requiredStepNode' && reqSlot) {
             position = reqSlot                                            // 새로 생긴 필수 → 필수 슬롯
           } else if (currentPositions.has(node.id)) {
@@ -437,7 +442,11 @@ export default function CanvasPage() {
           return {
             ...node,
             position,
-            data: { ...node.data, isNew: !existingIds.has(node.id) },
+            data: {
+              ...node.data,
+              isNew: !existingIds.has(node.id),
+              ...extraData,
+            },
           }
         })
     } else {
