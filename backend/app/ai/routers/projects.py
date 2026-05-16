@@ -42,7 +42,7 @@ async def design_export_stream(
     # SSE 시작 전 검증 — 여기서 raise하면 HTTP 상태코드 정상 반환
     project_service.get_project_or_raise(db, project_id)
     design_export_service.check_rate_limit(project_id)
-    input_data, stage_seq_to_name = design_export_service.build_input(
+    input_data = design_export_service.build_input(
         db, project_id, payload.selected_step_ids
     )
 
@@ -65,7 +65,7 @@ async def design_export_stream(
             yield f"event: error\ndata: {json.dumps({'code': 'DESIGN_EXPORT_INVALID_OUTPUT'})}\n\n"
             return
 
-        md = design_export_renderer.render(input_data, ai_output, stage_seq_to_name)
+        md = design_export_renderer.render(input_data, ai_output)
         filename = f"design_{datetime.now(timezone.utc):%Y-%m-%d}.md"
         yield f"event: complete\ndata: {json.dumps({'markdown': md, 'filename': filename}, ensure_ascii=False)}\n\n"
 

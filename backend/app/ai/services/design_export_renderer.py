@@ -6,11 +6,19 @@ from datetime import datetime, timezone
 
 from ai.schemas.design_export import DesignExportInput, DesignExportOutput, RSQuestions
 
+_STAGE_SEQ_TO_NAME: dict[int, str] = {
+    1: "아이디어 구체화",
+    2: "프로젝트 계획",
+    3: "요구사항 정의",
+    4: "설계",
+    5: "개발",
+    6: "테스트 및 검증",
+}
+
 
 def render(
     input_data: DesignExportInput,
     ai_output: DesignExportOutput,
-    stage_seq_to_name: dict[int, str],
 ) -> str:
     ctx = input_data.project_context
     constraints_str = (
@@ -66,7 +74,7 @@ def render(
     lines.append("")
 
     for stage_seq in seen_stage_seqs:
-        stage_name = stage_seq_to_name.get(stage_seq, "")
+        stage_name = _STAGE_SEQ_TO_NAME.get(stage_seq, "")
         lines.append(f"### Stage {stage_seq} — {stage_name}")
         lines.append("")
         for rs in stage_rs_map[stage_seq]:

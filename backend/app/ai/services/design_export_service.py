@@ -41,7 +41,7 @@ def build_input(
     db: Session,
     project_id: UUID,
     selected_step_ids: list[UUID],
-) -> tuple[DesignExportInput, dict[int, str]]:
+) -> DesignExportInput:
 
     if not selected_step_ids:
         raise DesignExportEmptySelectionError()
@@ -123,9 +123,7 @@ def build_input(
             )
         )
 
-    stage_seq_to_name = {s.stage.sequence: s.stage.name for s in steps_sorted}
-
     return DesignExportInput(
         project_context=project_context,
         selected_required_steps=selected_required_steps,
-    ), stage_seq_to_name
+    )
