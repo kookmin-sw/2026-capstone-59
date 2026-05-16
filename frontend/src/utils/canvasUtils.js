@@ -106,22 +106,33 @@ export function flattenTree(steps, stageSequence) {
   parentToOrderedChildren.forEach((childIds) => {
     if (childIds.length <= 1) return
 
-    // Dagre가 배치한 현재 Y 슬롯들 (정렬해서 가용 슬롯으로 사용)
-    const availableYs = childIds
-      .map(id => g.node(id).y)
-      .sort((a, b) => a - b)
+    const subtreeInfos = childIds.map(id => {
+      const descendants = getDescendants(id)
+      const ys = descendants.map(d => g.node(d).y)
+      const minY = Math.min(...ys)
+      const maxY = Math.max(...ys)
+      return { id, minY, maxY, height: maxY - minY }
+    })
 
-    // 원본 순서대로 자식들에게 Y 슬롯 재할당
-    childIds.forEach((id, i) => {
-      const currentY = g.node(id).y
-      const targetY = availableYs[i]
-      if (currentY !== targetY) {
-        const deltaY = targetY - currentY
-        // 자식 + 그 subtree 전체를 deltaY만큼 시프트
+    const totalMinY = Math.min(...subtreeInfos.map(s => s.minY))
+    const totalMaxY = Math.max(...subtreeInfos.map(s => s.maxY))
+
+    const totalHeight = subtreeInfos.reduce((sum, s) => sum + s.height, 0)
+    const totalSpace = totalMaxY - totalMinY
+    const gap = childIds.length > 1
+      ? (totalSpace - totalHeight) / (childIds.length - 1)
+      : 0
+
+    let currentTop = totalMinY
+    childIds.forEach((id) => {
+      const s = subtreeInfos.find(info => info.id === id)
+      const deltaY = currentTop - s.minY
+      if (deltaY !== 0) {
         getDescendants(id).forEach(descId => {
           g.node(descId).y += deltaY
         })
       }
+      currentTop += s.height + gap
     })
   })
 
