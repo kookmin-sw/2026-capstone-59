@@ -22,42 +22,24 @@ export default function MdExportModal({ projectId, onClose, onDownload }) {
   const [helpOpen, setHelpOpen] = useState(false)
   const helpRef = useRef(null)
 
-  // accepted RS 조회
-  // useEffect(() => {
-  //   let cancelled = false
-  //   setLoading(true)
-  //   setError(null)
-  //   getAcceptedRequiredSteps(projectId)
-  //     .then(res => {
-  //       if (cancelled) return
-  //       setAccepted(res?.required_steps ?? [])
-  //     })
-  //     .catch(() => {
-  //       if (cancelled) return
-  //       setError('목록을 불러오지 못했어요.')
-  //     })
-  //     .finally(() => {
-  //       if (!cancelled) setLoading(false)
-  //     })
-  //   return () => { cancelled = true }
-  // }, [projectId])
+  //accepted RS 조회
   useEffect(() => {
-    setLoading(false)
-    const dummy = []
-    let count = 0
-    outer: for (const [seqStr, names] of Object.entries(REQUIRED_STEPS_BY_STAGE)) {
-      const seq = Number(seqStr)
-      for (const name of names) {
-        if (count >= 10) break outer
-        dummy.push({
-          step_id: `dummy-${seq}-${name}`,
-          name,
-          stage_sequence: seq,
-        })
-        count++
-      }
-    }
-    setAccepted(dummy)
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getAcceptedRequiredSteps(projectId)
+      .then(res => {
+        if (cancelled) return
+        setAccepted(res?.required_steps ?? [])
+      })
+      .catch(() => {
+        if (cancelled) return
+        setError('목록을 불러오지 못했어요.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
   }, [projectId])
 
   useEffect(() => {
