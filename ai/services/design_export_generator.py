@@ -123,7 +123,7 @@ class DesignExportGenerator:
         흐름:
             1) 입력을 텍스트 블록으로 직렬화
             2) 프롬프트 렌더 (PromptTemplate.load_and_render)
-            3) LLM 동기 호출 max_tokens=6144
+            3) LLM 동기 호출 max_tokens=8192
             4) 금지 표현 스캔 → 위반 시 즉시 raise (재시도 금지 §3-7-2)
             5) questions_per_rs ID 매칭 검증 → 불일치 시 즉시 raise
         """
@@ -151,7 +151,7 @@ class DesignExportGenerator:
         result: DesignExportOutput = await self.llm.invoke(
             prompt,
             DesignExportOutput,
-            max_tokens=6144,
+            max_tokens=8192,
         )
 
         all_texts = [q for rs_q in result.questions_per_rs for q in rs_q.questions]

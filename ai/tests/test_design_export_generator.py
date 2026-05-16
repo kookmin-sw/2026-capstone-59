@@ -269,10 +269,10 @@ class TestHappyPath:
         assert llm.invoke_calls[0]["expected_schema"] is DesignExportOutput
 
     @pytest.mark.asyncio
-    async def test_llm_invoke_passes_max_tokens_6144(self):
+    async def test_llm_invoke_passes_max_tokens_8192(self):
         service, llm = _make_service()
         await service.generate_design_export(_input_full())
-        assert llm.invoke_calls[0]["max_tokens"] == 6144
+        assert llm.invoke_calls[0]["max_tokens"] == 8192
 
     @pytest.mark.asyncio
     async def test_empty_accepted_steps_input_succeeds(self):

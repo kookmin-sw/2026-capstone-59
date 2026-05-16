@@ -6,7 +6,7 @@
 - `core_summary`                          : 3~6개 글머리 (Pydantic 스키마로 강제)
 - 각 `questions` 항목 한 줄, 80자 이내 권장
 - `core_summary` 각 글머리 120자 이내 권장
-- 전체 출력                                : 약 5,000 tokens 이내 (max_tokens=6144 안에 충분)
+- 전체 출력                                : 약 6,500 tokens 이내 (max_tokens=8192 안에 충분)
 
 # 역할 (반드시 숙지)
 
