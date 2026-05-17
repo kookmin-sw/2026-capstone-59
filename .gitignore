@@ -35,6 +35,9 @@ presentation/
 # zip build staging (local only)
 .build/
 
+# CloudShell test runner (local only — not for public repo)
+tools/
+
 # Jekyll / GitHub Pages
 _site/
 .jekyll-cache/
