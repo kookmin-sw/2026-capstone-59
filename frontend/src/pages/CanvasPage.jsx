@@ -241,6 +241,7 @@ export default function CanvasPage() {
         if (siblingRequiredId && e.target === siblingRequiredId) {
           return {
             ...e,
+            type: 'default',
             style: { ...e.style, opacity: 0, transition: 'opacity 0.3s' }
           }
         }
