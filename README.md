@@ -13,7 +13,7 @@
 <p align="center">
   <!-- <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a> -->
   <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
-  <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_Track_59팀-FF9900?logo=amazon-aws" alt="AWS Track" /></a>
+  <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_분반_59팀-FF9900?logo=amazon-aws" alt="AWS 분반" /></a>
 </p>
 
 &nbsp;
@@ -179,4 +179,4 @@ docker-compose up -d
 
 ---
 
-<sub>본 프로젝트는 미국 법무부(<b>DOJ</b>) <b>SDLC Guidance Document</b>의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, <b>SWEBOK V4.0a</b> (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.</sub>
+<sub>*본 프로젝트는 미국 법무부(<b>DOJ</b>) <b>SDLC Guidance Document</b>의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, <b>SWEBOK V4.0a</b> (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
