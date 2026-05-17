@@ -1,7 +1,6 @@
-import { createApi } from './_client'
+import { createApi, resolveApiUrl } from './_client'
 
-const api = createApi() // Business Lambda (/api)
-const aiApi = createApi(import.meta.env.VITE_AI_URL || '/ai') // AI Lambda (/ai)
+const api = createApi()
 
 export const getStepTree = (projectId, stageId) =>
   api.get('/steps/tree', { params: { project_id: projectId, stage_id: stageId } })
@@ -10,10 +9,10 @@ export const getStepTreeBySequence = (projectId, stageSequence) =>
   api.get('/steps/tree', { params: { project_id: projectId, stage_sequence: stageSequence } })
 
 export const acceptStep = (stepId) =>
-  aiApi.post(`/steps/${stepId}/accept`)
+  api.post(`/steps/${stepId}/accept`)
 
 export const getStepDetail = (stepId) =>
-  aiApi.get(`/steps/${stepId}`)
+  api.get(`/steps/${stepId}`)
 
 export const rollbackStep = (stepId) =>
   api.post(`/steps/${stepId}/rollback`)
@@ -30,7 +29,8 @@ export function createSidePanelStream(stepId) {
 
       ;(async () => {
         try {
-          const response = await fetch(`${import.meta.env.VITE_AI_URL || '/ai'}/steps/${stepId}/sidepanel-stream`, {
+          const url = resolveApiUrl('GET', `/steps/${stepId}/sidepanel-stream`)
+          const response = await fetch(url, {
             method: 'GET',
             headers: {
               Accept: 'text/event-stream',
