@@ -26,7 +26,7 @@ from app.core.exceptions import (
     DesignExportRateLimitError,
     ProjectNotFoundError,
 )
-from app.business.services import project_service
+from app.core.repositories import project as project_repo
 
 router = EnvelopeRouter()
 
@@ -42,7 +42,9 @@ async def design_export_stream(
     db: Session = Depends(get_db),
 ):
     # SSE 시작 전 검증 — 여기서 raise하면 HTTP 상태코드 정상 반환
-    project_service.get_project_or_raise(db, project_id)
+    project = project_repo.get_active_project_by_id(db, project_id)
+    if not project:
+        raise ProjectNotFoundError()
     design_export_service.check_rate_limit(project_id)
     input_data = design_export_service.build_input(
         db, project_id, payload.selected_step_ids
