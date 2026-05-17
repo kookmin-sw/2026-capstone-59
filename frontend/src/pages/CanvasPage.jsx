@@ -321,16 +321,6 @@ export default function CanvasPage() {
     lastToastByStageRef.current[selectedStageId] = { message, persistent: true }
     }
   }
-
-  // function showActiveStageToast(stageList) {
-  //   const list = stageList ?? stages
-  //   const active = getLatestActiveStage(list)
-  //   if (!active) return
-  //   const name = active.stage_name ?? STAGE_NAMES[active.stage_sequence]
-  //   if (!name) return
-  //   showTimedToast(`🤔 현재 ${name}${josa(name, '을/를')} 진행 중이에요!`, 5500)
-  }
-
   function enqueueTyping(newChars) {
     typingQueueRef.current += newChars
     if (typingTimerRef.current) return  // 이미 돌고 있으면 큐에만 쌓음
