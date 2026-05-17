@@ -262,6 +262,11 @@ body .wrapper sup a:hover {
 }
 
 /* 사이드바 목차는 기존 검정 톤 유지 — hover 시도 검정 + 옅은 회색 배경 */
+#poco-side-toc li a,
+#poco-side-toc h3 {
+  color: #000000 !important;
+}
+
 #poco-side-toc li a:hover {
   background: #e2e8f0 !important;
   color: #000000 !important;
@@ -269,7 +274,9 @@ body .wrapper sup a:hover {
 
 /* 본문 안의 .poco-btn, 푸터 링크 등은 별도 스타일 유지 (override X) */
 .poco-btn,
-.poco-btn:hover {
+.poco-btn:hover,
+.poco-btn span,
+.poco-btn b {
   color: #000000 !important; /* 사이드바 버튼은 검정 텍스트 유지 */
 }
 </style>
@@ -432,7 +439,7 @@ Top 3 기능으로 사용자의 What·Why가 캔버스에 정리된다. 그런�
 <table>
   <tr>
     <th width="50%" style="background:#f3f4f6; color:#6b7280;">Before</th>
-    <th width="50%" style="background:#ede9fe; color:#5b21b6;">After</th>
+    <th width="50%" style="background:#ede9fe; color:#6c63b5;">After</th>
   </tr>
   <tr>
     <td><img src="./assets/gemini_before.png" alt="Poco 없이 Gemini 답변" /></td>
