@@ -971,7 +971,7 @@ docker-compose up -d
   <br/>
   <b>무엇을 · 왜 만들지는 — 여전히 우리 몫.</b>
   <br/><br/>
-  <i style="color: #6c63b5;">Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.</i>
+  <span style="color: #6c63b5;">Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.</span>
   <br/><br/>
   <sub>「 2026, 국민대학교 AWS 분반 캡스톤디자인 59팀 」</sub>
   <br/>
