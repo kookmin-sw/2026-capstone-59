@@ -10,13 +10,15 @@ Poco의 **RAG 파이프라인**(Bedrock Knowledge Base + S3 Vectors)에 인덱�
 
 ```
 ai/data/
-├── doj/                    → KB-A 데이터 소스: DOJ SDLC Guidance Document (Jan 2003)
-│   └── *.md                  원문 PDF를 마크다운으로 변환한 파일들
+├── doj/                    → DOJ Data Source (단일 KB 안 1번 Data Source)
+│   └── *.md                  DOJ SDLC Guidance Document 마크다운 변환본
 │
-└── custom/                 → KB-B 데이터 소스: 팀 자체 제작 가이드 문서
+└── custom/                 → Custom Data Source (단일 KB 안 2번 Data Source)
     ├── glossary/             용어 사전 (1 파일 = 1 개념)
     └── technique/            기법 가이드 (1 파일 = 1 기법)
 ```
+
+> **KB 구성**: Bedrock Knowledge Base는 **`pj-kmucd1-09-kb` (ID `ZAEWSDQVP1`) 한 개**만 사용하며, 그 안에 위 두 개의 Data Source를 등록해 운영합니다. 런타임에 `dataSourceId` 필터로 한쪽만 검색합니다.
 
 ---
 
@@ -26,7 +28,7 @@ Poco의 Bedrock Knowledge Base는 **단일 KB 안에 두 개의 Data Source**를
 
 ### 왜 분리했나
 
-| 구분 | doj/ (KB-A) | custom/ (KB-B) |
+| 구분 | DOJ Data Source (`doj/`) | Custom Data Source (`custom/`) |
 |---|---|---|
 | **답하는 질문 유형** | *"이 Stage에서 뭘 해야 해?"* (절차·산출물·활동 범위) | *"그걸 어떤 방법으로 해?"* / *"이 용어가 뭐야?"* (기법·용어) |
 | **성격** | 표준 절차서 (What to do) | 팀 교과서 + 실무 멘토 (How to do / What it means) |

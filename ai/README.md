@@ -38,26 +38,30 @@ ai/
 │
 ├── services/                   # 시나리오별 오케스트레이터 (public interface)
 │   ├── __init__.py             #   generate_steps / judge_required_step /
-│   │                           #   generate_side_panel / generate_side_panel_stream
+│   │                           #   generate_side_panel / generate_side_panel_stream /
+│   │                           #   generate_design_export
 │   ├── step_generator.py       #   generate 시나리오
 │   ├── required_step_judge.py  #   accept 시나리오
-│   └── side_panel_generator.py #   side_panel 시나리오 (sync + stream)
+│   ├── side_panel_generator.py #   side_panel 시나리오 (sync + stream)
+│   └── design_export_generator.py #   design_export 시나리오 (.md 다운로드)
 │
 ├── schemas/                    # Pydantic 입출력 스키마
 │   ├── common.py               #   ProjectInfo, StageInfo, DecisionHistoryItem ...
 │   ├── generate.py             #   GenerateInput / GenerateOutput
 │   ├── accept.py               #   AcceptInput / AcceptOutput
-│   └── side_panel.py           #   SidePanelInput / SidePanelOutput
+│   ├── side_panel.py           #   SidePanelInput / SidePanelOutput
+│   └── design_export.py        #   DesignExportInput / DesignExportOutput
 │
 ├── prompts/                    # LLM 프롬프트 템플릿 (.txt, 별도 모듈화)
 │   ├── generate.txt
 │   ├── accept.txt
 │   ├── side_panel.txt
+│   ├── design_export.txt
 │   └── template.py             #   PromptTemplate.load_and_render
 │
 ├── data/                       # RAG 인덱싱 원본 (Bedrock Knowledge Base 업로드용)
-│   ├── doj/                    #   KB-A: DOJ SDLC Guidance Document 마크다운 변환본
-│   └── custom/                 #   KB-B: 팀 자체 제작 가이드 문서
+│   ├── doj/                    #   DOJ Data Source: DOJ SDLC Guidance Document 마크다운 변환본
+│   └── custom/                 #   Custom Data Source: 팀 자체 제작 가이드 문서
 │       ├── glossary/           #     용어 사전
 │       └── technique/          #     기법 가이드
 │
@@ -197,9 +201,9 @@ python -m ai.cli_simulator
 
 ---
 
-## 7. AI 모듈 공개 함수 (4개)
+## 7. AI 모듈 공개 함수 (5개)
 
-`ai/services/__init__.py`에서 re-export. 백엔드가 이 4개 함수만 import해서 사용합니다.
+`ai/services/__init__.py`에서 re-export. 백엔드가 이 5개 함수만 import해서 사용합니다.
 
 | 함수 | 시나리오 | 반환 타입 |
 |---|---|---|
@@ -207,8 +211,11 @@ python -m ai.cli_simulator
 | `judge_required_step` | 필수 Step 충족 판단 (`fulfillment_criteria` 커버리지 기반) | `AcceptOutput` (boolean) |
 | `generate_side_panel` | 일반 Step 사이드패널 콘텐츠 생성 (sync) | `SidePanelOutput` |
 | `generate_side_panel_stream` | 일반 Step 사이드패널 콘텐츠 생성 (stream) | `AsyncIterator[str]` |
+| `generate_design_export` | 사고 궤적 .md 다운로드 — RS별 What·Why 질문 + 영역 전체 핵심 정리 생성 | `DesignExportOutput` |
 
-**병렬 호출(judge ∥ generate, side_panel × 3 등)은 백엔드 오케스트레이션 영역**입니다. AI 모듈은 위 4개 단독 호출만 public interface로 노출하며, 합성·멀티플렉싱·SSE 엔드포인트 구성 등은 백엔드 PR에서 처리합니다.
+**병렬 호출(judge ∥ generate, side_panel × 3 등) 및 SSE 응답 layer 구성은 백엔드 오케스트레이션 영역**입니다. AI 모듈은 위 5개 단독 호출만 public interface로 노출하며, 합성·멀티플렉싱·SSE 엔드포인트 구성·.md 골격 렌더 등은 백엔드 PR에서 처리합니다.
+
+design-export 시나리오의 `.md` 골격(자기소개 블록쿼터·프로젝트 컨텍스트·RS 헤더·진행한 결정·푸터)은 백엔드 `Design_Export_Renderer`가 직접 렌더하며, AI 모듈은 변환·합성이 필요한 두 부분(`questions_per_rs`, `core_summary`) 만 JSON으로 반환합니다.
 
 ---
 
@@ -259,18 +266,19 @@ logging.basicConfig(level=logging.DEBUG, format="%(levelname)s | %(name)s | %(me
 
 ---
 
-## 10. 백엔드 납품 절차
+## 10. 백엔드 납품 (현재 상태)
 
-AI 모듈 검증이 완료되면 `ai/` → `backend/app/ai/services/`로 구조만 이관합니다. 이때 import 경로만 `backend.app.ai...`로 교체되며, 로직·프롬프트·스키마는 그대로 유지됩니다.
+AI 모듈은 `backend/app/ai/services/`에 **import 경로 그대로 사용** 중입니다. AI 모듈 코드는 `ai/` 폴더 하나만 유지되며, 백엔드는 `from ai import ...` 형태로 직접 import합니다 (sys.path를 통해 둘 다 참조 가능).
 
 백엔드에서 사용하는 형태:
 
 ```python
-from backend.app.ai.services import (
+from ai import (
     generate_steps,
     judge_required_step,
     generate_side_panel,
     generate_side_panel_stream,
+    generate_design_export,
 )
 
 # 예시: Accept API 핸들러
@@ -280,9 +288,14 @@ async def accept_step(step_id: str):
         ...
     generated = await generate_steps(input_data, bedrock_client, bedrock_agent_client, model_id, kb_id)
     ...
+
+# 예시: design-export SSE 엔드포인트 (backend/app/ai/routers/projects.py)
+ai_output = await generate_design_export(input_data, bedrock_client, model_id)
+md = design_export_renderer.render(input_data, ai_output)
+yield f"event: complete\ndata: {json.dumps({'markdown': md, 'filename': filename})}\n\n"
 ```
 
-백엔드는 위 4개 함수를 직접 호출하고, 병렬 실행 / SSE 엔드포인트 구성 / DB 저장 / 에러 응답 변환은 백엔드 레이어에서 처리합니다.
+백엔드는 위 5개 함수를 직접 호출하고, **병렬 실행 / SSE 엔드포인트 구성 / `.md` 골격 렌더 / DB 저장 / 에러 응답 변환은 모두 백엔드 레이어에서 처리**합니다. design-export의 경우 AI는 동기 1회 호출이고, 백엔드가 결과를 받아 SSE `event: complete` 청크로 전송하는 *"whole-response SSE"* 패턴을 사용합니다 (API Gateway 29초 동기 한도 우회용).
 
 ---
 

@@ -1,6 +1,6 @@
 # ai/data/custom/
 
-팀 자체 제작 가이드 문서 모음. Bedrock Knowledge Base의 **KB-B** Data Source로 인덱싱됩니다.
+팀 자체 제작 가이드 문서 모음. Bedrock Knowledge Base의 **Custom Data Source**로 인덱싱됩니다.
 
 ## 두 유형으로 분리
 
@@ -70,7 +70,7 @@ related_steps: []
 
 ## 작성 우선순위
 
-자체 문서 제작 순서 (`.kiro/steering/Poco_AI_Design_Guide_v1.md` §6.3 참조):
+자체 문서는 우선순위에 따라 단계적으로 제작합니다:
 
 | 순위 | 기준 | 시점 |
 |---|---|---|
