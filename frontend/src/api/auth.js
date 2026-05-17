@@ -1,6 +1,13 @@
-import { createApi } from './_client'
+import { clearCsrfToken, createApi } from './_client'
 
 const api = createApi()
 
 export const getMe = () => api.get('/auth/me')
-export const logout = () => api.post('/auth/logout')
+
+export const logout = async () => {
+  try {
+    return await api.post('/auth/logout')
+  } finally {
+    clearCsrfToken()
+  }
+}

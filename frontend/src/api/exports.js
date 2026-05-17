@@ -1,13 +1,6 @@
-import { createApi, resolveApiUrl } from './_client'
+import { createApi, getCsrfToken, resolveApiUrl } from './_client'
 
 const api = createApi()
-
-function getCsrfToken() {
-  return document.cookie
-    .split('; ')
-    .find((row) => row.startsWith('csrf_token='))
-    ?.split('=')[1]
-}
 
 // 1) 사전 조회 — accept된 RS 목록
 export const getAcceptedRequiredSteps = (projectId) =>
