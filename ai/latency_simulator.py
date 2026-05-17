@@ -52,7 +52,8 @@ from ai.services.step_generator import StepGenerator
 SCHEMA_VERSION = "1.0"
 SCHEMA_VERSION_STREAMING = "1.1"
 SCENARIO_TAG = "stage1_r1_problem_definition"
-DEFAULT_BASELINE_PATH = Path(".kiro/specs/ai-latency-optimization/baseline.json")
+# 로컬 전용 baseline 디폴트 경로. 추적 대상 아님 (.gitignore).
+DEFAULT_BASELINE_PATH = Path("baseline/ai-latency-optimization.json")
 
 
 # ---------------------------------------------------------------------------
@@ -578,7 +579,7 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         action="store_true",
         help=(
             "Baseline 기록 모드. target 파일이 이미 존재하면 refuse(exit 2). "
-            "--output 미지정 시 기본 경로 .kiro/specs/ai-latency-optimization/baseline.json 사용"
+            "--output 미지정 시 기본 경로 baseline/ai-latency-optimization.json 사용"
         ),
     )
     parser.add_argument(

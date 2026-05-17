@@ -38,6 +38,9 @@ presentation/
 # CloudShell test runner (local only — not for public repo)
 tools/
 
+# Local-only baseline files for latency simulator
+baseline/
+
 # Jekyll / GitHub Pages
 _site/
 .jekyll-cache/
