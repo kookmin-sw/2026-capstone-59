@@ -24,17 +24,14 @@ app.add_middleware(
 
 exception_handlers.register(app)
 
+_protected = [Depends(get_current_user_id), Depends(verify_csrf)]
 app.include_router(
-    steps.router,
-    tags=["ai"],
-    dependencies=[Depends(get_current_user_id), Depends(verify_csrf)],
+    steps.router, prefix="/steps", tags=["ai"], dependencies=_protected
+)
+app.include_router(
+    projects.router, prefix="/projects", tags=["ai"], dependencies=_protected
 )
 
-app.include_router(
-    projects.router,
-    tags=["ai"],
-    dependencies=[Depends(get_current_user_id), Depends(verify_csrf)],
-)
 
 @app.get("/health")
 def health() -> HealthResponse:

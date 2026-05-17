@@ -35,7 +35,7 @@ class DesignExportRequest(BaseModel):
     selected_step_ids: list[UUID]
 
 
-@router.post("/projects/{project_id}/design-export")
+@router.post("/{project_id}/design-export")
 async def design_export_stream(
     project_id: UUID,
     payload: DesignExportRequest,

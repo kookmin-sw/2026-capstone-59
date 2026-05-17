@@ -17,19 +17,19 @@ from app.core.schemas.step import (
 router = EnvelopeRouter()
 
 
-@router.post("/steps/{step_id}/accept", status_code=http_status.HTTP_200_OK)
+@router.post("/{step_id}/accept", status_code=http_status.HTTP_200_OK)
 async def accept_step(
     step_id: UUID, db: Session = Depends(get_db)
 ) -> StepAcceptResponse:
     return await step_service.accept_step(db, step_id)
 
 
-@router.get("/steps/{step_id}", status_code=http_status.HTTP_200_OK)
+@router.get("/{step_id}", status_code=http_status.HTTP_200_OK)
 def get_step_detail(step_id: UUID, db: Session = Depends(get_db)) -> StepDetailResponse:
     return step_service.get_step_detail(db, step_id)
 
 
-@router.get("/steps/{step_id}/sidepanel-stream")
+@router.get("/{step_id}/sidepanel-stream")
 async def sidepanel_stream(step_id: UUID, db: Session = Depends(get_db)):
     """사이드패널 콘텐츠를 SSE 스트림으로 반환.
 
