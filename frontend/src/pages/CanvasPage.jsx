@@ -936,12 +936,16 @@ export default function CanvasPage() {
           }
           lastCompletedRequiredStepRef.current = null
 
-          const newRSName = currentRequiredStepName.current
-          if (newRSName && newRSName !== prevRSName) {
-            persistentMsgRef.current = `🤔 ${newRSName}${josa(newRSName, '을/를')} 진행 중이에요!`
-            showTimedToast(`📌 ${newRSName}${josa(newRSName, '(으)로')} 돌아왔어요!`, 5500)
+          const selectedRSName = selectedStep.type === 'requiredStepNode'
+            ? selectedStep.data.label
+            : findRequiredStep(selectedStep.id, nodes, edges)?.data?.label
+
+          if (selectedRSName && selectedRSName !== prevRSName) {
+            persistentMsgRef.current = `🤔 ${selectedRSName}${josa(selectedRSName, '을/를')} 진행 중이에요!`
+            showTimedToast(`📌 ${selectedRSName}${josa(selectedRSName, '(으)로')} 돌아왔어요!`, 5500)
           } else {
-            persistentMsgRef.current = null            }
+            persistentMsgRef.current = null
+          }
         }
       }
 
