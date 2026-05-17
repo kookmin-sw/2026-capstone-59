@@ -789,6 +789,26 @@ export default function CanvasPage() {
     if (latestActive) {
       setCurrentStageSequence(latestActive.stage_sequence)
       stageHasProgressRef.current[latestActive.stage_id] = false
+
+      const stageName = latestActive.stage_name ?? STAGE_NAMES[latestActive.stage_sequence]
+      
+      // selectedStep 기준으로 소속 RS 찾기
+      let rsName = null
+      if (selectedStep) {
+        if (selectedStep.type === 'requiredStepNode') {
+          rsName = selectedStep.data.label
+        } else {
+          const rs = findRequiredStep(selectedStep.id, nodes, edges)
+          rsName = rs?.data?.label
+        }
+      }
+      
+      if (stageName) {
+        const msg = rsName
+          ? `📌 ${stageName} 중 ${rsName}${josa(rsName, '(으)로')} 돌아왔어요!`
+          : `📌 ${stageName}${josa(stageName, '(으)로')} 돌아왔어요!`
+        showTimedToast(msg, 5500)
+      }
     }
 
     await executeAccept({ skipRollback: true })
