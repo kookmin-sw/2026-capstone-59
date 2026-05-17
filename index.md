@@ -72,7 +72,7 @@ body .wrapper {
   font-size: 18px;
   font-weight: 800;
   margin: 0 0 18px 0;
-  color: #24292f;
+  color: #000000;
   letter-spacing: 0.02em;
 }
 
@@ -91,7 +91,7 @@ body .wrapper {
 
 #poco-side-toc li a {
   display: block;
-  color: #24292f;
+  color: #000000;
   text-decoration: none;
   padding: 8px 10px;
   border-radius: 5px;
@@ -102,12 +102,12 @@ body .wrapper {
 
 #poco-side-toc li a:hover {
   background: #e2e8f0;
-  color: #0969da;
+  color: #000000;
 }
 
 #poco-side-toc li a::before {
   content: counter(poco-toc) ". ";
-  color: #8c959f;
+  color: #6b7280;
   margin-right: 2px;
 }
 
@@ -127,7 +127,7 @@ body .wrapper {
   gap: 8px;
   padding: 0.75rem;
   background-color: #ffffff;
-  color: #1f2937 !important;
+  color: #000000 !important;
   text-align: center;
   border-radius: 8px;
   font-weight: 600;
@@ -186,7 +186,7 @@ body .wrapper h3,
 body .wrapper h4,
 body .wrapper h5,
 body .wrapper h6 {
-  color: #7c5cff !important; /* Poco 퍼플 — 옅은 톤 (브랜드 메인 #6B4EE8 보다 살짝 밝음) */
+  color: #6c63b5 !important; /* Poco 퍼플 — 차분한 톤 (채도 낮춰 눈 편하게) */
 }
 
 .main-content h1,
@@ -204,13 +204,13 @@ body .wrapper h2 {
 .main-content a,
 .page-content a,
 body .wrapper a {
-  color: #7c5cff !important; /* 본문 링크 = Poco 옅은 퍼플 */
+  color: #6c63b5 !important; /* 본문 링크 = 차분한 Poco 퍼플 (헤더와 동일 톤) */
 }
 
 .main-content a:hover,
 .page-content a:hover,
 body .wrapper a:hover {
-  color: #6b4ee8 !important; /* hover 시 메인 퍼플로 살짝 진하게 */
+  color: #5b4a9c !important; /* hover 시 살짝 진하게 */
 }
 
 /* blockquote 안의 텍스트 + 링크는 회색 톤 (보조 정보용) */
@@ -264,13 +264,13 @@ body .wrapper sup a:hover {
 /* 사이드바 목차는 기존 검정 톤 유지 — hover 시도 검정 + 옅은 회색 배경 */
 #poco-side-toc li a:hover {
   background: #e2e8f0 !important;
-  color: #24292f !important;
+  color: #000000 !important;
 }
 
 /* 본문 안의 .poco-btn, 푸터 링크 등은 별도 스타일 유지 (override X) */
 .poco-btn,
 .poco-btn:hover {
-  color: #1f2937 !important; /* 사이드바 버튼은 검정 텍스트 유지 */
+  color: #000000 !important; /* 사이드바 버튼은 검정 텍스트 유지 */
 }
 </style>
 
