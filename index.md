@@ -166,7 +166,8 @@ body .wrapper {
 }
 
 /* ----- Poco 브랜드 컬러 — 헤더·링크 톤 통일 -----
-   Cayman 테마의 초록 톤 헤더(h1·h2·h3...)와 파란 링크를 Poco 퍼플로 덮어쓴다. */
+   Cayman 테마의 초록 톤 헤더(h1·h2·h3...)와 파란 링크를 Poco 퍼플로 덮어쓴다.
+   사이드바는 기존 검정 톤 유지. */
 .main-content h1,
 .main-content h2,
 .main-content h3,
@@ -185,7 +186,7 @@ body .wrapper h3,
 body .wrapper h4,
 body .wrapper h5,
 body .wrapper h6 {
-  color: #5b21b6 !important; /* Poco 퍼플 (조금 진한 톤, 본문 가독성용) */
+  color: #7c5cff !important; /* Poco 퍼플 — 옅은 톤 (브랜드 메인 #6B4EE8 보다 살짝 밝음) */
 }
 
 .main-content h1,
@@ -203,19 +204,67 @@ body .wrapper h2 {
 .main-content a,
 .page-content a,
 body .wrapper a {
-  color: #6b4ee8 !important; /* 본문 링크 = Poco 메인 퍼플 */
+  color: #7c5cff !important; /* 본문 링크 = Poco 옅은 퍼플 */
 }
 
 .main-content a:hover,
 .page-content a:hover,
 body .wrapper a:hover {
-  color: #5b21b6 !important; /* hover 시 살짝 진하게 */
+  color: #6b4ee8 !important; /* hover 시 메인 퍼플로 살짝 진하게 */
 }
 
-/* 사이드바 목차 hover 색도 퍼플로 통일 */
+/* blockquote 안의 텍스트 + 링크는 회색 톤 (보조 정보용) */
+.main-content blockquote,
+.page-content blockquote,
+body .wrapper blockquote {
+  color: #6b7280 !important;
+}
+
+.main-content blockquote a,
+.page-content blockquote a,
+body .wrapper blockquote a {
+  color: #6b7280 !important;
+  text-decoration: underline;
+}
+
+.main-content blockquote a:hover,
+.page-content blockquote a:hover,
+body .wrapper blockquote a:hover {
+  color: #4b5563 !important;
+}
+
+/* sub·sup 태그(학술 인용)도 회색 톤 */
+.main-content sub,
+.main-content sup,
+.page-content sub,
+.page-content sup,
+body .wrapper sub,
+body .wrapper sup {
+  color: #6b7280 !important;
+}
+
+.main-content sub a,
+.main-content sup a,
+.page-content sub a,
+.page-content sup a,
+body .wrapper sub a,
+body .wrapper sup a {
+  color: #6b7280 !important;
+}
+
+.main-content sub a:hover,
+.main-content sup a:hover,
+.page-content sub a:hover,
+.page-content sup a:hover,
+body .wrapper sub a:hover,
+body .wrapper sup a:hover {
+  color: #4b5563 !important;
+}
+
+/* 사이드바 목차는 기존 검정 톤 유지 — hover 시도 검정 + 옅은 회색 배경 */
 #poco-side-toc li a:hover {
-  background: #ede9fe !important;
-  color: #6b4ee8 !important;
+  background: #e2e8f0 !important;
+  color: #24292f !important;
 }
 
 /* 본문 안의 .poco-btn, 푸터 링크 등은 별도 스타일 유지 (override X) */
@@ -270,9 +319,6 @@ body .wrapper a:hover {
   <img src="./assets/poster.svg" alt="Poco 포스터" width="100%" style="max-width:900px;" />
 </p>
 
-> 📌 *소개 영상은 추후 첨부할 예정입니다.*
-
-
 ## 1. 프로젝트 소개
 
 ### 한 줄 요약
@@ -297,7 +343,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 ### 소개 영상
 
-> 📌 *소개 영상은 추후 첨부할 예정입니다 (1분 30초, 무음 + 자막 + BGM, 토스·Apple 톤).*
+> 📌 *소개 영상은 추후 첨부할 예정입니다.*
 
 &nbsp;
 
