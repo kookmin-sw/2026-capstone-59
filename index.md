@@ -262,9 +262,12 @@ body .wrapper sup a:hover {
 }
 
 /* 사이드바 목차는 기존 검정 톤 유지 — hover 시도 검정 + 옅은 회색 배경 */
-#poco-side-toc li a,
-#poco-side-toc h3 {
+#poco-side-toc li a {
   color: #000000 !important;
+}
+
+#poco-side-toc h3 {
+  color: #6c63b5 !important; /* '목차' 헤더만 본문 헤더와 같은 라벤더 톤 */
 }
 
 #poco-side-toc li a:hover {
@@ -439,7 +442,7 @@ Top 3 기능으로 사용자의 What·Why가 캔버스에 정리된다. 그런�
 <table>
   <tr>
     <th width="50%" style="background:#f3f4f6; color:#6b7280;">Before</th>
-    <th width="50%" style="background:#ede9fe; color:#6c63b5;">After</th>
+    <th width="50%" style="background:#eeecf7; color:#6c63b5;">After</th>
   </tr>
   <tr>
     <td><img src="./assets/gemini_before.png" alt="Poco 없이 Gemini 답변" /></td>
