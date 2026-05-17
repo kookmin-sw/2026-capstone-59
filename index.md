@@ -164,6 +164,65 @@ body .wrapper {
     margin: 1rem auto !important;
   }
 }
+
+/* ----- Poco 브랜드 컬러 — 헤더·링크 톤 통일 -----
+   Cayman 테마의 초록 톤 헤더(h1·h2·h3...)와 파란 링크를 Poco 퍼플로 덮어쓴다. */
+.main-content h1,
+.main-content h2,
+.main-content h3,
+.main-content h4,
+.main-content h5,
+.main-content h6,
+.page-content h1,
+.page-content h2,
+.page-content h3,
+.page-content h4,
+.page-content h5,
+.page-content h6,
+body .wrapper h1,
+body .wrapper h2,
+body .wrapper h3,
+body .wrapper h4,
+body .wrapper h5,
+body .wrapper h6 {
+  color: #5b21b6 !important; /* Poco 퍼플 (조금 진한 톤, 본문 가독성용) */
+}
+
+.main-content h1,
+.page-content h1,
+body .wrapper h1 {
+  border-bottom-color: #ddd6fe !important; /* h1 밑줄 — 옅은 퍼플 */
+}
+
+.main-content h2,
+.page-content h2,
+body .wrapper h2 {
+  border-bottom-color: #ede9fe !important; /* h2 밑줄 — 더 옅은 퍼플 */
+}
+
+.main-content a,
+.page-content a,
+body .wrapper a {
+  color: #6b4ee8 !important; /* 본문 링크 = Poco 메인 퍼플 */
+}
+
+.main-content a:hover,
+.page-content a:hover,
+body .wrapper a:hover {
+  color: #5b21b6 !important; /* hover 시 살짝 진하게 */
+}
+
+/* 사이드바 목차 hover 색도 퍼플로 통일 */
+#poco-side-toc li a:hover {
+  background: #ede9fe !important;
+  color: #6b4ee8 !important;
+}
+
+/* 본문 안의 .poco-btn, 푸터 링크 등은 별도 스타일 유지 (override X) */
+.poco-btn,
+.poco-btn:hover {
+  color: #1f2937 !important; /* 사이드바 버튼은 검정 텍스트 유지 */
+}
 </style>
 
 <nav id="poco-side-toc" aria-label="목차">
@@ -326,8 +385,8 @@ Top 3 기능으로 사용자의 What·Why가 캔버스에 정리된다. 그런�
 
 <table>
   <tr>
-    <th width="50%">❌ Poco 없이 (Before)</th>
-    <th width="50%">✅ Poco .md 첨부 (After)</th>
+    <th width="50%" style="background:#f3f4f6; color:#6b7280;">Before</th>
+    <th width="50%" style="background:#ede9fe; color:#5b21b6;">After</th>
   </tr>
   <tr>
     <td><img src="./assets/gemini_before.png" alt="Poco 없이 Gemini 답변" /></td>
@@ -335,7 +394,7 @@ Top 3 기능으로 사용자의 What·Why가 캔버스에 정리된다. 그런�
   </tr>
   <tr>
     <td>
-      <b>표면 분류 묻기 → 사용자에게 다시 공</b><br/>
+      <b>표면 분류 묻기 (사용자에게 다시 공을 던짐)</b><br/>
       <em>"어떤 프로그래밍 언어나 특정 프레임워크를 타겟으로 하는 디버깅 에이전트를 먼저 기획하고 계신가요?"</em>
     </td>
     <td>
@@ -345,9 +404,9 @@ Top 3 기능으로 사용자의 What·Why가 캔버스에 정리된다. 그런�
   </tr>
 </table>
 
-> 💬 **실제 Gemini 채팅 검증**: [공유 링크 →](https://gemini.google.com/share/f7511935947a)
+> [실제 Gemini 채팅 검증 링크](https://gemini.google.com/share/f7511935947a)
 >
-> 📄 **Gemini Gem 지침에 추가한 Poco 추출 .md**: [`design_2026-05-17_03-25.md`](./assets/design_2026-05-17_03-25.md) (실측 시점 사용된 실제 파일)
+> [실제 인용된 의사결정 궤적 .md 보러가기](./assets/design_2026-05-17_03-25.md)
 
 ### 4-3. 의미 — Poco의 역할이 외부 AI와 충돌하지 않는다
 
