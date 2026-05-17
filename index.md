@@ -173,12 +173,13 @@ body .wrapper {
       <li><a href="#1-프로젝트-소개">프로젝트 소개</a></li>
       <li><a href="#2-문제-정의">문제 정의</a></li>
       <li><a href="#3-해결-방법--top-3-핵심-기능">해결 방법 Top 3</a></li>
-      <li><a href="#4-기술-설계">기술 설계</a></li>
-      <li><a href="#5-데이터와-확장-가능성">데이터와 확장 가능성</a></li>
-      <li><a href="#6-소프트웨어-방법론-근거">방법론 근거</a></li>
-      <li><a href="#7-팀-소개">팀 소개</a></li>
-      <li><a href="#8-레포지토리-탐색-가이드-및-협업-방식">레포지토리 탐색 가이드</a></li>
-      <li><a href="#9-사용법">사용법</a></li>
+      <li><a href="#4-의사결정-궤적-추출--외부-ai와-연결되는-다리">의사결정 궤적 추출</a></li>
+      <li><a href="#5-기술-설계">기술 설계</a></li>
+      <li><a href="#6-데이터와-확장-가능성">데이터와 확장 가능성</a></li>
+      <li><a href="#7-소프트웨어-방법론-근거">방법론 근거</a></li>
+      <li><a href="#8-팀-소개-및-협업-방식">팀 소개 및 협업 방식</a></li>
+      <li><a href="#9-레포지토리-구조">레포지토리 구조</a></li>
+      <li><a href="#10-사용법">사용법</a></li>
     </ol>
   </div>
   <div class="nav-bottom">
@@ -206,7 +207,11 @@ body .wrapper {
 
 &nbsp;
 
-> 📌 *포스터 이미지 및 소개 영상은 추후 첨부할 예정입니다.*
+<p align="center">
+  <img src="./assets/poster.svg" alt="Poco 포스터" width="100%" style="max-width:900px;" />
+</p>
+
+> 📌 *소개 영상은 추후 첨부할 예정입니다.*
 
 
 ## 1. 프로젝트 소개
@@ -233,7 +238,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 ### 소개 영상
 
-> 📌 *소개 영상은 추후 첨부할 예정입니다.*
+> 📌 *소개 영상은 추후 첨부할 예정입니다 (1분 30초, 무음 + 자막 + BGM, 토스·Apple 톤).*
 
 &nbsp;
 
@@ -300,9 +305,67 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 &nbsp;
 
-## 4. 기술 설계
+## 4. 의사결정 궤적 추출 — 외부 AI와 연결되는 다리
 
-### 4-1. AWS 서버리스 중심 아키텍처
+Top 3 기능으로 사용자의 What·Why가 캔버스에 정리된다. 그런데 결국 코드는 Claude나 ChatGPT 같은 외부 AI가 만들어줘야 한다. 매번 그 AI에게 What·Why 컨텍스트를 다시 설명하는 건 부담스러운 일.
+
+**그래서 Poco는 의사결정 궤적을 한 번에 마크다운(.md) 파일로 추출하는 기능을 제공한다.**
+
+### 4-1. 어떻게 동작하는가
+
+| 단계 | 동작 | 결과 |
+|---|---|---|
+| 1. | Poco 캔버스에서 사고 정리 | Top 3 기능으로 사용자의 What·Why가 트리에 박힘 |
+| 2. | 다운로드 모달에서 구간 선택 | Stage / 필수 Step 단위로 원하는 부분만 선택 가능 |
+| 3. | 마크다운(.md) 파일 다운로드 | 사용자의 사고 궤적이 정돈된 문서로 추출 |
+| 4. | 외부 AI에 첨부 | Claude · ChatGPT · Cursor · Codex 등 어디든 |
+
+### 4-2. 무엇이 달라지는가 — Gemini 실측 비교
+
+같은 외부 AI(Gemini Pro)에 같은 입력 *"AI 디버깅 에이전트 만들고 싶어"* 를 던졌을 때, **Poco가 추출해준 마크다운을 첨부했냐 안 했냐** 만 다른데 답변 차원이 달라진다.
+
+<table>
+  <tr>
+    <th width="50%">❌ Poco 없이 (Before)</th>
+    <th width="50%">✅ Poco .md 첨부 (After)</th>
+  </tr>
+  <tr>
+    <td><img src="./assets/gemini_before.png" alt="Poco 없이 Gemini 답변" /></td>
+    <td><img src="./assets/gemini_after.png" alt="Poco .md 첨부 후 Gemini 답변" /></td>
+  </tr>
+  <tr>
+    <td>
+      <b>표면 분류 묻기 → 사용자에게 다시 공</b><br/>
+      <em>"어떤 프로그래밍 언어나 특정 프레임워크를 타겟으로 하는 디버깅 에이전트를 먼저 기획하고 계신가요?"</em>
+    </td>
+    <td>
+      <b>사용자에 맞춘 구체적 다음 한 걸음</b><br/>
+      <em>"최근 팀 내에서 발생했던 가장 까다로웠던 버그 사례 1~2가지를 ... 작업을 시작해보면 어떨까요?"</em>
+    </td>
+  </tr>
+</table>
+
+> 💬 **실제 Gemini 채팅 검증**: [공유 링크 →](https://gemini.google.com/share/f7511935947a)
+>
+> 📄 **Gemini Gem 지침에 추가한 Poco 추출 .md**: [`design_2026-05-17_03-25.md`](./assets/design_2026-05-17_03-25.md) (실측 시점 사용된 실제 파일)
+
+### 4-3. 의미 — Poco의 역할이 외부 AI와 충돌하지 않는다
+
+Poco는 *"What·Why를 정의하는 도구"* 이고, 외부 AI(Claude·ChatGPT·Cursor·Codex 등)는 *"How를 구현하는 도구"* 다. **의사결정 궤적의 .md 추출은 그 둘을 연결하는 다리**다.
+
+- **Poco** — 사용자 사고 정리 (What·Why)
+- **.md (의사결정 궤적)** — 두 도구를 잇는 번역 매개
+- **외부 AI** — 코드·디자인·문서 생성 (How)
+
+같은 .md를 Gemini가 아닌 Claude에 첨부했을 때도 동일한 효과(차원 변환)가 확인되었다. *"답변 패턴이 다른 두 외부 AI인데, .md 한 장이 답변 차원을 바꾼다"*. **Poco의 안내 품질은 특정 외부 AI에 종속되지 않는 보편적 시스템 프롬프트 페이로드 형태로 설계되어 있다.**
+
+> *— 의사결정 궤적이 .md로 남으니, 외부 AI도 사용자 맥락을 이해한다.*
+
+&nbsp;
+
+## 5. 기술 설계
+
+### 5-1. AWS 서버리스 중심 아키텍처
 
 <!-- 이미지 파일(`assets/architecture.png`) 업로드 후 아래 이미지가 자동 표시됩니다. -->
 <img src="./assets/architecture.png" alt="Poco System Architecture" onerror="this.style.display='none'; document.getElementById('arch-placeholder').style.display='block';" />
@@ -312,7 +375,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 > RAG 파이프라인과 "단기 기억 · 장기 지식" 분리 설계로, AI가 검증된 방법론을 실시간 참조합니다.
 
-### 4-2. 설계 철학 — "단기 기억 · 장기 지식" 분리
+### 5-2. 설계 철학 — "단기 기억 · 장기 지식" 분리
 
 | 구분 | 역할 | 저장소 |
 |---|---|---|
@@ -321,7 +384,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 이 분리 설계가 왜 중요한가? 프로젝트마다 *상태*는 매 요청마다 갱신되지만, *방법론 지식*은 거의 변하지 않는다. 변경 빈도와 접근 패턴이 **완전히 다른 두 층**을 하나의 DB에 섞으면 확장성과 비용 효율이 모두 나빠진다. 그래서 저장소부터 구조적으로 분리하여, **지식은 한 번만 인덱싱하고 여러 프로젝트가 공유**하도록 했다.
 
-### 4-3. 기술 스택
+### 5-3. 기술 스택
 
 **Frontend**
 
@@ -355,7 +418,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 
-### 4-4. 백엔드의 AI 의존도와 기여점
+### 5-4. 백엔드의 AI 의존도와 기여점
 
 **AI 의존 범위 (정확히 명시)**
 
@@ -378,9 +441,9 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 &nbsp;
 
-## 5. 데이터와 확장 가능성
+## 6. 데이터와 확장 가능성
 
-### 5-1. 서비스가 축적하는 데이터와 가치
+### 6-1. 서비스가 축적하는 데이터와 가치
 
 **수집되는 정보**
 
@@ -396,7 +459,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 - **방법론 개선 루프** — DOJ SDLC·SWEBOK의 **이론과 실제 사용 패턴 차이**를 데이터로 관찰하여, 자체 제작 가이드 문서를 지속 개선할 수 있다.
 - **AI 프롬프트·RAG 품질 개선** — 실제 Accept된 Step의 맥락을 분석하여, 동적 생성 AI의 프롬프트와 RAG 검색 전략을 데이터 기반으로 튜닝한다.
 
-### 5-2. 확장 가능성
+### 6-2. 확장 가능성
 
 **다른 방법론·도메인으로의 확장**
 
@@ -404,6 +467,22 @@ Poco의 지식 레이어는 *방법론 독립적으로 설계*되어 있다. 현
 
 - **다른 SDLC 모델** — Agile·Scrum·XP·V-Model 등 기존 방법론의 Stage 구성으로 치환
 - **다른 지식 도메인** — 제품 기획(PMBOK), 연구 프로젝트(IMRaD), 논문 작성(학술 구조), UX 리서치(Double Diamond) 등
+
+**"누구의 사고 프레임이냐"로 시장이 갈라진다**
+
+Poco의 본질은 *"사고 프레임 + 사용자 사고"* 다. 사고 프레임을 바꾸면 시장이 바뀐다.
+
+| 시장 | 사고 프레임 | 대상 |
+|---|---|---|
+| 🎓 **대학·교육** | 학교·교수의 캡스톤 진행 프레임 | 학생들 |
+| 🏢 **기업 온보딩** | 토스만의 업무 사고 프레임 | 신입 사원 |
+| 💡 **유명인 사고** | 일론 머스크·워렌 버핏의 사고 프레임 | 누구든 |
+
+각 시장에서 *"프레임은 정해두지만, 사고는 사용자 자유"* 라는 Poco의 원칙은 그대로 유지된다.
+
+**프리셋 공유 마켓플레이스로의 발전 가능성**
+
+기술 구조상, 사고 프레임은 **S3 Vectors의 인덱싱 단위**로 다룰 수 있다. 즉 새 프레임을 만들어 올리는 것이 *"새 데이터 인덱스 추가"* 수준의 비용이라는 의미다. 이 특성을 살리면 **Poco 내에서 사용자들이 자기만의 사고 프레임 프리셋을 자유롭게 공유·다운로드하는 마켓플레이스**로 발전 가능하다. 인기 프리셋이 거래되는 구조까지 자연스럽게 이어진다.
 
 **S3 Vectors를 RAG 저장소로 선택한 이유**
 
@@ -416,7 +495,7 @@ Poco의 지식 레이어는 *방법론 독립적으로 설계*되어 있다. 현
 
 결과적으로 **새 방법론을 추가할 때마다 인덱스를 복제하거나 별도 DB를 띄울 필요 없이**, 동일 저장소에 메타데이터만 붙여 추가할 수 있다. 운영 비용을 올리지 않고도 지식 레이어가 선형 확장되는 구조다.
 
-### 5-3. 프로젝트 규모의 적절성
+### 6-3. 프로젝트 규모의 적절성
 
 **결론: 적절하다.** 근거는 세 가지.
 
@@ -431,11 +510,11 @@ Poco의 지식 레이어는 *방법론 독립적으로 설계*되어 있다. 현
 
 &nbsp;
 
-## 6. 소프트웨어 방법론 근거
+## 7. 소프트웨어 방법론 근거
 
 Poco가 참조하는 학술적 근거와, 각 출처가 실제 서비스 어디에서 어떻게 사용되는지를 투명하게 공개한다.
 
-### 6-1. 참조 문서와 자체 제작 가이드 — 왜 이 구조인가
+### 7-1. 참조 문서와 자체 제작 가이드 — 왜 이 구조인가
 
 Poco의 방법론 구조는 **"갖다 쓴 것"이 아니라 "재가공한 것"** 이다. 핵심 흐름은 다음과 같다.
 
@@ -476,7 +555,7 @@ Poco는 **제3의 길**을 제시한다. 표준의 *"원칙"* 은 유지하되, 
 | **AI 기본 지식으로 충분한 영역** (일반 SE 용어 정의, 기술 스택 개요, 범용 절차 설명 등) | 자체 문서 **투입하지 않음**. LLM 기본 지식만으로 충분한 품질 확보. |
 | **팀 가이드가 필요한 영역** (아래 4개 영역) | DOJ·SWEBOK 구조를 근거로 한 **자체 가이드 집중 투입**. |
 
-### 6-2. 팀 자체 가이드가 필요한 4가지 영역
+### 7-2. 팀 자체 가이드가 필요한 4가지 영역
 
 최근 LLM4SE(LLM for Software Engineering) 연구들은 LLM이 설계·아키텍처 추천 시 프로젝트 규모·맥락을 별도 조정 없이 과도하게 복잡한 제안을 할 수 있으며, 인간이 단순화·검증해야 한다고 반복 지적한다<sup>[1]</sup>. 또한 RLHF 기반 정렬이 *"더 많이, 더 상세하게 도와주려는"* 방향으로 보상하는 구조이기 때문에, *"여기서 멈춰라"* 라는 브레이크는 별도로 설계해야 한다<sup>[2]</sup>.
 
@@ -521,14 +600,14 @@ LLM은 *"사용자 인터뷰를 하세요"* 까지는 잘 말하지만, *"몇 �
 [3] Kim et al., ["CLIcK: A Benchmark Dataset of Cultural and Linguistic Intelligence in Korean"](https://arxiv.org/abs/2403.06412), arXiv:2403.06412, 2024 — 한국어·한국 문화 맥락에서 LLM 성능이 영어 대비 저하되며, 전문 용어·뉘앙스에 별도 로컬 데이터가 필요함을 보고.
 </sub>
 
-### 6-3. 참조 문서와 활용 매트릭스
+### 7-3. 참조 문서와 활용 매트릭스
 
 | 문서 | 분류 | Poco에서의 활용 범위 |
 |---|---|---|
 | **DOJ SDLC Guidance Document** (미국 법무부, Jan 2003) | 소프트웨어 개발 방법론 (공공 문서) | 원문을 RAG에 그대로 탑재하여 AI 참조 지식으로 사용. 서비스 Stage 구조는 원문 10단계 중 **6단계를 선별하여 팀이 별도 설계**. 24개 필수 Step의 목표·진입·충족 기준도 팀이 자체 정의. |
 | **SWEBOK V4.0a** (2024, IEEE Computer Society) | 소프트웨어 공학 **지식 체계** (방법론이 아닌 지식 지도) | **토픽 구조(Knowledge Area → Topic)만 참조.** 원문 미탑재. 팀이 약점 4개 영역에 대한 자체 가이드 작성 시 **출처·구조의 학술적 근거**로 활용. |
 
-### 6-4. 자체 제작 자산
+### 7-4. 자체 제작 자산
 
 Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자산들을 자체 제작하여, 참조 문서를 초심자 친화적인 형태로 변환했다.
 
@@ -544,7 +623,7 @@ Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자
 
 > 이 구조의 의미는, Poco의 **안내 품질이 AI의 즉흥성이 아닌, 팀이 설계한 학술적 근거 위에서 나온다**는 것이다. AI는 팀이 만든 구조 안에서 **동적 맥락 생성**만 담당한다.
 
-### 6-5. 왜 폭포수(워터폴) 기반인가
+### 7-5. 왜 폭포수(워터폴) 기반인가
 
 | | Agile/Scrum | 폭포수 (DOJ SDLC 기반) |
 |---|---|---|
@@ -555,7 +634,7 @@ Poco는 참조 문서를 **그대로 노출하지 않는다.** 팀이 다음 자
 
 Poco가 폭포수를 선택한 이유는 **"교육 도구로서의 명확성"** 이다. 학생이 처음 SDLC를 학습할 때 *"지금 어느 단계인지"* 항상 알 수 있어야 한다. Agile은 실무에 적합하지만, 첫 학습에는 폭포수가 적합하다. **한 사이클을 끝까지 가본 경험이 있어야 Agile도 의미를 가진다.** Poco는 그 첫 사이클을 가이드하는 도구다.
 
-### 6-6. 6 Stage 진행 플로우
+### 7-6. 6 Stage 진행 플로우
 
 | 번호 | 한글명 | 영문명 | 설명 |
 |:---:|---|---|---|
@@ -568,7 +647,10 @@ Poco가 폭포수를 선택한 이유는 **"교육 도구로서의 명확성"** 
 
 &nbsp;
 
-## 7. 팀 소개
+## 8. 팀 소개 및 협업 방식
+
+### 8-1. 팀원
+
 <table>
   <tr>
     <td align="center" width="160">
@@ -607,54 +689,6 @@ Poco가 폭포수를 선택한 이유는 **"교육 도구로서의 명확성"** 
     <td align="center">Backend, DB</td>
   </tr>
 </table>
-
-&nbsp;
-
-## 8. 레포지토리 탐색 가이드 및 협업 방식
-
-### 8-1. 레포지토리 구조
-
-```
-2026-capstone-59/
-│
-├── frontend/               → React SPA (UI/UX, 캔버스 시각화)
-│   ├── src/
-│   └── public/
-│
-├── backend/                → FastAPI 메인 서버
-│   ├── app/
-│   │   ├── ai/             → AI 모듈 납품 자리 (ai/ 폴더에서 검증 후 이관)
-│   │   ├── core/
-│   │   │   ├── models/     → SQLAlchemy 모델 (Project, Stage, Step, RequiredStep ...)
-│   │   │   └── seeds/      → 24개 필수 Step 시드 데이터 + 필수 Step 사이드패널 콘텐츠
-│   │   └── routers/        → API 엔드포인트
-│   ├── alembic/            → DB 마이그레이션
-│   └── tests/
-│
-├── ai/                     → AI 모듈 독립 개발·검증 공간
-│   ├── services/           → step_generator, required_step_judge, side_panel_generator
-│   ├── clients/            → Bedrock Claude, Knowledge Base 공통 클라이언트
-│   ├── prompts/            → 시나리오별 프롬프트 템플릿 (.txt)
-│   ├── schemas/            → Pydantic 스키마 (generate, accept, side_panel)
-│   ├── data/               → RAG 인덱싱 원본 (Bedrock Knowledge Base로 업로드)
-│   │   ├── doj/            →   KB-A: DOJ SDLC Guidance Document 마크다운 변환본
-│   │   └── custom/         →   KB-B: 팀 자체 제작 가이드 문서
-│   │       ├── glossary/   →     용어 사전 (1 파일 = 1 개념)
-│   │       └── technique/  →     기법 가이드 (1 파일 = 1 기법)
-│   └── tests/              → 단위 테스트 + Property-Based Tests (hypothesis)
-│
-├── assets/                 → 소개 페이지 이미지 (로고, 아키텍처 다이어그램, 포스터 등)
-├── docker-compose.yml      → 로컬 개발 환경
-├── index.md                → GitHub Pages 소개 페이지 (이 페이지)
-└── README.md               → 프로젝트 개요
-```
-
-**주요 문서**
-- [프로젝트 전체 레포](https://github.com/kookmin-sw/2026-capstone-59)
-- [`backend/README.md`](./backend/README.md) — 백엔드 실행 방법
-- [`ai/README.md`](./ai/README.md) — AI 모듈 독립 검증 방법
-- [`ai/data/README.md`](./ai/data/README.md) — RAG 인덱싱 원본 가이드
-- [`frontend/README.md`](./frontend/README.md) — 프론트엔드 실행 방법
 
 &nbsp;
 
@@ -703,8 +737,9 @@ Poco가 폭포수를 선택한 이유는 **"교육 도구로서의 명확성"** 
 [#n][BE/FE/AI/DOCS] 커밋 메시지
 
 예시 1) [#2][BE] Stage 생성 API 추가
-예시 2) [#2][BE] API 분류 별 파일 분리 및 모듈화
-예시 3) [#4][FE] Project View UI 추가
+예시 2) [#4][FE] Project View UI 추가
+예시 3) [#48][AI] Side Panel Generator 구현
+예시 4) [#107][DOCS] README · index.md 레이아웃 정비
 ```
 
 - 커밋은 최대한 작은 단위로 쪼개서 작성했다.
@@ -739,13 +774,61 @@ other/#n-other-example       → 문서 수정 및 기타
 
 &nbsp;
 
-## 9. 사용법
+## 9. 레포지토리 구조
 
-### 9-1. 배포 버전
+```
+2026-capstone-59/
+│
+├── frontend/               → React SPA (UI/UX, 캔버스 시각화)
+│   ├── src/
+│   └── public/
+│
+├── backend/                → FastAPI 메인 서버
+│   ├── app/
+│   │   ├── ai/             → AI 모듈 납품 자리 (ai/ 폴더에서 검증 후 이관)
+│   │   ├── core/
+│   │   │   ├── models/     → SQLAlchemy 모델 (Project, Stage, Step, RequiredStep ...)
+│   │   │   └── seeds/      → 24개 필수 Step 시드 데이터 + 필수 Step 사이드패널 콘텐츠
+│   │   └── routers/        → API 엔드포인트
+│   ├── alembic/            → DB 마이그레이션
+│   └── tests/
+│
+├── ai/                     → AI 모듈 독립 개발·검증 공간
+│   ├── services/           → step_generator, required_step_judge, side_panel_generator, design_export_generator
+│   ├── clients/            → Bedrock Claude, Knowledge Base 공통 클라이언트
+│   ├── prompts/            → 시나리오별 프롬프트 템플릿 (.txt)
+│   ├── schemas/            → Pydantic 스키마 (generate, accept, side_panel, design_export)
+│   ├── data/               → RAG 인덱싱 원본 (Bedrock Knowledge Base로 업로드)
+│   │   ├── doj/            →   DOJ Data Source: DOJ SDLC Guidance Document 마크다운 변환본
+│   │   └── custom/         →   Custom Data Source: 팀 자체 제작 가이드 문서
+│   │       ├── glossary/   →     용어 사전 (1 파일 = 1 개념)
+│   │       └── technique/  →     기법 가이드 (1 파일 = 1 기법)
+│   └── tests/              → 단위 테스트 + Property-Based Tests (hypothesis)
+│
+├── assets/                 → 소개 페이지 이미지 (로고, 아키텍처 다이어그램, 포스터 등)
+├── docker-compose.yml      → 로컬 개발 환경
+├── index.md                → GitHub Pages 소개 페이지 (이 페이지)
+└── README.md               → 프로젝트 개요
+```
+
+**주요 문서**
+- [프로젝트 전체 레포](https://github.com/kookmin-sw/2026-capstone-59)
+- [`backend/`](./backend/) — 백엔드 실행 방법
+- [`ai/`](./ai/) — AI 모듈 독립 검증 방법
+- [`ai/data/`](./ai/data/) — RAG 인덱싱 원본 가이드
+- [`frontend/`](./frontend/) — 프론트엔드 실행 방법
+
+&nbsp;
+
+
+</content>
+</file>## 10. 사용법
+
+### 10-1. 배포 버전
 
 > 📌 *현재 개발 중입니다. 배포 완료 후 서비스 링크를 추가할 예정입니다.*
 
-### 9-2. 로컬 실행
+### 10-2. 로컬 실행
 
 ```bash
 # 1. 레포 클론
@@ -762,6 +845,22 @@ docker-compose up -d
 ```
 
 자세한 환경 변수 및 AWS 자격증명 설정은 각 폴더의 `README.md`를 참조해주세요.
+
+&nbsp;
+
+---
+
+<p align="center">
+  <br/>
+  <b>AI가 다 만들어주는 시대,</b>
+  <br/>
+  <b>무엇을 · 왜 만들지는 — 여전히 우리 몫.</b>
+  <br/><br/>
+  <i>Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.</i>
+  <br/><br/>
+  <sub>「 2026, 국민대학교 AWS 분반 캡스톤디자인 59팀 」</sub>
+  <br/>
+</p>
 
 ---
 
