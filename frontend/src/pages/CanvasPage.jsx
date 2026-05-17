@@ -28,7 +28,7 @@ import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 import { 
   REQUIRED_STEPS_BY_STAGE, STAGE_NAMES,
   STAGE_ENGLISH, X_GAP, Y_GAP, flattenTree, 
-  getStageProgressFromTree, findRequiredStep, 
+  getStageProgressFromTree, findRequiredStep, findAcceptedLeaf, 
   getLatestActiveStage, predictGhostPositions
 } from '../utils/canvasUtils'
 
@@ -180,6 +180,7 @@ export default function CanvasPage() {
   const shownToastsRef = useRef(new Set())
   const persistentMsgRef = useRef(null)
   const justCompletedRSRef = useRef(null)
+  const lastToastByStageRef = useRef({})  // { stageId: { message, persistent } }
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -305,6 +306,9 @@ export default function CanvasPage() {
     setToastPersistent(false)
     setToastVisible(true)
     timerRef.current = setTimeout(() => setToastVisible(false), duration)
+    if (selectedStageId) {
+      lastToastByStageRef.current[selectedStageId] = { message, persistent: false }
+    }
   }
 
   function showPersistentToast(message) {
@@ -313,8 +317,10 @@ export default function CanvasPage() {
     setToastPersistent(true)
     setToastVisible(true)
     persistentMsgRef.current = message
+    if (selectedStageId) {
+    lastToastByStageRef.current[selectedStageId] = { message, persistent: true }
+    }
   }
-
   function enqueueTyping(newChars) {
     typingQueueRef.current += newChars
     if (typingTimerRef.current) return  // 이미 돌고 있으면 큐에만 쌓음
@@ -457,12 +463,17 @@ export default function CanvasPage() {
       }
     })
 
-    const acceptedRequiredNode = n.find(
-      (node) => node.type === 'requiredStepNode' && node.data.status === 'ACCEPTED'
-    )
-    if (acceptedRequiredNode) {
-      currentRequiredStepName.current = acceptedRequiredNode.data.label
+    // 현재 진행 경로의 leaf로부터 소속 RS를 추적
+    const leafAccepted = findAcceptedLeaf(n, e)
+    let activeRS = null
+    if (leafAccepted) {
+      if (leafAccepted.type === 'requiredStepNode') {
+        activeRS = leafAccepted
+      } else {
+        activeRS = findRequiredStep(leafAccepted.id, n, e)
+      }
     }
+    currentRequiredStepName.current = activeRS?.data?.label ?? null
 
     if (animateNew) {
       n.filter((node) =>
@@ -569,7 +580,9 @@ export default function CanvasPage() {
     }
     setToastVisible(false)
     setToastPersistent(false)
-    persistentMsgRef.current = null
+    // 이전 stage 기억된 토스트 → persistentMsgRef 복원 
+    const remembered = lastToastByStageRef.current[selectedStageId]
+    persistentMsgRef.current = remembered?.persistent ? remembered.message : null
     currentRequiredStepName.current = null
     lastCompletedRequiredStepRef.current = null
     shownToastsRef.current.clear()
@@ -766,6 +779,26 @@ export default function CanvasPage() {
     if (latestActive) {
       setCurrentStageSequence(latestActive.stage_sequence)
       stageHasProgressRef.current[latestActive.stage_id] = false
+
+      const stageName = latestActive.stage_name ?? STAGE_NAMES[latestActive.stage_sequence]
+      
+      // selectedStep 기준으로 소속 RS 찾기
+      let rsName = null
+      if (selectedStep) {
+        if (selectedStep.type === 'requiredStepNode') {
+          rsName = selectedStep.data.label
+        } else {
+          const rs = findRequiredStep(selectedStep.id, nodes, edges)
+          rsName = rs?.data?.label
+        }
+      }
+      
+      if (stageName) {
+        const msg = rsName
+          ? `📌 ${stageName} 중 ${rsName}${josa(rsName, '(으)로')} 돌아왔어요!`
+          : `📌 ${stageName}${josa(stageName, '(으)로')} 돌아왔어요!`
+        showTimedToast(msg, 5500)
+      }
     }
 
     await executeAccept({ skipRollback: true })

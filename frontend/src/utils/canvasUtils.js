@@ -193,6 +193,14 @@ export function getStageProgressFromTree(nodes, edges) {
     : false
 }
 
+export function findAcceptedLeaf(nodes, edges) {
+  const acceptedNodes = nodes.filter((n) => n.data?.status === 'ACCEPTED')
+  const acceptedIds = new Set(acceptedNodes.map((n) => n.id))
+  const hasAcceptedChild = (parentId) =>
+    edges.some((e) => e.source === parentId && acceptedIds.has(e.target))
+  return acceptedNodes.find((n) => !hasAcceptedChild(n.id)) ?? null
+}
+
 export function findRequiredStep(nodeId, nodes, edges) {
   const parentEdge = edges.find((e) => e.target === nodeId)
   if (!parentEdge) return null
