@@ -1,6 +1,5 @@
 import { createPublicApi } from './_client'
 
-// 공유 토큰 기반 read-only API — 인증 불필요, refresh 로직 불필요
 const api = createPublicApi()
 
 export const getSharedProject = (shareToken) =>

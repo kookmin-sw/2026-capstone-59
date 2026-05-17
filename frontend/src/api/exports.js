@@ -1,19 +1,17 @@
-import { createApi } from './_client'
+import { createApi, resolveApiUrl } from './_client'
 
-const api = createApi()                                          // Business (/api)
-const AI_BASE = import.meta.env.VITE_AI_URL || '/ai'
+const api = createApi()
 
 function getCsrfToken() {
   return document.cookie
     .split('; ')
-    .find(row => row.startsWith('csrf_token='))
+    .find((row) => row.startsWith('csrf_token='))
     ?.split('=')[1]
 }
 
 // 1) 사전 조회 — accept된 RS 목록
 export const getAcceptedRequiredSteps = (projectId) =>
   api.get(`/projects/${projectId}/accepted-required-steps`)
-  // 응답 envelope unwrap 후: { required_steps: [{ step_id, name, stage_sequence }, ...] }
 
 // 2) design-export SSE
 export function createDesignExportStream(projectId, selectedStepIds) {
@@ -26,12 +24,13 @@ export function createDesignExportStream(projectId, selectedStepIds) {
       ;(async () => {
         try {
           const csrf = getCsrfToken()
-          const res = await fetch(`${AI_BASE}/projects/${projectId}/design-export`, {
+          const url = resolveApiUrl('POST', `/projects/${projectId}/design-export`)
+          const res = await fetch(url, {
             method: 'POST',
             credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
-              'Accept': 'text/event-stream',
+              Accept: 'text/event-stream',
               ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
             },
             body: JSON.stringify({ selected_step_ids: selectedStepIds }),
@@ -43,7 +42,9 @@ export function createDesignExportStream(projectId, selectedStepIds) {
             try {
               const body = await res.json()
               code = body?.error?.code ?? body?.code ?? code
-            } catch { /* */ }
+            } catch {
+              /* */
+            }
             onError?.({ code, status: res.status })
             return
           }
@@ -73,7 +74,11 @@ export function createDesignExportStream(projectId, selectedStepIds) {
                 }
 
                 let data
-                try { data = JSON.parse(dataStr) } catch { data = null }
+                try {
+                  data = JSON.parse(dataStr)
+                } catch {
+                  data = null
+                }
 
                 if (currentEvent === 'complete') {
                   onComplete?.(data)
