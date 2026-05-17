@@ -38,11 +38,34 @@ export function resolveApiUrl(method, path) {
   return `${pickBaseUrl(method, path)}${path}`
 }
 
-function getCsrfToken() {
-  return document.cookie
-    .split('; ')
-    .find((row) => row.startsWith('csrf_token='))
-    ?.split('=')[1]
+// cross-site 셋업에서 JS 가 csrf 쿠키를 읽을 수 없으므로,
+// 백엔드가 /auth/me, /auth/refresh 응답 body 로 내려준 값을
+// sessionStorage 에 보관해 헤더로 부착한다.
+const CSRF_STORAGE_KEY = 'csrf_token'
+
+export function getCsrfToken() {
+  try {
+    return sessionStorage.getItem(CSRF_STORAGE_KEY) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function setCsrfToken(token) {
+  if (!token) return
+  try {
+    sessionStorage.setItem(CSRF_STORAGE_KEY, token)
+  } catch {
+    /* sessionStorage 불가 환경 — 무시 */
+  }
+}
+
+export function clearCsrfToken() {
+  try {
+    sessionStorage.removeItem(CSRF_STORAGE_KEY)
+  } catch {
+    /* */
+  }
 }
 
 // 동시 다발의 401 을 한 번의 refresh 로 합치기 위한 단일 promise.
@@ -52,6 +75,12 @@ function refreshTokens() {
   if (!refreshPromise) {
     refreshPromise = axios
       .post(`${BUSINESS_BASE}/auth/refresh`, null, { withCredentials: true })
+      .then((res) => {
+        // 새 csrf_token 을 응답 body 에서 받아 sessionStorage 갱신
+        const newCsrf = res?.data?.data?.csrf_token
+        if (newCsrf) setCsrfToken(newCsrf)
+        return res
+      })
       .finally(() => {
         refreshPromise = null
       })
@@ -93,7 +122,14 @@ export function createApi() {
 
   // 응답: envelope unwrap + 401 자동 refresh & retry
   instance.interceptors.response.use(
-    (res) => res.data?.data,
+    (res) => {
+      const data = res.data?.data
+      // /auth/me 응답에 포함된 csrf_token 을 자동으로 sessionStorage 에 저장
+      if (data && typeof data === 'object' && data.csrf_token) {
+        setCsrfToken(data.csrf_token)
+      }
+      return data
+    },
     async (err) => {
       const original = err.config
       const status = err.response?.status
