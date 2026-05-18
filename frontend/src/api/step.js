@@ -1,4 +1,4 @@
-import { createApi, resolveApiUrl } from './_client'
+import { createApi, getAccessToken, resolveApiUrl } from './_client'
 
 const api = createApi()
 
@@ -30,10 +30,12 @@ export function createSidePanelStream(stepId) {
       ;(async () => {
         try {
           const url = resolveApiUrl('GET', `/steps/${stepId}/sidepanel-stream`)
+          const accessToken = getAccessToken()
           const response = await fetch(url, {
             method: 'GET',
             headers: {
               Accept: 'text/event-stream',
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
             },
             credentials: 'include',
             signal: abortController.signal,

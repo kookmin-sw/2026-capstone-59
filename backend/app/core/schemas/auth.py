@@ -16,10 +16,14 @@ class UserProfileResponse(BaseModel):
     nickname: str
     provider: str
     csrf_token: str | None = None
+    # AI Lambda 의 Function URL 호출용 — 별도 도메인이라 쿠키가 안 가서
+    # 프론트가 Authorization: Bearer 로 보낼 수 있도록 body 로도 노출.
+    access_token: str | None = None
 
 
 class CsrfTokenResponse(BaseModel):
     csrf_token: str
+    access_token: str | None = None
 
 
 class OAuthUserInfo(BaseModel):

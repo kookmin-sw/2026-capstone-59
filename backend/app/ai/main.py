@@ -1,12 +1,10 @@
 from fastapi import Depends, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from app.ai.routers import steps, projects
 from app.core import exception_handlers
 from app.core.auth.csrf import verify_csrf
 from app.core.auth.dependencies import get_current_user_id
-from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.schemas.health import HealthResponse
 
@@ -14,13 +12,8 @@ setup_logging()
 
 app = FastAPI(title="Poco AI Orchestrator")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS 는 Function URL 의 CORS 설정으로 edge 에서 처리.
+# FastAPI CORSMiddleware 를 켜면 헤더가 중복되어 브라우저가 거부함.
 
 exception_handlers.register(app)
 

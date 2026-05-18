@@ -27,10 +27,13 @@ const AI_ROUTES = [
   { method: 'POST', pattern: new RegExp(`^/projects/${UUID}/design-export$`) },
 ]
 
-function pickBaseUrl(method, path) {
+function isAiRoute(method, path) {
   const m = (method || 'GET').toUpperCase()
-  const isAi = AI_ROUTES.some((r) => r.method === m && r.pattern.test(path))
-  return isAi ? AI_BASE : BUSINESS_BASE
+  return AI_ROUTES.some((r) => r.method === m && r.pattern.test(path))
+}
+
+function pickBaseUrl(method, path) {
+  return isAiRoute(method, path) ? AI_BASE : BUSINESS_BASE
 }
 
 // path 를 절대 URL 로 변환. fetch (SSE 등) 직접 호출에 사용.
@@ -38,10 +41,15 @@ export function resolveApiUrl(method, path) {
   return `${pickBaseUrl(method, path)}${path}`
 }
 
-// cross-site 셋업에서 JS 가 csrf 쿠키를 읽을 수 없으므로,
-// 백엔드가 /auth/me, /auth/refresh 응답 body 로 내려준 값을
+// cross-site 셋업에서 JS 가 쿠키를 직접 읽을 수 없으므로,
+// 백엔드가 /auth/me, /auth/refresh 응답 body 로 내려준 토큰들을
 // sessionStorage 에 보관해 헤더로 부착한다.
+//
+// - csrf_token : 모든 mutating 요청의 X-CSRF-Token 헤더
+// - access_token: AI Lambda Function URL 호출 시 Authorization 헤더
+//                 (Function URL 은 별도 도메인이라 쿠키가 안 감)
 const CSRF_STORAGE_KEY = 'csrf_token'
+const ACCESS_TOKEN_STORAGE_KEY = 'access_token'
 
 export function getCsrfToken() {
   try {
@@ -60,13 +68,34 @@ export function setCsrfToken(token) {
   }
 }
 
-export function clearCsrfToken() {
+export function getAccessToken() {
   try {
-    sessionStorage.removeItem(CSRF_STORAGE_KEY)
+    return sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function setAccessToken(token) {
+  if (!token) return
+  try {
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token)
   } catch {
     /* */
   }
 }
+
+export function clearAuthTokens() {
+  try {
+    sessionStorage.removeItem(CSRF_STORAGE_KEY)
+    sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY)
+  } catch {
+    /* */
+  }
+}
+
+// 후위 호환을 위해 유지 (auth.js 의 logout 에서 사용)
+export const clearCsrfToken = clearAuthTokens
 
 // 동시 다발의 401 을 한 번의 refresh 로 합치기 위한 단일 promise.
 let refreshPromise = null
@@ -76,9 +105,10 @@ function refreshTokens() {
     refreshPromise = axios
       .post(`${BUSINESS_BASE}/auth/refresh`, null, { withCredentials: true })
       .then((res) => {
-        // 새 csrf_token 을 응답 body 에서 받아 sessionStorage 갱신
-        const newCsrf = res?.data?.data?.csrf_token
-        if (newCsrf) setCsrfToken(newCsrf)
+        // 새 csrf_token / access_token 을 응답 body 에서 받아 sessionStorage 갱신
+        const data = res?.data?.data
+        if (data?.csrf_token) setCsrfToken(data.csrf_token)
+        if (data?.access_token) setAccessToken(data.access_token)
         return res
       })
       .finally(() => {
@@ -107,16 +137,22 @@ export function createApi() {
 
   attachRouting(instance)
 
-  // CSRF 헤더 부착
+  // CSRF + Authorization Bearer 헤더 부착
   instance.interceptors.request.use((config) => {
+    config.headers = config.headers ?? {}
+
     const mutating = ['post', 'put', 'patch', 'delete']
     if (mutating.includes(config.method?.toLowerCase())) {
       const csrf = getCsrfToken()
-      if (csrf) {
-        config.headers = config.headers ?? {}
-        config.headers['X-CSRF-Token'] = csrf
-      }
+      if (csrf) config.headers['X-CSRF-Token'] = csrf
     }
+
+    // AI 라우트는 별도 도메인이라 쿠키가 안 가므로 Bearer 헤더로 폴백
+    if (isAiRoute(config.method, config.url)) {
+      const accessToken = getAccessToken()
+      if (accessToken) config.headers['Authorization'] = `Bearer ${accessToken}`
+    }
+
     return config
   })
 
@@ -124,9 +160,10 @@ export function createApi() {
   instance.interceptors.response.use(
     (res) => {
       const data = res.data?.data
-      // /auth/me 응답에 포함된 csrf_token 을 자동으로 sessionStorage 에 저장
-      if (data && typeof data === 'object' && data.csrf_token) {
-        setCsrfToken(data.csrf_token)
+      // /auth/me, /auth/refresh 등의 응답에 토큰이 포함되면 sessionStorage 갱신
+      if (data && typeof data === 'object') {
+        if (data.csrf_token) setCsrfToken(data.csrf_token)
+        if (data.access_token) setAccessToken(data.access_token)
       }
       return data
     },
@@ -145,9 +182,13 @@ export function createApi() {
         original._retry = true
         try {
           await refreshTokens()
+          // refresh 로 갱신된 새 토큰들로 헤더 교체
+          original.headers = original.headers ?? {}
           const newCsrf = getCsrfToken()
-          if (newCsrf && original.headers) {
-            original.headers['X-CSRF-Token'] = newCsrf
+          if (newCsrf) original.headers['X-CSRF-Token'] = newCsrf
+          if (isAiRoute(original.method, original.url)) {
+            const newAccess = getAccessToken()
+            if (newAccess) original.headers['Authorization'] = `Bearer ${newAccess}`
           }
           return instance(original)
         } catch (refreshErr) {

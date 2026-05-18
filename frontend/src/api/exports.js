@@ -1,4 +1,4 @@
-import { createApi, getCsrfToken, resolveApiUrl } from './_client'
+import { createApi, getAccessToken, getCsrfToken, resolveApiUrl } from './_client'
 
 const api = createApi()
 
@@ -17,6 +17,7 @@ export function createDesignExportStream(projectId, selectedStepIds) {
       ;(async () => {
         try {
           const csrf = getCsrfToken()
+          const accessToken = getAccessToken()
           const url = resolveApiUrl('POST', `/projects/${projectId}/design-export`)
           const res = await fetch(url, {
             method: 'POST',
@@ -25,6 +26,7 @@ export function createDesignExportStream(projectId, selectedStepIds) {
               'Content-Type': 'application/json',
               Accept: 'text/event-stream',
               ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
             },
             body: JSON.stringify({ selected_step_ids: selectedStepIds }),
             signal: abortController.signal,
