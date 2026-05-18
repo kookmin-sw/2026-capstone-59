@@ -1,304 +1,833 @@
-/* ====== Global page resets via :global ====== */
-:global(html) {
-  scroll-behavior: auto;
-  scroll-padding-top: 72px;
-}
-:global(body) {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  font-family: 'Pretendard', 'Pretendard Variable', system-ui, sans-serif;
+/* ===== Tokens =====
+   Poco 랜딩페이지 공통 컬러·타이포 토큰. 하나라도 바꾸면 페이지 전반 영향. */
+.page {
+  --s0: #ffffff;
+  --s1: #f8fafc;
+  --s2: #f1f5f9;
+  --hero-tint: #eeecf7;
+
+  --t-primary: #000000;
+  --t-strong: #1f2937;
+  --t-body: #4b5563;
+  --t-meta: #6b7280;
+
+  --p: #6c63b5;
+  --p-hover: #5b4a9c;
+  --p-faint: #ede9fe;
+  --p-faintest: #ddd6fe;
+
+  --border: #e5e7eb;
+  --border-soft: #eef0f3;
+
+  --maxw: 1200px;
+  --maxw-prose: 1080px;
+  --pad-x: 80px;
+
+  --f-sans: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --f-mono: ui-monospace, SFMono-Regular, Menlo, "JetBrains Mono", monospace;
+
+  font-family: var(--f-sans);
+  color: var(--t-primary);
+  background: var(--s0);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.01em;
+  min-width: 1280px;
+  word-break: keep-all;
 }
 
-/* Global keyframes (인라인 style 의 animation 참조를 위해) */
-:global(@keyframes pocoFloat) {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
-}
-:global(@keyframes pocoPulse) {
-  0%, 100% { transform: scale(1);   opacity: 0.2; }
-  50%      { transform: scale(1.6); opacity: 0;   }
-}
-/* 발자국이 "탁" 찍히는 효과 — 처음엔 살짝 위에서 떨어지며 fade-in,
-   잠시 머문 뒤 천천히 사라지고, 사이클 끝까지 비활성 유지 */
-:global(@keyframes pocoPawStamp) {
-  0%   { opacity: 0; transform: translate(-50%, calc(-50% - 10px)) scale(0.6); }
-  6%   { opacity: 0.7; transform: translate(-50%, -50%) scale(1.04); }
-  10%  { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
-  85%  { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1); }
-}
+.page a { color: inherit; text-decoration: none; }
 
-/* ====== Snap section ====== */
-.snapSection {
-  min-height: 100vh;
-  width: 100%;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: 80px 56px;
-  position: relative;
-}
-
-/* Hero 는 sticky nav 와 겹치지 않도록 top 정렬 + 충분한 padding-top */
-.heroSection {
-  justify-content: flex-start;
-  padding-top: 120px;
-  padding-bottom: 60px;
-}
-.hasFooter {
-  justify-content: space-between;
-  padding: 0;
-}
-.hasFooter > .snapCta {
-  flex: 1;
+/* ===== NAV ===== */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 68px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 80px 56px;
-  width: 100%;
+  justify-content: space-between;
+  padding: 0 40px;
+  background: rgba(255, 255, 255, 0);
+  transition: background 0.35s ease, backdrop-filter 0.35s ease, border-color 0.35s ease;
+  border-bottom: 1px solid transparent;
+  font-family: var(--f-sans);
+}
+.navScrolled {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border-bottom-color: var(--border-soft);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: 17px;
+  color: var(--t-primary);
+}
+.brandDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--t-primary);
+  position: relative;
+}
+.brandDot::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--p);
+}
+.navMenu {
+  display: flex;
+  gap: 36px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  color: var(--t-body);
+}
+.navMenu a:hover { color: var(--t-primary); }
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.navLogout {
+  appearance: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--t-body);
+  padding: 6px 0;
+  transition: color 0.2s ease;
+}
+.navLogout:hover { color: var(--t-primary); }
+.navCta {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--p);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.navCta:hover {
+  background: var(--p-hover);
+  transform: translateY(-1px);
 }
 
-/* ====== Sticky nav ====== */
-.navSticky {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: #FFFFFF;
-  border-bottom: 1px solid #ECECF2;
+/* ===== Buttons ===== */
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--p);
+  color: #fff;
+  padding: 16px 28px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s ease, transform 0.18s ease, box-shadow 0.25s ease;
 }
+.btnPrimary:hover {
+  background: var(--p-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 36px -18px rgba(108, 99, 181, 0.55);
+}
+.btnPrimary .arr { transition: transform 0.2s ease; }
+.btnPrimary:hover .arr { transform: translateX(3px); }
+.btnText {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--t-primary);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 16px 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.25s ease;
+}
+.btnText:hover { border-bottom-color: var(--t-primary); }
 
-/* ====== Reveal on scroll ====== */
+/* ===== Reveal — IntersectionObserver 진입 시 in 클래스로 페이드 ===== */
 .reveal {
   opacity: 0;
-  transform: translateY(var(--poco-reveal-y, 28px));
-  transition:
-    opacity 0.85s cubic-bezier(0.22, 0.61, 0.36, 1),
-    transform 0.85s cubic-bezier(0.22, 0.61, 0.36, 1);
-  will-change: opacity, transform;
+  transform: translateY(16px);
+  transition: opacity 1s ease, transform 1s ease;
 }
-.revealVisible {
+.revealIn {
   opacity: 1;
   transform: none;
 }
+.d1 { transition-delay: 0.12s; }
+.d2 { transition-delay: 0.24s; }
+.d3 { transition-delay: 0.36s; }
+.d4 { transition-delay: 0.48s; }
 
-/* ====== Card hover ====== */
-.card {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(20, 18, 40, 0.04), 0 28px 56px -28px rgba(124, 92, 255, 0.35);
-}
-
-/* ====== Source card (다크 테마) hover ====== */
-.sourceCard:hover {
-  transform: translateY(-4px);
-  border-color: rgba(124, 92, 255, 0.4) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 32px 64px -16px rgba(124, 92, 255, 0.3);
-}
-
-/* ====== Hero entrance animations (scoped) ====== */
-@keyframes pocoFadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes pocoFadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes pocoFadeScale {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes pocoCTAGlow {
-  0%, 100% { box-shadow: 0 1px 2px rgba(124,92,255,0.3), 0 8px 24px -8px rgba(124,92,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.06); }
-  50%      { box-shadow: 0 1px 2px rgba(124,92,255,0.4), 0 14px 36px -8px rgba(124,92,255,0.6),  inset 0 -1px 0 rgba(0,0,0,0.06); }
-}
-
-.fadeUp    { opacity: 0; animation: pocoFadeUp 0.7s ease forwards; }
-.fadeIn    { opacity: 0; animation: pocoFadeIn 0.7s ease forwards; }
-.fadeScale { opacity: 0; animation: pocoFadeScale 0.7s ease forwards; }
-.ctaGlow   { animation: pocoCTAGlow 3.6s ease-in-out infinite; border-radius: 99px; display: inline-block; }
-
-/* ====== Stage number hover ====== */
-.stageNumber:hover {
-  transform: translateY(-3px);
-}
-
-/* ====== Gallery chip hover ====== */
-.galleryChip {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  cursor: default;
-}
-.galleryChip:hover {
-  transform: translateY(-2px) scale(1.03);
-  background: #F4F1FF !important;
-  box-shadow: 0 6px 16px -8px rgba(124, 92, 255, 0.4);
-}
-
-/* ====== 비교 표 ====== */
-.comparisonTable {
-  background: #fff;
-  border: 1px solid #ECECF2;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(20, 18, 40, 0.03);
-}
-
-.comparisonTable table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: inherit;
-}
-
-.comparisonTable thead th {
-  background: #FAFAFD;
-  padding: 16px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #3C3C48;
-  text-align: center;
-  border-bottom: 1px solid #ECECF2;
-  letter-spacing: -0.01em;
-  vertical-align: middle;
-}
-
-.comparisonTable thead th.pocoCol {
-  background: #F4F1FF;
-  color: #7C5CFF;
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.comparisonTable .colSub {
-  display: inline-block;
-  margin-top: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #7A7A88;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  letter-spacing: 0.04em;
-}
-
-.comparisonTable tbody tr {
-  border-bottom: 1px solid #F0EEF7;
-}
-.comparisonTable tbody tr:last-child {
-  border-bottom: none;
-}
-
-.comparisonTable tbody th.tableLabelCol {
-  text-align: left;
-  padding: 16px 18px;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #11121A;
-  background: #FAFAFD;
-  width: 18%;
-  letter-spacing: -0.01em;
-}
-
-.comparisonTable tbody td {
-  padding: 16px 12px;
-  text-align: center;
-  font-size: 13px;
-  color: #3C3C48;
-  vertical-align: middle;
-  letter-spacing: -0.01em;
-}
-
-.comparisonTable tbody td.pocoCol {
-  background: #FBFAFF;
-}
-
-.comparisonTable .cellText {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #7A7A88;
-  line-height: 1.4;
-}
-
-.comparisonTable tbody td.pocoCol .cellText {
-  color: #3C3C48;
-  font-weight: 500;
-}
-
-/* ====== Marquee — 갤러리 무한 가로 스크롤 ====== */
-.marqueeWrap {
+/* ===== Placeholder ===== */
+.ph {
   position: relative;
+  background: var(--s0);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(108, 99, 181, 0.045) 0 10px,
+    transparent 10px 20px
+  );
+  border: 1px dashed var(--p-faintest);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.phLabel {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  color: var(--t-meta);
+  background: var(--s0);
+  border: 1px solid var(--border);
+  padding: 7px 12px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+.phLabel::before {
+  content: "PLACEHOLDER";
+  color: var(--p);
+  margin-right: 10px;
+  font-weight: 500;
+}
+
+/* ===== SCENE 1 — Opening ===== */
+.scene1 {
+  position: relative;
+  min-height: 100vh;
+  padding: 168px var(--pad-x) 0;
+  background: linear-gradient(180deg, var(--hero-tint) 0%, #f4f1fa 18%, #ffffff 72%);
+  overflow: hidden;
+}
+.scene1Inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: 64px;
+  row-gap: 56px;
+  min-height: calc(100vh - 168px);
+}
+.heroTitle {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: clamp(40px, 5.5vw, 80px);
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  font-weight: 800;
+  color: var(--t-primary);
+  text-wrap: balance;
+  max-width: 1040px;
+}
+.heroSub {
+  grid-column: 1 / 2;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.7;
+  color: var(--t-body);
+  font-weight: 400;
+  max-width: 520px;
+  align-self: end;
+  padding-bottom: 24px;
+}
+.heroVis {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+  align-self: end;
+  justify-self: end;
+  width: 142%;
+  margin-right: -12%;
+  margin-bottom: 8px;
+  transform: translateY(56px);
+}
+.heroVis img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.heroCtas {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 80px;
+  align-self: end;
+  margin-top: -16px;
+}
+.heroMeta {
+  position: absolute;
+  bottom: 28px;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  max-width: var(--maxw);
+  margin: 0 auto;
+  color: var(--t-meta);
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.heroMetaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--t-meta);
+  opacity: 0.6;
+}
+
+/* ===== SCENE 2 — The Quiet Question ===== */
+.scene2 {
+  background: var(--s0);
+  padding: 200px var(--pad-x);
+}
+.scene2Inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+.scene2Intro {
+  font-size: 14px;
+  color: var(--t-meta);
+  font-weight: 400;
+  margin: 0 0 88px;
+  letter-spacing: 0;
+}
+.scene2Quotes {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+}
+.scene2Q {
+  font-size: 28px;
+  line-height: 1.6;
+  color: var(--t-strong);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+.scene2Q::before {
+  content: "“ ";
+  color: var(--t-meta);
+  font-weight: 400;
+}
+.scene2Q::after {
+  content: " ”";
+  color: var(--t-meta);
+  font-weight: 400;
+}
+.scene2Closer {
+  margin: 96px 0 0 auto;
+  max-width: 640px;
+  font-size: 22px;
+  line-height: 1.55;
+  color: var(--p);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-align: right;
+}
+
+/* ===== SCENE 3 — Sticky Showcase ===== */
+.scene3 {
+  background: var(--s0);
+  padding: 80px 0 0;
+}
+.scene3Intro {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--pad-x) 80px;
+}
+.scene3Intro h2 {
+  margin: 0;
+  font-size: clamp(36px, 4vw, 56px);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  font-weight: 500;
+  color: var(--t-primary);
+}
+.stage { position: relative; }
+.stageInner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--pad-x);
+  display: grid;
+  grid-template-columns: 40% 60%;
+  column-gap: 56px;
+  align-items: start;
+}
+/* LEFT: text panels with timeline rail */
+.stageText {
+  position: relative;
+  padding-left: 40px;
+}
+.timeline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  pointer-events: none;
+}
+.timelineLine {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+}
+.timelineFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(180deg, var(--p) 0%, var(--p) 80%, rgba(108, 99, 181, 0) 100%);
+  transition: height 0.15s linear;
+}
+.timelineDot {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--s0);
+  border: 2px solid var(--border);
+  transition: border-color 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+}
+.timelineDotDone { border-color: var(--p); background: var(--p); }
+.timelineDotCurrent {
+  border-color: var(--p);
+  background: var(--s0);
+  box-shadow: 0 0 0 4px var(--p-faint), 0 0 0 5px rgba(108, 99, 181, 0.1);
+}
+.timelineCursor {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  top: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--p);
+  box-shadow: 0 0 12px rgba(108, 99, 181, 0.6);
+}
+.panel {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 460px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.panelIn { opacity: 1; transform: none; }
+.panel h3 {
+  margin: 0 0 24px;
+  font-size: 32px;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--t-primary);
+  text-wrap: balance;
+}
+.panelBody {
+  margin: 0 0 32px;
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--t-body);
+  font-weight: 400;
+  max-width: 420px;
+}
+.panelCaption {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--t-meta);
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.panelCaption::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: var(--p);
+  opacity: 0.6;
+}
+
+/* RIGHT: pinned iMac frame */
+.stageDevice {
+  position: sticky;
+  top: 8vh;
+  align-self: start;
+}
+.device {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  margin-left: auto;
+}
+.deviceFrame {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+/* show-imac.png 측정 좌표: L=2.75% T=2.96% W=94.5% H=62.72% */
+.deviceDisplay {
+  position: absolute;
+  left: 2.75%;
+  top: 2.96%;
+  width: 94.5%;
+  height: 62.72%;
+  overflow: hidden;
+  background: var(--s0);
+  z-index: 2;
+}
+.screens {
+  position: absolute;
+  inset: 0;
+}
+.screen {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.55s ease;
+  background: var(--s0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.screenActive { opacity: 1; }
+.screen .ph {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: 1px dashed rgba(108, 99, 181, 0.35);
+}
+
+/* ===== SCENE 4 — Foundation (SDLC diagram) ===== */
+.scene4 {
+  background: var(--s0);
+  padding: 200px var(--pad-x);
+}
+.scene4Inner {
+  max-width: 920px;
+  margin: 0 auto;
+}
+.scene4Label {
+  font-size: 14px;
+  color: var(--t-meta);
+  font-weight: 400;
+  margin: 0 0 88px;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+/* SDLC 다이어그램 — 6 stage horizontal grid */
+.sdlc {
+  position: relative;
+  padding: 8px 0 0;
+  margin: 0 0 28px;
+}
+.sdlcStages {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: start;
+  gap: 0;
+}
+.sdlcStage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+}
+/* circular node — default outlined, active filled */
+.sdlcNode {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--s0);
+  border: 2px solid var(--p);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--f-mono);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--p);
+  position: relative;
+  z-index: 2;
+  transition: background 0.35s ease, color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+}
+.sdlcStageActive .sdlcNode {
+  background: var(--p);
+  color: #fff;
+  box-shadow: 0 8px 24px -10px rgba(108, 99, 181, 0.55);
+  transform: scale(1.04);
+}
+/* connector — dashed faint, lit purple when stage.lit */
+.sdlcStage:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 32px;
+  left: calc(50% + 38px);
+  right: calc(-50% + 38px);
+  height: 0;
+  border-top: 1.5px dashed var(--p-faintest);
+  z-index: 0;
+  transition: border-color 0.45s ease;
+}
+.sdlcStageLit:not(:last-child)::after {
+  border-top-color: var(--p);
+}
+/* small diamond gate marker between stages */
+.sdlcStage:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 32px;
+  left: 100%;
+  width: 7px;
+  height: 7px;
+  background: var(--p-faintest);
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 1px;
+  z-index: 1;
+  box-shadow: 0 0 0 4px var(--s0);
+  transition: background 0.35s ease;
+}
+.sdlcStageLit:not(:last-child)::before {
+  background: var(--p);
+  opacity: 0.7;
+}
+.sdlcName {
+  font-size: 16px;
+  color: var(--t-primary);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  text-align: center;
+  margin-top: 4px;
+}
+.sdlcEn {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--p);
+  opacity: 0.7;
+  letter-spacing: 0.02em;
+  margin-top: -8px;
+  text-align: center;
+}
+
+.sdlcCount {
+  text-align: center;
+  color: var(--t-meta);
+  font-size: 13px;
+  font-family: var(--f-mono);
+  letter-spacing: 0.04em;
+  margin: 56px 0 0;
+}
+.sdlcCount b { color: var(--t-primary); font-weight: 500; }
+
+/* Footnote */
+.scene4Foot {
+  margin: 88px auto 0;
+  max-width: 640px;
+  border-top: 1px solid var(--border);
+  padding-top: 28px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--t-meta);
+  font-weight: 400;
+}
+.scene4Foot p { margin: 0 0 18px; }
+.scene4Foot ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: cite;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scene4Foot li {
+  counter-increment: cite;
+  padding-left: 28px;
+  position: relative;
+  font-size: 12.5px;
+  color: var(--t-meta);
+}
+.scene4Foot li::before {
+  content: "[" counter(cite) "]";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--f-mono);
+  color: var(--p);
+  font-size: 11px;
+}
+
+/* ===== SCENE 5 — Who Uses ===== */
+.scene5 {
+  background: var(--s0);
+  padding: 200px var(--pad-x);
+}
+.scene5Inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+.scene5 h2 {
+  margin: 0 0 120px;
+  font-size: 28px;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--t-primary);
+}
+.scene5Cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+.scene5Col {
+  border-top: 1px solid var(--border);
+  padding-top: 36px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent,
-    black 6%,
-    black 94%,
-    transparent
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    black 6%,
-    black 94%,
-    transparent
-  );
+  position: relative;
+}
+.scene5Glyph {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  font-size: 38px;
+  line-height: 1;
+  background: var(--s0);
+  padding-right: 14px;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+.scene5Col h3 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--t-primary);
+  text-wrap: balance;
+}
+.scene5Col p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--t-meta);
+  font-weight: 400;
 }
 
-.marqueeRow {
+/* ===== SCENE 6 — Closing ===== */
+.scene6 {
+  position: relative;
+  min-height: 100vh;
+  padding: 160px var(--pad-x) 80px;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f2fa 60%, var(--hero-tint) 100%);
   display: flex;
-  overflow: hidden;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
-
-.marqueeTrack {
+.scene6Inner {
+  max-width: 880px;
+  margin: 0 auto;
   display: flex;
-  gap: 14px;
-  flex-shrink: 0;
-  width: max-content;
-  will-change: transform;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+.scene6 h2 {
+  margin: 0;
+  font-size: clamp(40px, 5.5vw, 80px);
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  font-weight: 800;
+  color: var(--t-primary);
+  text-wrap: balance;
+}
+.scene6Sub {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.55;
+  color: var(--p);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.scene6Footer {
+  margin-top: 120px;
+  color: var(--t-meta);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.scene6Footer button {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.scene6Footer button:hover,
+.scene6Footer a:hover {
+  color: var(--t-primary);
+}
+.scene6FooterSep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--t-meta);
+  opacity: 0.5;
 }
 
-/* 동일한 콘텐츠가 2배 길이로 들어있으므로 -50% 만큼 이동하면 seamless loop */
-@keyframes pocoMarqueeLeft {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@keyframes pocoMarqueeRight {
-  from { transform: translateX(-50%); }
-  to   { transform: translateX(0); }
-}
-
-/* 4배 반복 시 -25% 만큼 이동하면 seamless loop */
-@keyframes pocoMarqueeLeft4x {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-25%); }
-}
-@keyframes pocoMarqueeRight4x {
-  from { transform: translateX(-25%); }
-  to   { transform: translateX(0); }
-}
-
-/* hover 시 일시 정지 — 사용자가 칩을 읽고 싶을 때 유용 */
-.marqueeWrap:hover .marqueeTrack {
-  animation-play-state: paused;
-}
-
-/* ====== Reduced motion ====== */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-  .reveal {
-    opacity: 1;
-    transform: none;
-  }
+.page ::selection {
+  background: var(--p-faintest);
+  color: var(--t-primary);
 }
