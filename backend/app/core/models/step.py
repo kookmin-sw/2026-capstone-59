@@ -74,6 +74,16 @@ class StepContent(Base):
     dictionary: Mapped[str | None] = mapped_column(Text, nullable=True)
     mentoring: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Side panel 비동기 폴링 상태.
+    # streaming_status: idle / pending / streaming / done / error
+    # streaming_raw   : 생성 중 누적되는 raw LLM 응답 (폴링으로 실시간 노출)
+    streaming_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="idle"
+    )
+    streaming_raw: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=""
+    )
+
     step: Mapped["Step"] = relationship(back_populates="content")
 
 

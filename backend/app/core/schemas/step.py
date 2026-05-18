@@ -74,6 +74,19 @@ class NotionTemplateResponse(BaseModel):
     notion_page_url: str
 
 
+class SidePanelStartResponse(BaseModel):
+    """POST /steps/{step_id}/sidepanel-start 응답."""
+    step_id: UUID
+    status: str  # pending / streaming / done
+
+
+class SidePanelContentResponse(BaseModel):
+    """GET /steps/{step_id}/sidepanel-content 폴링 응답."""
+    status: str  # idle / pending / streaming / done / error
+    content: str  # 누적 raw text (생성 중에도 부분 노출)
+    is_complete: bool
+
+
 class ProjectInfo(BaseModel):
     project_id: UUID
     name: str
