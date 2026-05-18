@@ -8,8 +8,10 @@ from app.business.dependencies import get_owned_project, get_owned_step
 from app.core.api.route import EnvelopeRouter
 from app.core.models.project import Project as ProjectModel
 from app.core.models.step import Step as StepModel
+from app.core.models.step import StepContent as StepContentModel
 from app.core.schemas.step import (
     RequiredStepListResponse,
+    SidePanelContentResponse,
     StepKeepResponse,
     StepKeepUpdateRequest,
     StepTreeResponse,
@@ -60,3 +62,26 @@ def update_step_keep(
 ) -> StepKeepResponse:
     """Step.is_keep 값을 변경한다."""
     return step_service.update_step_keep(db, step.id, payload.is_keep)
+
+
+@router.get(
+    "/{step_id}/sidepanel-content",
+    status_code=http_status.HTTP_200_OK,
+)
+def get_side_panel_content(
+    db: Session = Depends(get_db),
+    step: StepModel = Depends(get_owned_step),
+) -> SidePanelContentResponse:
+    """Side panel 생성 진행 상태 폴링.
+
+    POST /steps/{step_id}/sidepanel-start 로 시작된 작업의 누적 raw text 와
+    상태를 반환. 매 호출 200 OK + body 의 status 필드로 상태 전달.
+    """
+    content = db.get(StepContentModel, step.id)
+    if content is None:
+        return SidePanelContentResponse(status="idle", content="", is_complete=False)
+    return SidePanelContentResponse(
+        status=content.streaming_status,
+        content=content.streaming_raw or "",
+        is_complete=content.streaming_status in ("done", "error"),
+    )

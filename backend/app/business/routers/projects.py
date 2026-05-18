@@ -11,7 +11,9 @@ from app.core.api.route import EnvelopeRouter
 from app.core.auth.dependencies import get_current_user
 from app.core.models.app_user import AppUser as AppUserModel
 from app.core.models.project import Project as ProjectModel
+from app.core.models.design_export_job import DesignExportJob as DesignExportJobModel
 from app.core.schemas.project import (
+    DesignExportJobResponse,
     ProjectCreateRequest,
     ProjectListResponse,
     ProjectResponse,
@@ -98,3 +100,31 @@ def get_accepted_required_steps(
     project: ProjectModel = Depends(get_owned_project),
 ) -> AcceptedRequiredStepListResponse:
     return step_service.get_accepted_required_steps(db, project.id)
+
+
+@router.get(
+    "/{project_id}/design-export-jobs/{job_id}",
+    status_code=http_status.HTTP_200_OK,
+)
+def get_design_export_job(
+    job_id: UUID,
+    db: Session = Depends(get_db),
+    project: ProjectModel = Depends(get_owned_project),
+) -> DesignExportJobResponse:
+    """Design Export 진행 상태 폴링.
+
+    매 호출 200 OK + body 의 status 필드로 상태 전달.
+    project 소유권은 get_owned_project 가 검증.
+    """
+    job = db.get(DesignExportJobModel, job_id)
+    if job is None or job.project_id != project.id:
+        return DesignExportJobResponse(
+            status="pending", is_complete=False
+        )
+    return DesignExportJobResponse(
+        status=job.status,
+        markdown=job.markdown,
+        filename=job.filename,
+        error_code=job.error_code,
+        is_complete=job.status in ("done", "error"),
+    )

@@ -591,7 +591,7 @@ def get_step_for_stream(db: Session, step_id: uuid.UUID) -> StepModel:
 
 
 def save_side_panel_content(db: Session, step_id: uuid.UUID, full_text: str) -> None:
-    """SSE 스트리밍 완료 후 누적 텍스트를 파싱해 DB에 저장."""
+    """누적 텍스트를 파싱해 mentoring/dictionary 컬럼에 영속화."""
     from pydantic import ValidationError
     from ai.schemas.side_panel import SidePanelOutput
 
@@ -622,3 +622,73 @@ def save_side_panel_content(db: Session, step_id: uuid.UUID, full_text: str) -> 
         "ai: side_panel content saved",
         extra={"step_id": str(step_id), "text_len": len(full_text)},
     )
+
+
+# ─────────────────────────────────────────────────────────────
+# Side panel — 비동기 폴링 방식
+# ─────────────────────────────────────────────────────────────
+
+
+def _ensure_step_content(db: Session, step_id: uuid.UUID) -> StepContentModel:
+    content = db.get(StepContentModel, step_id)
+    if content is None:
+        content = StepContentModel(step_id=step_id)
+        db.add(content)
+        db.flush()
+    return content
+
+
+def mark_side_panel_pending(db: Session, step_id: uuid.UUID) -> None:
+    """생성 시작 직전 — 누적 버퍼 초기화 + status='pending'."""
+    content = _ensure_step_content(db, step_id)
+    content.streaming_status = "pending"
+    content.streaming_raw = ""
+    db.commit()
+
+
+def append_side_panel_chunk(
+    db: Session, step_id: uuid.UUID, accumulated: str
+) -> None:
+    """chunk 도착마다 누적 텍스트 갱신 + status='streaming'."""
+    content = _ensure_step_content(db, step_id)
+    content.streaming_status = "streaming"
+    content.streaming_raw = accumulated
+    db.commit()
+
+
+def mark_side_panel_done(db: Session, step_id: uuid.UUID) -> None:
+    content = _ensure_step_content(db, step_id)
+    content.streaming_status = "done"
+    db.commit()
+
+
+def mark_side_panel_error(db: Session, step_id: uuid.UUID) -> None:
+    content = _ensure_step_content(db, step_id)
+    content.streaming_status = "error"
+    db.commit()
+
+
+async def run_side_panel_generation(db: Session, step_id: uuid.UUID) -> None:
+    """LLM 으로부터 chunk 를 받아 DB 에 누적 저장.
+
+    클라이언트 끊김 여부와 무관하게 Lambda 가 timeout 까지 실행되어
+    결과는 DB 에 보존된다.
+    """
+    step = get_step_for_stream(db, step_id)
+    request = build_side_panel_request(db, step)
+
+    mark_side_panel_pending(db, step_id)
+    accumulated: list[str] = []
+    try:
+        async for chunk in orchestrator.call_side_panel_stream(request):
+            accumulated.append(chunk)
+            append_side_panel_chunk(db, step_id, "".join(accumulated))
+        save_side_panel_content(db, step_id, "".join(accumulated))
+        mark_side_panel_done(db, step_id)
+    except Exception:
+        logger.exception(
+            "ai: side_panel generation failed",
+            extra={"step_id": str(step_id)},
+        )
+        mark_side_panel_error(db, step_id)
+        raise

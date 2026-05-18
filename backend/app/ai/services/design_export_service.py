@@ -22,11 +22,49 @@ from app.core.exceptions import (
     DesignExportRateLimitError,
     ProjectNotFoundError,
 )
+from app.core.models.design_export_job import DesignExportJob
 from app.core.repositories import project as project_repo
 from app.core.repositories import step as step_repo
 
 _rate_limit_store: dict[str, float] = {}
 _RATE_LIMIT_SECONDS = 10
+
+
+# ─────────────────────────────────────────────────────────────
+# 비동기 폴링 — Job 헬퍼
+# ─────────────────────────────────────────────────────────────
+
+
+def create_job(db: Session, job_id: UUID, project_id: UUID) -> DesignExportJob:
+    """클라이언트가 생성한 job_id 로 row 등록. 이미 존재하면 그대로 반환."""
+    existing = db.get(DesignExportJob, job_id)
+    if existing is not None:
+        return existing
+    job = DesignExportJob(id=job_id, project_id=project_id, status="pending")
+    db.add(job)
+    db.commit()
+    return job
+
+
+def mark_job_done(
+    db: Session, job_id: UUID, markdown: str, filename: str
+) -> None:
+    job = db.get(DesignExportJob, job_id)
+    if job is None:
+        return
+    job.status = "done"
+    job.markdown = markdown
+    job.filename = filename
+    db.commit()
+
+
+def mark_job_error(db: Session, job_id: UUID, error_code: str) -> None:
+    job = db.get(DesignExportJob, job_id)
+    if job is None:
+        return
+    job.status = "error"
+    job.error_code = error_code
+    db.commit()
 
 
 def check_rate_limit(project_id: UUID) -> None:

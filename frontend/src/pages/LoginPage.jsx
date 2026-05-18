@@ -1,10 +1,11 @@
 import styles from './LoginPage.module.css'
 import { SiGoogle, SiNaver } from 'react-icons/si'
+import { resolveApiUrl } from '../api/_client'
 
 
 export default function LoginPage() {
   function handleLogin(provider) {
-    window.location.href = `${import.meta.env.VITE_API_URL || '/api'}/auth/${provider}/login`
+    window.location.href = resolveApiUrl('GET', `/auth/${provider}/login`)
   }
 
   return (

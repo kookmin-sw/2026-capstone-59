@@ -15,7 +15,7 @@ from app.core.auth.dependencies import get_current_user
 from app.core.config import settings
 from app.core.exceptions import InvalidTokenError
 from app.core.models.app_user import AppUser as AppUserModel
-from app.core.schemas.auth import UserProfileResponse
+from app.core.schemas.auth import CsrfTokenResponse, UserProfileResponse
 
 router = EnvelopeRouter()
 
@@ -58,8 +58,12 @@ def refresh_token(
     refresh_token: str | None = Cookie(
         default=None, alias=settings.REFRESH_COOKIE_NAME
     ),
-) -> None:
-    """Refresh Token 쿠키로 Access Token 갱신. 응답 쿠키도 모두 갱신."""
+) -> CsrfTokenResponse:
+    """Refresh Token 쿠키로 Access Token 갱신. 응답 쿠키도 모두 갱신.
+
+    cross-site 셋업에서 프론트 JS가 쿠키를 읽을 수 없으므로,
+    새 csrf_token 값을 body로도 함께 반환한다.
+    """
     if not refresh_token:
         raise InvalidTokenError("Refresh Token 쿠키가 없습니다.")
 
@@ -71,7 +75,7 @@ def refresh_token(
         refresh_token=tokens.refresh_token,
         csrf_token=csrf,
     )
-    return None
+    return CsrfTokenResponse(csrf_token=csrf)
 
 
 @router.post("/logout", status_code=http_status.HTTP_200_OK)
@@ -86,7 +90,16 @@ def logout(
 @router.get("/me", status_code=http_status.HTTP_200_OK)
 def get_me(
     user: AppUserModel = Depends(get_current_user),
+    csrf_cookie: str | None = Cookie(
+        default=None, alias=settings.CSRF_COOKIE_NAME
+    ),
     db: Session = Depends(get_db),
 ) -> UserProfileResponse:
-    """현재 로그인 사용자 정보."""
-    return auth_service.get_user_profile(db, user)
+    """현재 로그인 사용자 정보.
+
+    cross-site 셋업에서 프론트가 쿠키를 직접 읽지 못하므로 csrf_token 값을
+    body 에도 실어 보낸다. 이미 발급되어 있는 값을 그대로 노출 (재발급 X).
+    """
+    profile = auth_service.get_user_profile(db, user)
+    profile.csrf_token = csrf_cookie
+    return profile

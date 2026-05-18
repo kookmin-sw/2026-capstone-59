@@ -45,6 +45,12 @@
   color: #E26B6B;
 }
 
+.warnIcon {
+  width: 20px;
+  height: 20px;
+  color: #E2B048;
+}
+
 .message {
   flex: 1;
   font-size: 13.5px;

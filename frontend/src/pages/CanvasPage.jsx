@@ -20,9 +20,9 @@ import MdExportModal from '../components/canvas/MdExportModal'
 import DownloadNotification from '../components/canvas/DownloadNotification'
 
 import { getStages } from '../api/stage'
-import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep, getSidePanelContent } from '../api/step'
 import { createShare, deleteShare, getShareStatus } from '../api/projects'
-import { createDesignExportStream } from '../api/exports'
+import { createDesignExportStream, getDesignExportJobId, startDesignExport } from '../api/exports'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
 import { 
@@ -352,10 +352,11 @@ export default function CanvasPage() {
     buf.stream = stream
 
     stream.start({
-      onChunk: (delta) => {
+      // 폴링은 누적 content 전체를 전달 — 대입으로 처리 (중복 누적 방지)
+      onChunk: (content) => {
         const b = streamBuffers.current.get(nodeId)
         if (!b) return
-        b.text += delta
+        b.text = content
         b.onUpdate?.(b.text)
       },
       onDone: async () => {
@@ -654,7 +655,26 @@ export default function CanvasPage() {
     }
 
     const requestId = ++detailRequestRef.current
-    const buf = streamBuffers.current.get(node.id)
+    let buf = streamBuffers.current.get(node.id)
+
+    // 새로고침 등으로 in-memory buffer 가 유실된 경우 — 백엔드에 진행 상태 확인.
+    // streaming/pending 이면 폴링을 재개해 화면을 복구한다.
+    if (!buf && !detailCacheRef.current[node.id]) {
+      try {
+        const probe = await getSidePanelContent(node.id)
+        if (requestId !== detailRequestRef.current) return
+        if (probe.status === 'streaming' || probe.status === 'pending') {
+          startNodeStream(node.id)
+          buf = streamBuffers.current.get(node.id)
+          if (buf && probe.content) {
+            // 첫 폴링까지 기다리지 않고 누적된 raw text 를 미리 채워둠
+            buf.text = probe.content
+          }
+        }
+      } catch {
+        // probe 실패는 무시 — 아래 분기에서 자연스럽게 처리됨
+      }
+    }
 
     if (buf?.isDone) {
       setIsStreamMode(false)
@@ -1119,16 +1139,8 @@ export default function CanvasPage() {
     setDownloadStatus(null)
   }
 
-  function handleStartExport(selectedStepIds) {
-    setMdExportOpen(false)
-    setDownloadStatus('downloading')
-
-    // 이전 스트림 정리
-    exportStreamRef.current?.abort?.()
-
-    const stream = createDesignExportStream(projectId, selectedStepIds)
+  function runExportStream(stream) {
     exportStreamRef.current = stream
-
     stream.start({
       onComplete: (data) => {
         try {
@@ -1158,6 +1170,46 @@ export default function CanvasPage() {
       },
     })
   }
+
+  async function handleStartExport(selectedStepIds) {
+    setMdExportOpen(false)
+
+    // 사전 체크 — 이미 진행 중인 다운로드가 있으면 새 요청 보내지 말고 안내만.
+    if (exportStreamRef.current || getDesignExportJobId(projectId)) {
+      setDownloadStatus('rate_limited')
+      return
+    }
+
+    setDownloadStatus('downloading')
+
+    // POST 트리거 — 응답까지 await 해서 429 등을 즉시 감지.
+    const result = await startDesignExport(projectId, selectedStepIds)
+    if (result.error) {
+      const { code, status } = result.error
+      if (status === 429 || code === 'DESIGN_EXPORT_RATE_LIMITED') {
+        setDownloadStatus('rate_limited')
+      } else {
+        setDownloadStatus('error')
+      }
+      return
+    }
+
+    // 성공 — 폴링 시작
+    runExportStream(createDesignExportStream(projectId, result.jobId))
+  }
+
+  // 새로고침 후에도 진행 중이던 design-export 가 있으면 자동 재개.
+  // localStorage 에 보관된 job_id 로 폴링만 다시 시작 (POST 생략).
+  useEffect(() => {
+    if (!projectId) return
+    if (exportStreamRef.current) return // 이미 진행 중이면 skip
+    const pendingJobId = getDesignExportJobId(projectId)
+    if (!pendingJobId) return
+
+    setDownloadStatus('downloading')
+    runExportStream(createDesignExportStream(projectId, pendingJobId))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
 
   const selectedHasChildren = edges.some((e) => e.source === selectedStep?.id)
 

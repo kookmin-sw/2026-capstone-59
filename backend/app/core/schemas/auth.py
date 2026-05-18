@@ -15,6 +15,11 @@ class UserProfileResponse(BaseModel):
     email: str
     nickname: str
     provider: str
+    csrf_token: str | None = None
+
+
+class CsrfTokenResponse(BaseModel):
+    csrf_token: str
 
 
 class OAuthUserInfo(BaseModel):
