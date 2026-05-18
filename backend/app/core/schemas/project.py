@@ -49,3 +49,24 @@ class ProjectListResponse(BaseModel):
     total_count: int
     page: int
     size: int
+
+
+class DesignExportStartRequest(BaseModel):
+    """POST /projects/{project_id}/design-export-start 요청."""
+    job_id: UUID  # 클라이언트가 생성 — 응답 안 기다리고 곧장 폴링 가능
+    selected_step_ids: list[UUID]
+
+
+class DesignExportStartResponse(BaseModel):
+    """POST /projects/{project_id}/design-export-start 응답."""
+    job_id: UUID
+    status: str  # pending / done / error
+
+
+class DesignExportJobResponse(BaseModel):
+    """GET /projects/{project_id}/design-export-jobs/{job_id} 폴링 응답."""
+    status: str  # pending / done / error
+    markdown: str | None = None
+    filename: str | None = None
+    error_code: str | None = None
+    is_complete: bool

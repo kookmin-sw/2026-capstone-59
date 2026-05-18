@@ -20,12 +20,12 @@ const UUID =
   '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 
 // AI 서버로 보낼 (method, path) 패턴. 그 외는 전부 business.
-// 폴링 GET (sidepanel-content 등) 은 business 로 가야 하므로 여기 X.
+// 폴링 GET (sidepanel-content, design-export-jobs 등) 은 business 로 가야 하므로 여기 X.
 const AI_ROUTES = [
   { method: 'POST', pattern: new RegExp(`^/steps/${UUID}/accept$`) },
   { method: 'POST', pattern: new RegExp(`^/steps/${UUID}/sidepanel-start$`) },
   { method: 'GET', pattern: new RegExp(`^/steps/${UUID}$`) },
-  { method: 'POST', pattern: new RegExp(`^/projects/${UUID}/design-export$`) },
+  { method: 'POST', pattern: new RegExp(`^/projects/${UUID}/design-export-start$`) },
 ]
 
 function pickBaseUrl(method, path) {
