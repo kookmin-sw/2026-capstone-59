@@ -20,7 +20,7 @@ import MdExportModal from '../components/canvas/MdExportModal'
 import DownloadNotification from '../components/canvas/DownloadNotification'
 
 import { getStages } from '../api/stage'
-import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep } from '../api/step'
+import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep, getSidePanelContent } from '../api/step'
 import { createShare, deleteShare, getShareStatus } from '../api/projects'
 import { createDesignExportStream } from '../api/exports'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
@@ -654,7 +654,26 @@ export default function CanvasPage() {
     }
 
     const requestId = ++detailRequestRef.current
-    const buf = streamBuffers.current.get(node.id)
+    let buf = streamBuffers.current.get(node.id)
+
+    // 새로고침 등으로 in-memory buffer 가 유실된 경우 — 백엔드에 진행 상태 확인.
+    // streaming/pending 이면 폴링을 재개해 화면을 복구한다.
+    if (!buf && !detailCacheRef.current[node.id]) {
+      try {
+        const probe = await getSidePanelContent(node.id)
+        if (requestId !== detailRequestRef.current) return
+        if (probe.status === 'streaming' || probe.status === 'pending') {
+          startNodeStream(node.id)
+          buf = streamBuffers.current.get(node.id)
+          if (buf && probe.content) {
+            // 첫 폴링까지 기다리지 않고 누적된 raw text 를 미리 채워둠
+            buf.text = probe.content
+          }
+        }
+      } catch {
+        // probe 실패는 무시 — 아래 분기에서 자연스럽게 처리됨
+      }
+    }
 
     if (buf?.isDone) {
       setIsStreamMode(false)

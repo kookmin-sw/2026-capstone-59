@@ -1,3 +1,4 @@
+import asyncio
 from uuid import UUID
 
 from fastapi import Depends
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.ai.services import step_service
 from app.core.api.route import EnvelopeRouter
 from app.core.database import get_db
+from app.core.logging import get_logger
 from app.core.models.step import StepContent as StepContentModel
 from app.core.schemas.response import SuccessResponse
 from app.core.schemas.step import (
@@ -15,6 +17,8 @@ from app.core.schemas.step import (
     StepAcceptResponse,
     StepDetailResponse,
 )
+
+logger = get_logger(__name__)
 
 router = EnvelopeRouter()
 
@@ -62,6 +66,26 @@ async def start_side_panel(step_id: UUID, db: Session = Depends(get_db)):
             step_id=step.id, status=content.streaming_status
         )
 
-    # 새로 시작 — 같은 invocation 에서 LLM 실행. Lambda timeout 까지 계속 진행.
-    await step_service.run_side_panel_generation(db, step_id)
+    # 새로 시작 — 같은 invocation 에서 LLM 실행.
+    # 클라이언트가 끊겨도(새로고침 등) LLM 스트림이 cancel 되지 않도록 shield 로 격리한다.
+    # 핸들러는 작업이 끝날 때까지 살아있어 Lambda invocation 도 종료되지 않는다.
+    task = asyncio.create_task(
+        step_service.run_side_panel_generation(db, step_id)
+    )
+    while not task.done():
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            # 클라이언트 끊김으로 인한 핸들러 취소 — task 는 shield 로 보호되어 계속 실행.
+            # 다음 iteration 에서 task 가 끝날 때까지 계속 대기한다.
+            logger.info(
+                "ai: side_panel handler cancelled by client — task continues under shield",
+                extra={"step_id": str(step_id)},
+            )
+            continue
+
+    exc = task.exception()
+    if exc is not None:
+        raise exc
+
     return SidePanelStartResponse(step_id=step.id, status="done")

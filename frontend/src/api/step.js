@@ -20,6 +20,10 @@ export const rollbackStep = (stepId) =>
 export const keepStep = (stepId, isKeep) =>
   api.post(`/steps/${stepId}/keep`, { is_keep: isKeep })
 
+// Side panel 현재 진행 상태 1회 조회 (폴링 시작 전 probe 용).
+export const getSidePanelContent = (stepId) =>
+  api.get(`/steps/${stepId}/sidepanel-content`)
+
 // ─────────────────────────────────────────────────────────────
 // Side Panel — 비동기 폴링
 //
