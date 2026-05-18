@@ -69,6 +69,23 @@ export function clearCsrfToken() {
   }
 }
 
+export function clearSession() {
+  try {
+    sessionStorage.clear()
+  } catch {
+    /* */
+  }
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('design_export_job:')) {
+        localStorage.removeItem(key)
+      }
+    }
+  } catch {
+    /* */
+  }
+}
+
 // 동시 다발의 401 을 한 번의 refresh 로 합치기 위한 단일 promise.
 let refreshPromise = null
 
