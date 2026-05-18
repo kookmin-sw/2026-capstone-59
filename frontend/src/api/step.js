@@ -33,12 +33,20 @@ export const getSidePanelContent = (stepId) =>
 //    - 변경 없음 누적 시: 주기를 1.5x 씩 늘려 최대 MAX_INTERVAL 까지
 //    - 변경 발생 시: 다시 MIN_INTERVAL 로 reset
 // 3. is_complete 면 onDone/onError 후 폴링 중단
+// 4. 4xx (인증/권한/존재하지 않음 등): 종료 신호로 간주 — 폴링 중단
+//    5xx / 네트워크 오류: 일시적이므로 MAX_FAILURES 까지만 재시도 후 포기
 //
 // abort() 는 클라이언트 폴링만 멈춤 — 백엔드는 끝까지 실행되어 DB 에 저장됨.
 // ─────────────────────────────────────────────────────────────
 const MIN_POLL_MS = 1000
 const MAX_POLL_MS = 4000
 const BACKOFF_AFTER_QUIET = 2 // 변경 없는 폴링이 N회 연속이면 주기 확대
+const MAX_TRANSIENT_FAILURES = 5 // 5xx / 네트워크 오류 누적 한도
+
+function getStatusCode(err) {
+  // axios err 와 _client.js 응답 interceptor 가 던지는 envelope 에러 모두 대응
+  return err?.response?.status ?? err?.status ?? null
+}
 
 export function createSidePanelStream(stepId) {
   let timeoutId = null
@@ -54,6 +62,14 @@ export function createSidePanelStream(stepId) {
       let lastLen = 0
       let interval = MIN_POLL_MS
       let quietCount = 0
+      let transientFailures = 0
+
+      const stop = (kind) => {
+        timeoutId = null
+        aborted = true
+        if (kind === 'error') onError?.()
+        else onDone?.()
+      }
 
       const poll = async () => {
         if (aborted) return
@@ -61,6 +77,8 @@ export function createSidePanelStream(stepId) {
           const { status, content, is_complete } = await api.get(
             `/steps/${stepId}/sidepanel-content`
           )
+
+          transientFailures = 0 // 성공 시 카운터 리셋
 
           const grew =
             typeof content === 'string' && content.length > lastLen
@@ -77,12 +95,19 @@ export function createSidePanelStream(stepId) {
           }
 
           if (is_complete) {
-            timeoutId = null
-            status === 'error' ? onError?.() : onDone?.()
-            return
+            return stop(status === 'error' ? 'error' : 'done')
           }
-        } catch {
-          // 일시적 네트워크 오류는 무시 — 다음 사이클에 재시도
+        } catch (err) {
+          const code = getStatusCode(err)
+          // 4xx — 종료 신호. 더 폴링해도 의미 없음.
+          if (code !== null && code >= 400 && code < 500) {
+            return stop('error')
+          }
+          // 5xx / 네트워크 오류 — 한도까지 재시도, 초과 시 포기
+          transientFailures += 1
+          if (transientFailures >= MAX_TRANSIENT_FAILURES) {
+            return stop('error')
+          }
         }
 
         if (!aborted) {
