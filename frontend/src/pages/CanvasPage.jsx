@@ -537,16 +537,24 @@ export default function CanvasPage() {
     const viewportH = rect?.height ?? window.innerHeight
 
     ;(async () => {
-      // 노드가 적을 때는 fitView를 건너뛰고 기본 zoom 유지
-      if (nodes.length >= 5) {
-        await rfInstance.fitView({ duration: 0, padding: 0.2 })
-      }
-
-      const zoom = rfInstance().getZoom()
-
-      // focusNode 기준으로 wrapper 중앙 정렬
       const NODE_W = 180
       const NODE_H = focusNode.type === 'requiredStepNode' ? 120 : 70
+
+      if (nodes.length < 4) {
+        // 왼쪽 정렬 + Y만 focusNode 중앙
+        const cy = (focusNode.position?.y ?? 0) + NODE_H / 2
+        const targetY = viewportH / 2 - cy
+        rfInstance.setViewport(
+          { x: -10, y: targetY, zoom: 1 },
+          { duration: 0 }
+        )
+        return
+      }
+
+      // 5개 이상: fitView + X/Y 모두 focusNode 중앙
+      await rfInstance.fitView({ duration: 0, padding: 0.2 })
+      const zoom = rfInstance.getZoom()
+
       const cx = (focusNode.position?.x ?? 0) + NODE_W / 2
       const cy = (focusNode.position?.y ?? 0) + NODE_H / 2
       const targetX = viewportW / 2 - cx * zoom
