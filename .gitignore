@@ -32,6 +32,9 @@ CLAUDE.md
 # Presentation working files (local only — not for public repo)
 presentation/
 
+# Claude Design raw output (local working copy — ported into frontend/src/pages/LandingPage.jsx)
+Poco_Landing/
+
 # zip build staging (local only)
 .build/
 
