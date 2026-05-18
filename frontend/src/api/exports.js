@@ -66,34 +66,41 @@ function getStatusCode(err) {
 }
 
 /**
- * Design Export 스트림 생성/재개.
+ * Design Export 생성 트리거. POST 응답까지 await 한 뒤 결과 반환.
  *
- * @param {string} projectId
- * @param {string[]} selectedStepIds  selected step ids — resumeJobId 가 있으면 무시됨
- * @param {object} [opts]
- * @param {string} [opts.resumeJobId]  기존 job_id 로 재개 (POST 생략, 폴링만 시작)
+ * @returns {Promise<{jobId?: string, error?: {code: string|null, status: number|null}}>}
  */
-export function createDesignExportStream(projectId, selectedStepIds, opts = {}) {
+export async function startDesignExport(projectId, selectedStepIds) {
+  const jobId = generateJobId()
+  try {
+    await api.post(`/projects/${projectId}/design-export-start`, {
+      job_id: jobId,
+      selected_step_ids: selectedStepIds,
+    })
+    saveDesignExportJobId(projectId, jobId)
+    return { jobId }
+  } catch (err) {
+    return {
+      error: {
+        code: err?.code ?? null,
+        status: getStatusCode(err),
+      },
+    }
+  }
+}
+
+/**
+ * Design Export 폴링 스트림. job_id 는 외부에서 주입.
+ * - 새 다운로드: startDesignExport() 로 얻은 jobId 전달
+ * - 새로고침 후 재개: getDesignExportJobId() 로 얻은 jobId 전달
+ */
+export function createDesignExportStream(projectId, jobId) {
   let timeoutId = null
   let aborted = false
 
   return {
     start({ onComplete, onError } = {}) {
       aborted = false
-      const jobId = opts.resumeJobId || generateJobId()
-
-      if (!opts.resumeJobId) {
-        // 새 job — localStorage 에 기록 + 트리거 POST
-        saveDesignExportJobId(projectId, jobId)
-        api
-          .post(`/projects/${projectId}/design-export-start`, {
-            job_id: jobId,
-            selected_step_ids: selectedStepIds,
-          })
-          .catch(() => {
-            // 사전검증 실패(rate limit / 빈 selection 등) 가능 — 폴링이 곧 알아냄.
-          })
-      }
 
       let interval = MIN_POLL_MS
       let quietCount = 0

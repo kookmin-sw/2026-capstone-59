@@ -22,7 +22,7 @@ import DownloadNotification from '../components/canvas/DownloadNotification'
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep, getSidePanelContent } from '../api/step'
 import { createShare, deleteShare, getShareStatus } from '../api/projects'
-import { createDesignExportStream, getDesignExportJobId } from '../api/exports'
+import { createDesignExportStream, getDesignExportJobId, startDesignExport } from '../api/exports'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
 import { 
@@ -1170,14 +1170,31 @@ export default function CanvasPage() {
     })
   }
 
-  function handleStartExport(selectedStepIds) {
+  async function handleStartExport(selectedStepIds) {
     setMdExportOpen(false)
+
+    // 사전 체크 — 이미 진행 중인 다운로드가 있으면 새 요청 보내지 말고 안내만.
+    if (exportStreamRef.current || getDesignExportJobId(projectId)) {
+      setDownloadStatus('rate_limited')
+      return
+    }
+
     setDownloadStatus('downloading')
 
-    // 이전 스트림 정리
-    exportStreamRef.current?.abort?.()
+    // POST 트리거 — 응답까지 await 해서 429 등을 즉시 감지.
+    const result = await startDesignExport(projectId, selectedStepIds)
+    if (result.error) {
+      const { code, status } = result.error
+      if (status === 429 || code === 'DESIGN_EXPORT_RATE_LIMITED') {
+        setDownloadStatus('rate_limited')
+      } else {
+        setDownloadStatus('error')
+      }
+      return
+    }
 
-    runExportStream(createDesignExportStream(projectId, selectedStepIds))
+    // 성공 — 폴링 시작
+    runExportStream(createDesignExportStream(projectId, result.jobId))
   }
 
   // 새로고침 후에도 진행 중이던 design-export 가 있으면 자동 재개.
@@ -1189,9 +1206,7 @@ export default function CanvasPage() {
     if (!pendingJobId) return
 
     setDownloadStatus('downloading')
-    runExportStream(
-      createDesignExportStream(projectId, [], { resumeJobId: pendingJobId })
-    )
+    runExportStream(createDesignExportStream(projectId, pendingJobId))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
