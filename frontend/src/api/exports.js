@@ -20,6 +20,7 @@ export const getAcceptedRequiredSteps = (projectId) =>
 const MIN_POLL_MS = 1000
 const MAX_POLL_MS = 4000
 const BACKOFF_AFTER_QUIET = 2
+const MAX_TRANSIENT_FAILURES = 5
 
 function generateJobId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -33,28 +34,79 @@ function generateJobId() {
   })
 }
 
-export function createDesignExportStream(projectId, selectedStepIds) {
+// ─── 진행 중인 job_id 를 localStorage 에 보관 (새로고침 후 복구용) ───
+const STORAGE_KEY = (projectId) => `design_export_job:${projectId}`
+
+export function getDesignExportJobId(projectId) {
+  try {
+    return localStorage.getItem(STORAGE_KEY(projectId)) || null
+  } catch {
+    return null
+  }
+}
+
+function saveDesignExportJobId(projectId, jobId) {
+  try {
+    localStorage.setItem(STORAGE_KEY(projectId), jobId)
+  } catch {
+    /* */
+  }
+}
+
+export function clearDesignExportJobId(projectId) {
+  try {
+    localStorage.removeItem(STORAGE_KEY(projectId))
+  } catch {
+    /* */
+  }
+}
+
+function getStatusCode(err) {
+  return err?.response?.status ?? err?.status ?? null
+}
+
+/**
+ * Design Export 스트림 생성/재개.
+ *
+ * @param {string} projectId
+ * @param {string[]} selectedStepIds  selected step ids — resumeJobId 가 있으면 무시됨
+ * @param {object} [opts]
+ * @param {string} [opts.resumeJobId]  기존 job_id 로 재개 (POST 생략, 폴링만 시작)
+ */
+export function createDesignExportStream(projectId, selectedStepIds, opts = {}) {
   let timeoutId = null
   let aborted = false
 
   return {
     start({ onComplete, onError } = {}) {
       aborted = false
-      const jobId = generateJobId()
+      const jobId = opts.resumeJobId || generateJobId()
 
-      // 생성 트리거 — 응답 안 기다림
-      api
-        .post(`/projects/${projectId}/design-export-start`, {
-          job_id: jobId,
-          selected_step_ids: selectedStepIds,
-        })
-        .catch(() => {
-          // 사전검증 실패(rate limit / 빈 selection 등) 가능 — 폴링이 곧 알아냄.
-        })
+      if (!opts.resumeJobId) {
+        // 새 job — localStorage 에 기록 + 트리거 POST
+        saveDesignExportJobId(projectId, jobId)
+        api
+          .post(`/projects/${projectId}/design-export-start`, {
+            job_id: jobId,
+            selected_step_ids: selectedStepIds,
+          })
+          .catch(() => {
+            // 사전검증 실패(rate limit / 빈 selection 등) 가능 — 폴링이 곧 알아냄.
+          })
+      }
 
       let interval = MIN_POLL_MS
       let quietCount = 0
       let lastStatus = null
+      let transientFailures = 0
+
+      const stop = (kind, payload) => {
+        timeoutId = null
+        aborted = true
+        clearDesignExportJobId(projectId)
+        if (kind === 'done') onComplete?.(payload)
+        else onError?.(payload)
+      }
 
       const poll = async () => {
         if (aborted) return
@@ -62,16 +114,14 @@ export function createDesignExportStream(projectId, selectedStepIds) {
           const res = await api.get(
             `/projects/${projectId}/design-export-jobs/${jobId}`
           )
+          transientFailures = 0
+
           const { status, markdown, filename, error_code, is_complete } = res
 
           if (is_complete) {
-            timeoutId = null
-            if (status === 'done') {
-              onComplete?.({ markdown, filename })
-            } else {
-              onError?.({ code: error_code || 'DESIGN_EXPORT_FAILED' })
-            }
-            return
+            return status === 'done'
+              ? stop('done', { markdown, filename })
+              : stop('error', { code: error_code || 'DESIGN_EXPORT_FAILED' })
           }
 
           // 진행 중 — 상태 변화 없으면 점진적으로 주기 늘림
@@ -85,8 +135,17 @@ export function createDesignExportStream(projectId, selectedStepIds) {
             quietCount = 0
             lastStatus = status
           }
-        } catch {
-          // 일시적 네트워크 오류 — 다음 사이클 재시도
+        } catch (err) {
+          const code = getStatusCode(err)
+          // 4xx — 종료 신호. 더 폴링해도 의미 없음.
+          if (code !== null && code >= 400 && code < 500) {
+            return stop('error', { code: 'DESIGN_EXPORT_FAILED' })
+          }
+          // 5xx / 네트워크 오류 — 한도까지 재시도
+          transientFailures += 1
+          if (transientFailures >= MAX_TRANSIENT_FAILURES) {
+            return stop('error', { code: 'DESIGN_EXPORT_NETWORK_ERROR' })
+          }
         }
 
         if (!aborted) {
@@ -98,9 +157,12 @@ export function createDesignExportStream(projectId, selectedStepIds) {
     },
 
     abort() {
+      // 사용자가 명시적으로 취소 — 백엔드 작업은 계속되지만 클라이언트 입장에선 버려짐.
+      // localStorage 도 정리해서 새로고침 시 재개되지 않게.
       aborted = true
       if (timeoutId) clearTimeout(timeoutId)
       timeoutId = null
+      clearDesignExportJobId(projectId)
     },
   }
 }

@@ -22,7 +22,7 @@ import DownloadNotification from '../components/canvas/DownloadNotification'
 import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep, getSidePanelContent } from '../api/step'
 import { createShare, deleteShare, getShareStatus } from '../api/projects'
-import { createDesignExportStream } from '../api/exports'
+import { createDesignExportStream, getDesignExportJobId } from '../api/exports'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
 import { 
@@ -1138,16 +1138,8 @@ export default function CanvasPage() {
     setDownloadStatus(null)
   }
 
-  function handleStartExport(selectedStepIds) {
-    setMdExportOpen(false)
-    setDownloadStatus('downloading')
-
-    // 이전 스트림 정리
-    exportStreamRef.current?.abort?.()
-
-    const stream = createDesignExportStream(projectId, selectedStepIds)
+  function runExportStream(stream) {
     exportStreamRef.current = stream
-
     stream.start({
       onComplete: (data) => {
         try {
@@ -1177,6 +1169,31 @@ export default function CanvasPage() {
       },
     })
   }
+
+  function handleStartExport(selectedStepIds) {
+    setMdExportOpen(false)
+    setDownloadStatus('downloading')
+
+    // 이전 스트림 정리
+    exportStreamRef.current?.abort?.()
+
+    runExportStream(createDesignExportStream(projectId, selectedStepIds))
+  }
+
+  // 새로고침 후에도 진행 중이던 design-export 가 있으면 자동 재개.
+  // localStorage 에 보관된 job_id 로 폴링만 다시 시작 (POST 생략).
+  useEffect(() => {
+    if (!projectId) return
+    if (exportStreamRef.current) return // 이미 진행 중이면 skip
+    const pendingJobId = getDesignExportJobId(projectId)
+    if (!pendingJobId) return
+
+    setDownloadStatus('downloading')
+    runExportStream(
+      createDesignExportStream(projectId, [], { resumeJobId: pendingJobId })
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
 
   const selectedHasChildren = edges.some((e) => e.source === selectedStep?.id)
 
