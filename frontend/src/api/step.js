@@ -33,8 +33,11 @@ export const getSidePanelContent = (stepId) =>
 //    - 변경 없음 누적 시: 주기를 1.5x 씩 늘려 최대 MAX_INTERVAL 까지
 //    - 변경 발생 시: 다시 MIN_INTERVAL 로 reset
 // 3. is_complete 면 onDone/onError 후 폴링 중단
-// 4. 4xx (인증/권한/존재하지 않음 등): 종료 신호로 간주 — 폴링 중단
-//    5xx / 네트워크 오류: 일시적이므로 MAX_FAILURES 까지만 재시도 후 포기
+// 4. 4xx: 종료 신호로 간주 — 폴링 중단 / 5xx·네트워크 오류: MAX 재시도 후 포기
+//
+// onChunk(content) 는 **누적된 full content** 를 전달한다 (delta 가 아님).
+// — 새로고침 후 복구 시 등에 buf 가 미리 채워져 있어도 중복 누적되지 않도록.
+// 소비자는 `b.text = content` 식으로 단순 대입하면 된다.
 //
 // abort() 는 클라이언트 폴링만 멈춤 — 백엔드는 끝까지 실행되어 DB 에 저장됨.
 // ─────────────────────────────────────────────────────────────
@@ -80,11 +83,12 @@ export function createSidePanelStream(stepId) {
 
           transientFailures = 0 // 성공 시 카운터 리셋
 
-          const grew =
-            typeof content === 'string' && content.length > lastLen
+          const text = typeof content === 'string' ? content : ''
+          const grew = text.length > lastLen
           if (grew) {
-            onChunk?.(content.slice(lastLen))
-            lastLen = content.length
+            // 누적 content 전체를 전달 (delta 가 아님)
+            onChunk?.(text)
+            lastLen = text.length
             interval = MIN_POLL_MS // 활발 — 빠른 폴링
             quietCount = 0
           } else {

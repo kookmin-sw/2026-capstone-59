@@ -352,10 +352,11 @@ export default function CanvasPage() {
     buf.stream = stream
 
     stream.start({
-      onChunk: (delta) => {
+      // 폴링은 누적 content 전체를 전달 — 대입으로 처리 (중복 누적 방지)
+      onChunk: (content) => {
         const b = streamBuffers.current.get(nodeId)
         if (!b) return
-        b.text += delta
+        b.text = content
         b.onUpdate?.(b.text)
       },
       onDone: async () => {
