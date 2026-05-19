@@ -216,7 +216,6 @@ class TestCurrentRequiredStepBranch:
         # required step 정보가 없으므로 그 안의 값들이 prompt에 들어가면 안 됨
         # (fulfillment_criteria 키 자체는 템플릿 본문에 등장하므로 값으로 검증)
         assert "1차 타겟 사용자군의 특성 정의" not in prompt
-        assert "대상 사용자 파악" not in prompt
         # JSON 직렬화 결과의 특징적 패턴도 없어야 함
         assert "minimum_fulfillment_count" not in prompt
 

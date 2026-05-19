@@ -12,6 +12,7 @@ from typing import Any, Optional
 
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
+from ai.prompts.activity_guides import resolve_activity_guide
 from ai.prompts.template import PromptTemplate
 from ai.schemas.common import RetrievedChunk
 from ai.schemas.generate import GenerateInput, GenerateOutput
@@ -108,6 +109,7 @@ class StepGenerator:
             current_step_name=input_data.current_step.name,
             current_required_step_info=required_step_info,
             rag_context=rag_context_text,
+            r_specific_activity_guide=resolve_activity_guide(input_data.current_required_step),
         )
 
         logger.info(
