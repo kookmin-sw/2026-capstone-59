@@ -233,26 +233,35 @@ psql -h localhost -U postgres -d pocodb
 POST /projects/{project_id}/design-export
 ```
 
-Lambda B(AI Orchestrator)로 라우팅. API Gateway 29초 동기 한도를 우회하기 위해 SSE(Server-Sent Events)로 응답한다.
+Lambda B(AI Orchestrator)로 라우팅. API Gateway 29초 동기 한도를 우회하기 위해 비동기 Job 패턴으로 동작한다.
 
-### 요청
+### 흐름
+
+```
+[1단계] POST /projects/{id}/design-export-start   → 즉시 202 반환
+[2단계] Lambda B 백그라운드에서 AI 처리 → design_export_job 테이블에 결과 저장
+[3단계] GET  /projects/{id}/design-export-jobs/{job_id}  → 클라이언트 폴링 (1초 → 4초, 1.5x backoff)
+```
+
+### 요청 (1단계)
 
 ```json
 {
+  "job_id": "<client-generated-uuid>",
   "selected_step_ids": ["<step_uuid>", ...]
 }
 ```
 
-`selected_step_ids`는 `required_step_id IS NOT NULL` + `status = ACCEPTED` 인 RS Step의 `step.id` 목록.
+`job_id`는 클라이언트가 `crypto.randomUUID()`로 직접 생성. `selected_step_ids`는 `required_step_id IS NOT NULL` + `status = ACCEPTED` 인 RS Step의 `step.id` 목록.
 
-### SSE 이벤트 흐름
+### 폴링 응답 (3단계)
 
-| 이벤트 | 데이터 | 설명 |
+| status | 데이터 | 설명 |
 |--------|--------|------|
-| `keepalive` | `{}` | 10초마다 전송, API Gateway timeout 방지 |
-| `complete` | `{"markdown": "...", "filename": "design_YYYY-MM-DD_HH-MM.md"}` | 생성 완료 |
-| `error` | `{"code": "DESIGN_EXPORT_AI_FAILED"}` | AI 호출 실패 |
-| `error` | `{"code": "DESIGN_EXPORT_INVALID_OUTPUT"}` | AI 출력 검증 실패 |
+| `pending` | — | 처리 중 |
+| `done` | `{"markdown": "...", "filename": "design_YYYY-MM-DD_HH-MM.md"}` | 생성 완료 |
+| `failed` | `{"error_code": "DESIGN_EXPORT_AI_FAILED"}` | AI 호출 실패 |
+| `failed` | `{"error_code": "DESIGN_EXPORT_INVALID_OUTPUT"}` | AI 출력 검증 실패 |
 
 ### 사전 검증 에러 (SSE 시작 전 HTTP 상태코드 반환)
 
