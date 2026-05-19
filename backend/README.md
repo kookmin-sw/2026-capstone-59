@@ -220,7 +220,83 @@ psql -h localhost -U postgres -d pocodb
 
 ---
 
-## 8. OAuth 세팅 가이드
+## 8. Design Export (사고 궤적 문서 내보내기)
+
+> **핵심 요약:** Poco라는 AI 멘토링 도구에서 사용자의 사고 궤적(What·Why)을 외부 AI(Claude Code, ChatGPT 등)로 export할 수 있게 해주는 기능입니다.
+
+사용자가 캔버스에서 Accept한 필수 Step과 그 영역 안의 일반 Step들을 `.md` 파일로 추출한다.
+외부 AI에 컨텍스트로 제공하면 사용자의 What·Why 사고 맥락을 인지한 상태에서 후속 구현(How)을 도울 수 있다.
+
+### 엔드포인트
+
+```
+POST /projects/{project_id}/design-export
+```
+
+Lambda B(AI Orchestrator)로 라우팅. API Gateway 29초 동기 한도를 우회하기 위해 SSE(Server-Sent Events)로 응답한다.
+
+### 요청
+
+```json
+{
+  "selected_step_ids": ["<step_uuid>", ...]
+}
+```
+
+`selected_step_ids`는 `required_step_id IS NOT NULL` + `status = ACCEPTED` 인 RS Step의 `step.id` 목록.
+
+### SSE 이벤트 흐름
+
+| 이벤트 | 데이터 | 설명 |
+|--------|--------|------|
+| `keepalive` | `{}` | 10초마다 전송, API Gateway timeout 방지 |
+| `complete` | `{"markdown": "...", "filename": "design_YYYY-MM-DD_HH-MM.md"}` | 생성 완료 |
+| `error` | `{"code": "DESIGN_EXPORT_AI_FAILED"}` | AI 호출 실패 |
+| `error` | `{"code": "DESIGN_EXPORT_INVALID_OUTPUT"}` | AI 출력 검증 실패 |
+
+### 사전 검증 에러 (SSE 시작 전 HTTP 상태코드 반환)
+
+| 코드 | HTTP | 설명 |
+|------|------|------|
+| `DESIGN_EXPORT_EMPTY_SELECTION` | 400 | selected_step_ids가 비어있음 |
+| `DESIGN_EXPORT_INVALID_STEP_ID` | 400 | 잘못된 step_id 또는 다른 프로젝트 소속 |
+| `DESIGN_EXPORT_INACTIVE_STEP_SELECTED` | 400 | 비활성 Stage의 Step 포함 |
+| `DESIGN_EXPORT_RATE_LIMITED` | 429 | 동일 프로젝트에 10초 내 재요청 |
+
+### 사전 조회 API
+
+```
+GET /projects/{project_id}/accepted-required-steps
+```
+
+다운로드 모달에서 선택 가능한 RS Step 목록을 반환한다. Lambda A(Business API)로 라우팅.
+
+```json
+{
+  "required_steps": [
+    {
+      "step_id": "<uuid>",
+      "name": "문제 정의",
+      "stage_sequence": 1
+    }
+  ]
+}
+```
+
+### 관련 파일
+
+| 파일 | 역할 |
+|------|------|
+| `app/ai/routers/projects.py` | SSE 엔드포인트 |
+| `app/ai/services/design_export_service.py` | DB 조회·검증·rate limit |
+| `app/ai/services/design_export_renderer.py` | `.md` 골격 렌더링 |
+| `app/ai/services/orchestrator.py` | `call_design_export()` — AI 모듈 호출 |
+| `app/business/routers/projects.py` | 사전 조회 엔드포인트 |
+| `app/core/exceptions.py` | `DesignExport*Error` 4종 |
+
+---
+
+## 9. OAuth 세팅 가이드
 
 ### Google
 1. [Google Cloud Console](https://console.cloud.google.com) → API 및 서비스 → 사용자 인증 정보
