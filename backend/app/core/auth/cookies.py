@@ -56,9 +56,25 @@ def set_auth_cookies(
 
 
 def clear_auth_cookies(response: Response) -> None:
-    for name, path in (
-        (settings.ACCESS_COOKIE_NAME, "/"),
-        (settings.REFRESH_COOKIE_NAME, "/auth"),
-        (settings.CSRF_COOKIE_NAME, "/"),
+    """auth 쿠키 3종 삭제.
+
+    delete_cookie 기본값 (SameSite=Lax, Secure=False) 으로 호출하면
+    원본 쿠키 (SameSite=None; Secure) 와 속성 불일치로 cross-site 환경의
+    브라우저가 삭제 시도를 무시한다. 원본과 동일한 속성으로 max-age=0 발급.
+    """
+    common = {
+        "secure": settings.COOKIE_SECURE,
+        "samesite": settings.COOKIE_SAMESITE,
+        "domain": settings.COOKIE_DOMAIN,
+    }
+    for name, path, httponly in (
+        (settings.ACCESS_COOKIE_NAME, "/", True),
+        (settings.REFRESH_COOKIE_NAME, "/auth", True),
+        (settings.CSRF_COOKIE_NAME, "/", False),
     ):
-        response.delete_cookie(name, path=path, domain=settings.COOKIE_DOMAIN)
+        response.delete_cookie(
+            name,
+            path=path,
+            httponly=httponly,
+            **common,
+        )
