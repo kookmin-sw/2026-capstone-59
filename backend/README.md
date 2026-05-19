@@ -263,7 +263,7 @@ Lambda B(AI Orchestrator)로 라우팅. API Gateway 29초 동기 한도를 우�
 | `failed` | `{"error_code": "DESIGN_EXPORT_AI_FAILED"}` | AI 호출 실패 |
 | `failed` | `{"error_code": "DESIGN_EXPORT_INVALID_OUTPUT"}` | AI 출력 검증 실패 |
 
-### 사전 검증 에러 (SSE 시작 전 HTTP 상태코드 반환)
+### 사전 검증 에러 (Job 시작 전 HTTP 상태코드 반환)
 
 | 코드 | HTTP | 설명 |
 |------|------|------|
@@ -296,7 +296,7 @@ GET /projects/{project_id}/accepted-required-steps
 
 | 파일 | 역할 |
 |------|------|
-| `app/ai/routers/projects.py` | SSE 엔드포인트 |
+| `app/ai/routers/projects.py` | design-export 엔드포인트 |
 | `app/ai/services/design_export_service.py` | DB 조회·검증·rate limit |
 | `app/ai/services/design_export_renderer.py` | `.md` 골격 렌더링 |
 | `app/ai/services/orchestrator.py` | `call_design_export()` — AI 모듈 호출 |
