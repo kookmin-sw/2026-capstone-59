@@ -11,9 +11,15 @@
 </p>
 
 <p align="center">
-  <!-- <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a> -->
+  <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
   <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_분반_59팀-FF9900?logo=amazon-aws" alt="AWS 분반" /></a>
+</p>
+
+&nbsp;
+
+<p align="center">
+  <img src="./assets/poster.svg" alt="Poco 포스터" width="100%" style="max-width:900px;" />
 </p>
 
 &nbsp;
@@ -63,7 +69,7 @@ AI가 다음 한 걸음의 선택지를 제시하고 의사결정의 궤적을 *
 
 <img src="./assets/architecture.png" alt="Poco System Architecture" />
 
-<!-- > *AI가 검증된 방법론을 실시간 참조하는 구조. [자세히 보기 →](https://kookmin-sw.github.io/2026-capstone-59/)* -->
+> *AI가 검증된 방법론을 실시간 참조하는 구조. [자세히 보기 →](https://kookmin-sw.github.io/2026-capstone-59/)*
 
 &nbsp;
 
@@ -120,16 +126,36 @@ docker-compose up -d
 ```
 2026-capstone-59/
 ├── frontend/          → React SPA (UI/UX, 캔버스 시각화)
-├── backend/           → FastAPI 메인 서버 (Business API, DB, AI 납품)
-├── ai/                → AI 모듈 독립 개발·검증 공간
-│   ├── services/      →   step_generator, required_step_judge, side_panel_generator
-│   ├── prompts/       →   시나리오별 프롬프트 템플릿
-│   ├── schemas/       →   Pydantic 스키마
-│   └── data/          →   RAG 인덱싱 원본 (doj/ + custom/)
-├── assets/            → 소개 페이지 이미지
-├── docker-compose.yml → 로컬 개발 환경
+│   ├── src/
+│   │   ├── api/        →  백엔드 통신 클라이언트 (auth, projects, steps, exports …)
+│   │   ├── components/ →  공용·캔버스 컴포넌트 (StepNode, SidePanel, MdExportModal …)
+│   │   ├── pages/      →  라우트 단위 페이지 (Landing, Login, Canvas, ProjectList …)
+│   │   ├── hooks/      →  커스텀 훅
+│   │   └── utils/      →  레이아웃·트리 유틸
+│   └── public/         →  정적 자산 (로고, 랜딩페이지 이미지)
+│
+├── backend/           → FastAPI 메인 서버 (Lambda A: Business API + Lambda B: AI Orchestrator)
+│   ├── app/
+│   │   ├── ai/         →  AI 엔드포인트 (Lambda B 진입점)
+│   │   ├── business/   →  비즈니스 엔드포인트 (Lambda A 진입점, 인증·프로젝트·CRUD)
+│   │   └── core/       →  공통 모델·스키마·DB·예외·시드 데이터
+│   ├── alembic/        →  DB 마이그레이션
+│   └── docs/           →  Swagger 보조 자료
+│
+├── ai/                → AI 모듈 독립 개발·검증 공간 (Bedrock + RAG)
+│   ├── services/       →  step_generator, required_step_judge, side_panel_generator, design_export_generator
+│   ├── clients/        →  Bedrock Claude · Knowledge Base 공통 클라이언트
+│   ├── prompts/        →  시나리오별 프롬프트 템플릿 (.txt)
+│   ├── schemas/        →  Pydantic 스키마 (generate, accept, side_panel, design_export)
+│   ├── data/           →  RAG 인덱싱 원본
+│   │   ├── doj/        →    DOJ SDLC 마크다운 변환본
+│   │   └── custom/     →    팀 자체 제작 가이드 (glossary, technique)
+│   └── tests/          →  단위 + Property-Based Tests (hypothesis)
+│
+├── assets/            → 소개 페이지·README 이미지 (포스터, 로고, 아키텍처 다이어그램)
+├── docker-compose.yml → 로컬 개발 환경 (db, backend-a, backend-b, frontend)
 ├── index.md           → GitHub Pages 소개 페이지
-└── README.md          → 프로젝트 개요
+└── README.md          → 프로젝트 개요 (이 파일)
 ```
 
 &nbsp;

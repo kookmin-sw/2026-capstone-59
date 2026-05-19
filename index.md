@@ -721,8 +721,8 @@ LLM은 *"사용자 인터뷰를 하세요"* 까지는 잘 말하지만, *"몇 �
 
 | 문서 | 분류 | Poco에서의 활용 범위 |
 |---|---|---|
-| **DOJ SDLC Guidance Document** (미국 법무부, Jan 2003) | 소프트웨어 개발 방법론 (공공 문서) | 원문을 RAG에 그대로 탑재하여 AI 참조 지식으로 사용. 서비스 Stage 구조는 원문 10단계 중 **6단계를 선별하여 팀이 별도 설계**. 24개 필수 Step의 목표 · 진입 · 충족 기준도 팀이 자체 정의. |
-| **SWEBOK V4.0a** (2024, IEEE Computer Society) | 소프트웨어 공학 **지식 체계** (방법론이 아닌 지식 지도) | **토픽 구조(Knowledge Area → Topic)만 참조.** 원문 미탑재. 팀이 약점 4개 영역에 대한 자체 가이드 작성 시 **출처 · 구조의 학술적 근거**로 활용. |
+| **[DOJ SDLC Guidance Document](https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm)** (미국 법무부, Jan 2003) | 소프트웨어 개발 방법론 (공공 문서) | 원문을 RAG에 그대로 탑재하여 AI 참조 지식으로 사용. 서비스 Stage 구조는 원문 10단계 중 **6단계를 선별하여 팀이 별도 설계**. 24개 필수 Step의 목표 · 진입 · 충족 기준도 팀이 자체 정의. |
+| **[SWEBOK V4.0a](https://www.computer.org/education/bodies-of-knowledge/software-engineering#about)** (2024, IEEE Computer Society) | 소프트웨어 공학 **지식 체계** (방법론이 아닌 지식 지도) | **토픽 구조(Knowledge Area → Topic)만 참조.** 원문 미탑재. 팀이 약점 4개 영역에 대한 자체 가이드 작성 시 **출처 · 구조의 학술적 근거**로 활용. |
 
 ### 7-4. 자체 제작 자산
 
@@ -898,32 +898,35 @@ other/#n-other-example       → 문서 수정 및 기타
 │
 ├── frontend/               → React SPA (UI/UX, 캔버스 시각화)
 │   ├── src/
-│   └── public/
+│   │   ├── api/            →   백엔드 통신 클라이언트 (auth, projects, steps, exports …)
+│   │   ├── components/     →   공용·캔버스 컴포넌트 (StepNode, SidePanel, MdExportModal …)
+│   │   ├── pages/          →   라우트 단위 페이지 (Landing, Login, Canvas, ProjectList …)
+│   │   ├── hooks/          →   커스텀 훅
+│   │   └── utils/          →   레이아웃·트리 유틸
+│   └── public/             →   정적 자산 (로고, 랜딩페이지 이미지)
 │
-├── backend/                → FastAPI 메인 서버
+├── backend/                → FastAPI 메인 서버 (Lambda A: Business API + Lambda B: AI Orchestrator)
 │   ├── app/
-│   │   ├── ai/             → AI 모듈 납품 자리 (ai/ 폴더에서 검증 후 이관)
-│   │   ├── core/
-│   │   │   ├── models/     → SQLAlchemy 모델 (Project, Stage, Step, RequiredStep ...)
-│   │   │   └── seeds/      → 24개 필수 Step 시드 데이터 + 필수 Step 사이드패널 콘텐츠
-│   │   └── routers/        → API 엔드포인트
-│   ├── alembic/            → DB 마이그레이션
-│   └── tests/
+│   │   ├── ai/             →   AI 엔드포인트 (Lambda B 진입점)
+│   │   ├── business/       →   비즈니스 엔드포인트 (Lambda A: 인증·프로젝트·CRUD)
+│   │   └── core/           →   공통 모델·스키마·DB·예외·시드 데이터
+│   ├── alembic/            →   DB 마이그레이션
+│   └── docs/               →   Swagger 보조 자료
 │
-├── ai/                     → AI 모듈 독립 개발 · 검증 공간
-│   ├── services/           → step_generator, required_step_judge, side_panel_generator, design_export_generator
-│   ├── clients/            → Bedrock Claude, Knowledge Base 공통 클라이언트
-│   ├── prompts/            → 시나리오별 프롬프트 템플릿 (.txt)
-│   ├── schemas/            → Pydantic 스키마 (generate, accept, side_panel, design_export)
-│   ├── data/               → RAG 인덱싱 원본 (Bedrock Knowledge Base로 업로드)
-│   │   ├── doj/            →   DOJ Data Source: DOJ SDLC Guidance Document 마크다운 변환본
-│   │   └── custom/         →   Custom Data Source: 팀 자체 제작 가이드 문서
-│   │       ├── glossary/   →     용어 사전 (1 파일 = 1 개념)
-│   │       └── technique/  →     기법 가이드 (1 파일 = 1 기법)
-│   └── tests/              → 단위 테스트 + Property-Based Tests (hypothesis)
+├── ai/                     → AI 모듈 독립 개발·검증 공간 (Bedrock + RAG)
+│   ├── services/           →   step_generator, required_step_judge, side_panel_generator, design_export_generator
+│   ├── clients/            →   Bedrock Claude · Knowledge Base 공통 클라이언트
+│   ├── prompts/            →   시나리오별 프롬프트 템플릿 (.txt)
+│   ├── schemas/            →   Pydantic 스키마 (generate, accept, side_panel, design_export)
+│   ├── data/               →   RAG 인덱싱 원본 (Bedrock Knowledge Base로 업로드)
+│   │   ├── doj/            →     DOJ Data Source: DOJ SDLC Guidance Document 마크다운 변환본
+│   │   └── custom/         →     Custom Data Source: 팀 자체 제작 가이드 문서
+│   │       ├── glossary/   →       용어 사전 (1 파일 = 1 개념)
+│   │       └── technique/  →       기법 가이드 (1 파일 = 1 기법)
+│   └── tests/              →   단위 + Property-Based Tests (hypothesis)
 │
-├── assets/                 → 소개 페이지 이미지 (로고, 아키텍처 다이어그램, 포스터 등)
-├── docker-compose.yml      → 로컬 개발 환경
+├── assets/                 → 소개 페이지·README 이미지 (포스터, 로고, 아키텍처 다이어그램)
+├── docker-compose.yml      → 로컬 개발 환경 (db, backend-a, backend-b, frontend)
 ├── index.md                → GitHub Pages 소개 페이지 (이 페이지)
 └── README.md               → 프로젝트 개요
 ```
@@ -933,7 +936,7 @@ other/#n-other-example       → 문서 수정 및 기타
 - [`backend/`](./backend/) — 백엔드 실행 방법
 - [`ai/`](./ai/) — AI 모듈 독립 검증 방법
 - [`ai/data/`](./ai/data/) — RAG 인덱싱 원본 가이드
-- [`frontend/`](./frontend/) — 프론트엔드 실행 방법
+- [`frontend/README.md`](https://github.com/kookmin-sw/2026-capstone-59/blob/master/frontend/README.md) — 프론트엔드 실행 방법
 
 &nbsp;
 
@@ -979,4 +982,4 @@ docker-compose up -d
 
 ---
 
-<sub>*본 프로젝트는 미국 법무부(**DOJ**) **SDLC Guidance Document**의 10단계 Phase를 재검토 · 선별하여 6단계로 재구성하고, **SWEBOK V4.0a** (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
+<sub>*본 프로젝트는 미국 법무부(**DOJ**) **[SDLC Guidance Document](https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm)** 의 10단계 Phase를 재검토 · 선별하여 6단계로 재구성하고, **[SWEBOK V4.0a](https://www.computer.org/education/bodies-of-knowledge/software-engineering#about)** (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
