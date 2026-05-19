@@ -5,7 +5,7 @@ Vite + React 기반의 SPA 프론트엔드.
 React Flow(@xyflow/react)로 Step 트리를 시각화하고, d3-flextree로 tidy tree 레이아웃을 계산하며, Framer Motion으로 전환 애니메이션을 처리한다.
 사이드패널 콘텐츠는 백엔드의 비동기 폴링 구조에 맞춰 적응형 폴링 + 점진 렌더링으로 표시한다.
 
----
+```
 
 ## 1. 실행 방법
 
