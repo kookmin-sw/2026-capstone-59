@@ -1,3 +1,23 @@
+/* ===== Gmarket Sans (랜딩 전용 — 동글동글한 톤) ===== */
+@font-face {
+  font-family: 'GmarketSans';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansLight.woff') format('woff');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'GmarketSans';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'GmarketSans';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+  font-weight: 700;
+  font-display: swap;
+}
+
 /* ===== Tokens =====
    Poco 랜딩페이지 공통 컬러·타이포 토큰. 하나라도 바꾸면 페이지 전반 영향. */
 .page {
@@ -11,10 +31,12 @@
   --t-body: #4b5563;
   --t-meta: #6b7280;
 
-  --p: #6c63b5;
-  --p-hover: #5b4a9c;
-  --p-faint: #ede9fe;
-  --p-faintest: #ddd6fe;
+  /* iMac 본체 라벤더(샘플 #8987b1) 와 화음이 잡히도록 메인 액션 톤을 살짝
+     warm 쪽으로 이동. 흰 배경 위 가독성을 위해 채도/명도는 비슷하게 유지. */
+  --p: #7868c0;
+  --p-hover: #5f4ea8;
+  --p-faint: #efeafe;
+  --p-faintest: #ddd2ff;
 
   --border: #e5e7eb;
   --border-soft: #eef0f3;
@@ -23,8 +45,11 @@
   --maxw-prose: 1080px;
   --pad-x: 80px;
 
-  --f-sans: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
-    -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  /* Gmarket Sans 만 3가지 weight (300 / 500 / 700) 가져오므로 600/800 같은
+     중간값은 자동으로 700 으로 폴백된다. 본문 가독성용으로 Pretendard 는
+     서브 폰트로 유지 (영문·숫자 영역에서 자연스러움). */
+  --f-sans: "GmarketSans", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo",
+    "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --f-mono: ui-monospace, SFMono-Regular, Menlo, "JetBrains Mono", monospace;
 
   font-family: var(--f-sans);
@@ -106,16 +131,21 @@
 .navLogout {
   appearance: none;
   background: transparent;
-  border: none;
+  border: 1px solid var(--border);
   cursor: pointer;
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
   color: var(--t-body);
-  padding: 6px 0;
-  transition: color 0.2s ease;
+  padding: 8px 16px;
+  border-radius: 999px;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
-.navLogout:hover { color: var(--t-primary); }
+.navLogout:hover {
+  color: var(--p);
+  border-color: var(--p-faintest);
+  background: var(--p-faintest);
+}
 .navCta {
   font-size: 14px;
   font-weight: 500;
@@ -271,11 +301,118 @@
   margin-bottom: 8px;
   transform: translateY(56px);
 }
-.heroVis img {
+.heroDevice {
+  position: relative;
+  width: 100%;
+}
+.heroDevice img {
   display: block;
   width: 100%;
   height: auto;
 }
+/* hero-imac.png 측정 좌표: L=13.21% T=1.18% W=84.36% H=60.24% */
+.heroDisplay {
+  position: absolute;
+  left: 13.21%;
+  top: 1.18%;
+  width: 84.36%;
+  height: 60.24%;
+  overflow: hidden;
+  background: #15103a;
+}
+.heroScreen {
+  width: 100%;
+  height: 100%;
+}
+.heroScreenSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ===== Hero 화면 — 매우 느린 호흡·드리프트 (12초 루프, 안정감) ===== */
+@keyframes heroGlowDrift {
+  0%, 100% { transform: translate(0, 0); opacity: 0.85; }
+  50% { transform: translate(-30px, 12px); opacity: 1; }
+}
+@keyframes heroDiamondBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+/* 가로 흐름 강조 — X 축 변위를 Y 보다 크게 잡음 */
+@keyframes heroNodeDriftA {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(12px, -3px); }
+}
+@keyframes heroNodeDriftB {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-14px, 4px); }
+}
+@keyframes heroNodeDriftC {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-12px, -4px); }
+}
+@keyframes heroNodeDriftD {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(14px, 3px); }
+}
+@keyframes heroLineBreathe {
+  0%, 100% { stroke-opacity: 0.2; }
+  50% { stroke-opacity: 0.55; }
+}
+@keyframes heroParticleA {
+  0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+  50% { transform: translate(20px, 30px); opacity: 0.8; }
+}
+@keyframes heroParticleB {
+  0%, 100% { transform: translate(0, 0); opacity: 0.5; }
+  50% { transform: translate(-30px, 40px); opacity: 0.2; }
+}
+@keyframes heroParticleC {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50% { transform: translate(15px, -25px); opacity: 0.7; }
+}
+@keyframes heroParticleD {
+  0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+  50% { transform: translate(-20px, -30px); opacity: 0.6; }
+}
+@keyframes heroParticleE {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50% { transform: translate(40px, 20px); opacity: 0.7; }
+}
+
+.heroGlow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: heroGlowDrift 16s ease-in-out infinite;
+}
+.heroDiamond {
+  transform-box: fill-box;
+  transform-origin: 170px 250px;
+  animation: heroDiamondBreathe 6s ease-in-out infinite;
+}
+.heroNode {
+  transform-box: fill-box;
+}
+.heroNodeA { transform-origin: 440px 130px; animation: heroNodeDriftA 9s ease-in-out infinite; }
+.heroNodeB { transform-origin: 600px 210px; animation: heroNodeDriftB 11s ease-in-out infinite; }
+.heroNodeC { transform-origin: 600px 290px; animation: heroNodeDriftC 10s ease-in-out infinite; }
+.heroNodeD { transform-origin: 440px 370px; animation: heroNodeDriftD 12s ease-in-out infinite; }
+.heroLine {
+  stroke: #b8a5e6;
+  stroke-width: 1;
+  stroke-opacity: 0.3;
+  animation: heroLineBreathe 8s ease-in-out infinite;
+}
+.heroLine:nth-of-type(2) { animation-delay: -2s; }
+.heroLine:nth-of-type(3) { animation-delay: -4s; }
+.heroLine:nth-of-type(4) { animation-delay: -6s; }
+
+.heroParticleA { transform-box: fill-box; transform-origin: center; animation: heroParticleA 14s ease-in-out infinite; }
+.heroParticleB { transform-box: fill-box; transform-origin: center; animation: heroParticleB 17s ease-in-out infinite; }
+.heroParticleC { transform-box: fill-box; transform-origin: center; animation: heroParticleC 13s ease-in-out infinite; }
+.heroParticleD { transform-box: fill-box; transform-origin: center; animation: heroParticleD 19s ease-in-out infinite; }
+.heroParticleE { transform-box: fill-box; transform-origin: center; animation: heroParticleE 15s ease-in-out infinite; }
 .heroCtas {
   grid-column: 1 / -1;
   display: flex;
@@ -540,6 +677,328 @@
   border: 1px dashed rgba(108, 99, 181, 0.35);
 }
 
+/* ===== Panel Mock Canvas — Stage Navigator + Canvas 가로 분할 ===== */
+.mock {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  background: linear-gradient(180deg, #fbfafe 0%, #f4f0fb 100%);
+  font-family: var(--f-sans);
+  overflow: hidden;
+}
+.mockNav {
+  width: 28%;
+  min-width: 130px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+  border-right: 1px solid var(--border-soft);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mockNavTitle {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--t-meta);
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0 10px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 6px;
+}
+.mockNavItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--t-meta);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.mockNavNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--border-soft);
+  color: var(--t-meta);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.mockNavActive {
+  background: var(--p-faint);
+  color: var(--p);
+  font-weight: 700;
+}
+.mockNavActive .mockNavNum {
+  background: var(--p);
+  color: #fff;
+}
+.mockCanvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+.mockSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ===== Panel 1 애니메이션 — 7s 루프 ===== */
+/* 타임라인:
+   0.0–0.5s : 빈 캔버스
+   0.5–1.3s : 다이아 노드 등장 (scale)
+   1.5–2.2s : 클릭 ripple
+   2.4–3.2s : 3개 분기 라인이 다이아에서 뻗어 나감 (stagger)
+   3.4–4.4s : 3개 Step 노드 등장 (stagger)
+   4.4–5.8s : 정지 / 사용자가 결과를 인지
+   5.8–7.0s : 페이드아웃 후 다음 루프
+*/
+
+@keyframes mockDiamondIn {
+  0%, 7% { opacity: 0; transform: scale(0.6); }
+  18% { opacity: 1; transform: scale(1); }
+  /* click pulse */
+  28% { transform: scale(1); }
+  32% { transform: scale(1.12); }
+  36% { transform: scale(1); }
+  85% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.85); }
+}
+
+@keyframes mockRipple {
+  0%, 28% { opacity: 0; transform: scale(0.8); }
+  32% { opacity: 0.5; transform: scale(0.9); }
+  44% { opacity: 0; transform: scale(1.8); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
+
+@keyframes mockBranchDraw {
+  0%, 37% { stroke-dashoffset: 220; opacity: 0; }
+  50% { stroke-dashoffset: 0; opacity: 0.55; }
+  85% { stroke-dashoffset: 0; opacity: 0.55; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes mockStepIn {
+  0%, 50% { opacity: 0; transform: scale(0.5); }
+  62% { opacity: 1; transform: scale(1.1); }
+  68% { transform: scale(1); }
+  85% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8); }
+}
+
+.mockDiamond,
+.mockStep,
+.mockRipple,
+.mockBranch {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mockPlaying .mockDiamond {
+  animation: mockDiamondIn 7s ease-in-out infinite;
+}
+.mockPlaying .mockRipple {
+  fill: none;
+  stroke: var(--p);
+  stroke-width: 2;
+  animation: mockRipple 7s ease-out infinite;
+}
+.mockBranch {
+  stroke: var(--p);
+  stroke-width: 1.5;
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+}
+.mockPlaying .mockBranch1 { animation: mockBranchDraw 7s ease-in-out infinite; animation-delay: 0s; }
+.mockPlaying .mockBranch2 { animation: mockBranchDraw 7s ease-in-out infinite; animation-delay: 0.1s; }
+.mockPlaying .mockBranch3 { animation: mockBranchDraw 7s ease-in-out infinite; animation-delay: 0.2s; }
+
+.mockPlaying .mockStep1 { animation: mockStepIn 7s ease-out infinite; animation-delay: 0s; }
+.mockPlaying .mockStep2 { animation: mockStepIn 7s ease-out infinite; animation-delay: 0.15s; }
+.mockPlaying .mockStep3 { animation: mockStepIn 7s ease-out infinite; animation-delay: 0.3s; }
+
+/* ===== Panel 2 — S2 클릭 + Side Panel 슬라이드 인 (7s 루프) =====
+   0.0–1.0s : 트리 상태 인지
+   1.0–1.8s : S2 선택 ring 펄스 (클릭)
+   1.8–3.0s : Side Panel 우측에서 슬라이드 인
+   3.0–4.8s : 콘텐츠 lines stagger 등장 (typing 느낌)
+   4.8–5.4s : term chips 등장
+   5.4–6.4s : 정지
+   6.4–7.0s : 페이드아웃 */
+
+@keyframes mockSelectedRing {
+  0%, 14% { opacity: 0; transform: scale(0.7); }
+  20% { opacity: 0.7; transform: scale(0.9); }
+  28% { opacity: 0; transform: scale(1.4); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+@keyframes mockSidePanelIn {
+  0%, 22% { opacity: 0; transform: translateX(60px); }
+  40% { opacity: 1; transform: translateX(0); }
+  90% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(20px); }
+}
+
+@keyframes mockLineIn {
+  0%, 42% { opacity: 0; transform: translateX(-8px); }
+  /* delay 차이로 stagger 효과 */
+  52% { opacity: 1; transform: translateX(0); }
+  90% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(0); }
+}
+
+@keyframes mockChipIn {
+  0%, 65% { opacity: 0; transform: scale(0.7); }
+  75% { opacity: 1; transform: scale(1); }
+  90% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8); }
+}
+
+.mockSelectedRing,
+.mockSidePanel,
+.mockLine1, .mockLine2, .mockLine3, .mockLine4,
+.mockLine5, .mockLine6, .mockLine7,
+.mockChip1, .mockChip2 {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mockPlaying .mockSelectedRing { animation: mockSelectedRing 7s ease-out infinite; }
+.mockPlaying .mockSidePanel { animation: mockSidePanelIn 7s ease-out infinite; transform-origin: right center; }
+.mockPlaying .mockLine1 { animation: mockLineIn 7s ease-out infinite; animation-delay: 0s; }
+.mockPlaying .mockLine2 { animation: mockLineIn 7s ease-out infinite; animation-delay: 0.12s; }
+.mockPlaying .mockLine3 { animation: mockLineIn 7s ease-out infinite; animation-delay: 0.24s; }
+.mockPlaying .mockLine4 { animation: mockLineIn 7s ease-out infinite; animation-delay: 0.36s; }
+.mockPlaying .mockLine5 { animation: mockLineIn 7s ease-out infinite; animation-delay: 0.5s; }
+.mockPlaying .mockLine6 { animation: mockLineIn 7s ease-out infinite; animation-delay: 0.62s; }
+.mockPlaying .mockLine7 { animation: mockLineIn 7s ease-out infinite; animation-delay: 0.74s; }
+.mockPlaying .mockChip1 { animation: mockChipIn 7s ease-out infinite; animation-delay: 0s; }
+.mockPlaying .mockChip2 { animation: mockChipIn 7s ease-out infinite; animation-delay: 0.15s; }
+
+/* ===== Panel 3 — Rollback (7s 루프) =====
+   0.0–1.2s : 분기된 트리 인지 (B1 / B2 / B3 까지 펼쳐진 상태)
+   1.2–2.0s : B1 위에 클릭 ripple
+   2.0–3.0s : 우측 B2 / B3 분기 CANCELED → 흐리게 페이드아웃
+   3.0–4.0s : 새로운 분기점 ? 노드 등장
+   4.0–5.5s : 정지
+   5.5–7.0s : 페이드아웃 → 다시 분기된 상태 */
+
+@keyframes mockRollbackRipple {
+  0%, 14% { opacity: 0; transform: scale(0.8); }
+  20% { opacity: 0.6; transform: scale(0.9); }
+  32% { opacity: 0; transform: scale(1.7); }
+  100% { opacity: 0; transform: scale(1.7); }
+}
+
+@keyframes mockToRollback {
+  0%, 28% { opacity: 1; }
+  42% { opacity: 0.12; }
+  90% { opacity: 0.12; }
+  100% { opacity: 1; }
+}
+
+@keyframes mockNewBranch {
+  0%, 44% { opacity: 0; transform: scale(0.5); }
+  56% { opacity: 1; transform: scale(1.1); }
+  62% { transform: scale(1); }
+  90% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.7); }
+}
+
+@keyframes mockBranchKeep {
+  /* A1 — 변하지 않음. 강조용 미세 펄스 */
+  0%, 20% { transform: scale(1); }
+  30% { transform: scale(1.05); }
+  40% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+.mockRollbackRipple,
+.mockToRollback,
+.mockNewBranch {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.mockToRollback { opacity: 1; transform-origin: 420px 240px; }
+.mockBranchKeep { transform-box: fill-box; transform-origin: center; }
+
+.mockPlaying .mockRollbackRipple { animation: mockRollbackRipple 7s ease-out infinite; }
+.mockPlaying .mockToRollback { animation: mockToRollback 7s ease-in-out infinite; }
+.mockPlaying .mockNewBranch { animation: mockNewBranch 7s ease-out infinite; transform-origin: 420px 280px; }
+.mockPlaying .mockBranchKeep { animation: mockBranchKeep 7s ease-in-out infinite; transform-origin: 180px 180px; }
+
+/* ===== Panel 4 — Export 모달 → 체크 → 다운로드 토스트 (7s 루프) =====
+   0.0–1.0s : 모달 fade-in
+   1.0–3.4s : 체크박스 3개 순차 체크
+   3.4–4.2s : 다운로드 버튼 펄스
+   4.2–5.2s : 토스트 슬라이드 인
+   5.2–6.2s : 정지
+   6.2–7.0s : 페이드아웃 */
+
+@keyframes mockModalIn {
+  0% { opacity: 0; transform: scale(0.95) translateY(8px); }
+  14% { opacity: 1; transform: scale(1) translateY(0); }
+  88% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.97) translateY(4px); }
+}
+
+@keyframes mockCheck {
+  0%, 18% { fill: #fff; stroke: var(--border); }
+  /* checked */
+  20% { fill: var(--p); stroke: var(--p); }
+  88% { fill: var(--p); stroke: var(--p); }
+  100% { fill: #fff; stroke: var(--border); }
+}
+
+@keyframes mockDownloadBtn {
+  0%, 48% { transform: scale(1); }
+  54% { transform: scale(1.06); }
+  60% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes mockToast {
+  0%, 60% { opacity: 0; transform: translateY(20px); }
+  68% { opacity: 1; transform: translateY(0); }
+  88% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(10px); }
+}
+
+.mockModal,
+.mockToast,
+.mockCheckBox {
+  opacity: 0;
+  transform-box: fill-box;
+}
+.mockToast { transform-origin: center; }
+.mockModal { transform-origin: 380px 200px; }
+.mockCheckBox {
+  opacity: 1;
+  fill: #fff;
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.mockPlaying .mockModal { animation: mockModalIn 7s ease-out infinite; }
+.mockPlaying .mockCheck1 .mockCheckBox { animation: mockCheck 7s ease-in-out infinite; animation-delay: 0.1s; }
+.mockPlaying .mockCheck2 .mockCheckBox { animation: mockCheck 7s ease-in-out infinite; animation-delay: 0.55s; }
+.mockPlaying .mockCheck3 .mockCheckBox { animation: mockCheck 7s ease-in-out infinite; animation-delay: 1.0s; }
+.mockPlaying .mockDownloadBtn { animation: mockDownloadBtn 7s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.mockPlaying .mockToast { animation: mockToast 7s ease-out infinite; }
+
 /* ===== SCENE 4 — Foundation (SDLC diagram) ===== */
 .scene4 {
   background: var(--s0);
@@ -801,10 +1260,25 @@
   color: var(--t-meta);
   font-size: 13px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  text-align: center;
+}
+.scene6FooterTagline {
+  margin: 0;
+  font-size: 14px;
+  color: var(--t-body);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.scene6FooterMeta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   flex-wrap: wrap;
   justify-content: center;
+  color: var(--t-meta);
 }
 .scene6Footer button {
   appearance: none;
@@ -825,6 +1299,18 @@
   border-radius: 50%;
   background: var(--t-meta);
   opacity: 0.5;
+}
+
+/* Scene 4 footnote — clickable references */
+.scene4Foot li a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.scene4Foot li a:hover {
+  color: var(--p);
+  border-bottom-color: var(--p);
 }
 
 .page ::selection {

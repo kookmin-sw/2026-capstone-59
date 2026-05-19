@@ -9,27 +9,387 @@ const PANELS = [
     title: '다음 한 걸음을, AI가 제안합니다.',
     body: '검증된 소프트웨어 개발 방법론의 6단계 프로세스를 따라 노드가 동적으로 뻗어나갑니다. 각 단계의 핵심 관문은 다이아몬드 노드로 자연스럽게 나타납니다.',
     caption: '막연함을 다음 한 걸음으로.',
-    screenLabel: 'Step Flow 캔버스 화면',
   },
   {
     title: '노드를 클릭하면, 사이드패널이 펼쳐집니다.',
     body: '해당 단계의 멘토링과 용어 사전이 함께 보이고, 핵심 관문에 도달하면 팀이 설계한 노션 템플릿이 연결됩니다.',
     caption: '맥락에 맞는 어시스턴트가, 곁에.',
-    screenLabel: '사이드패널이 펼쳐진 화면',
   },
   {
     title: '아이디어가 흔들려도 괜찮습니다.',
     body: '이전 분기점으로 돌아가면 AI가 바뀐 맥락에 맞춰 새 길을 제안합니다. 모든 선택의 궤적이 캔버스에 트리로 남습니다.',
     caption: '되돌아갈 수 있는 선택, 트리로 남는 사고 과정.',
-    screenLabel: 'Footprint 트리 분기 화면',
   },
   {
     title: '사고가 정리되면, 한 장의 마크다운으로.',
     body: '의사결정 궤적이 .md 한 장으로 추출됩니다. Claude · ChatGPT · Cursor 어디든 첨부할 수 있습니다.',
     caption: '선택은 자산이 됩니다.',
-    screenLabel: '다운로드 모달 + .md 미리보기',
   },
 ]
+
+// ===== Hero Screen — 노드 콘스텔레이션이 천천히 호흡하는 추상 표현 =====
+function HeroScreen() {
+  return (
+    <div className={styles.heroScreen}>
+      <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" className={styles.heroScreenSvg}>
+        <defs>
+          <radialGradient id="heroBg" cx="50%" cy="40%" r="70%">
+            <stop offset="0%" stopColor="#3a2f6e" />
+            <stop offset="55%" stopColor="#251c4f" />
+            <stop offset="100%" stopColor="#15103a" />
+          </radialGradient>
+          <radialGradient id="heroGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(180, 160, 240, 0.45)" />
+            <stop offset="100%" stopColor="rgba(180, 160, 240, 0)" />
+          </radialGradient>
+        </defs>
+
+        <rect width="800" height="500" fill="url(#heroBg)" />
+        {/* Soft glow blob — drifts slowly */}
+        <ellipse cx="400" cy="250" rx="280" ry="200" fill="url(#heroGlow)" className={styles.heroGlow} />
+
+        {/* Connecting lines — 다이아 우측 정점에서 오른쪽으로 뻗는 4개 분기 */}
+        <line x1="210" y1="250" x2="440" y2="130" className={styles.heroLine} />
+        <line x1="210" y1="250" x2="600" y2="210" className={styles.heroLine} />
+        <line x1="210" y1="250" x2="600" y2="290" className={styles.heroLine} />
+        <line x1="210" y1="250" x2="440" y2="370" className={styles.heroLine} />
+
+        {/* Central diamond — 좌측에서 분기 시작점 */}
+        <g className={styles.heroDiamond}>
+          <polygon points="170,210 210,250 170,290 130,250" fill="rgba(180, 160, 240, 0.18)" stroke="#c8b8ff" strokeWidth="1.5" />
+        </g>
+
+        {/* Floating step nodes — 우측으로 펼쳐진 가로 흐름 */}
+        <g className={`${styles.heroNode} ${styles.heroNodeA}`}>
+          <circle cx="440" cy="130" r="14" fill="rgba(180, 160, 240, 0.1)" stroke="#b8a5e6" strokeWidth="1.2" />
+        </g>
+        <g className={`${styles.heroNode} ${styles.heroNodeB}`}>
+          <circle cx="600" cy="210" r="14" fill="rgba(180, 160, 240, 0.1)" stroke="#b8a5e6" strokeWidth="1.2" />
+        </g>
+        <g className={`${styles.heroNode} ${styles.heroNodeC}`}>
+          <circle cx="600" cy="290" r="14" fill="rgba(180, 160, 240, 0.1)" stroke="#b8a5e6" strokeWidth="1.2" />
+        </g>
+        <g className={`${styles.heroNode} ${styles.heroNodeD}`}>
+          <circle cx="440" cy="370" r="14" fill="rgba(180, 160, 240, 0.1)" stroke="#b8a5e6" strokeWidth="1.2" />
+        </g>
+
+        {/* Drifting particles — barely visible */}
+        <circle cx="120" cy="100" r="2" className={styles.heroParticleA} fill="#d6c9ff" />
+        <circle cx="680" cy="80" r="1.5" className={styles.heroParticleB} fill="#d6c9ff" />
+        <circle cx="150" cy="420" r="2" className={styles.heroParticleC} fill="#d6c9ff" />
+        <circle cx="650" cy="430" r="1.5" className={styles.heroParticleD} fill="#d6c9ff" />
+        <circle cx="380" cy="80" r="1.2" className={styles.heroParticleE} fill="#d6c9ff" />
+      </svg>
+    </div>
+  )
+}
+
+// ===== Panel 1 Screen — 다이아 노드 클릭 → 3개 분기 애니메이션 =====
+// 7s 루프: 다이아 등장 → 클릭 펄스 → 3개 분기 라인 → 3개 Step 노드 등장 → 페이드아웃
+function PanelScreen1({ playing }) {
+  return (
+    <div className={`${styles.mock} ${playing ? styles.mockPlaying : ''}`}>
+      {/* LEFT: Stage Navigator */}
+      <div className={styles.mockNav}>
+        <div className={styles.mockNavTitle}>Stages</div>
+        {['아이디어 구체화', '프로젝트 계획', '요구사항 정의', '설계', '개발', '테스트 및 검증'].map(
+          (label, i) => (
+            <div
+              key={label}
+              className={`${styles.mockNavItem} ${i === 1 ? styles.mockNavActive : ''}`}
+            >
+              <span className={styles.mockNavNum}>{i + 1}</span>
+              <span>{label}</span>
+            </div>
+          )
+        )}
+      </div>
+
+      {/* RIGHT: Canvas with animated nodes */}
+      <div className={styles.mockCanvas}>
+        <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid meet" className={styles.mockSvg}>
+          {/* Grid background dots */}
+          <defs>
+            <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1" fill="rgba(108, 99, 181, 0.08)" />
+            </pattern>
+          </defs>
+          <rect width="600" height="400" fill="url(#grid)" />
+
+          {/* Click ripple ring around the diamond */}
+          <circle cx="130" cy="200" r="36" className={styles.mockRipple} />
+
+          {/* Diamond (Required Step) node — 좌측 */}
+          <g className={styles.mockDiamond}>
+            <polygon
+              points="130,160 170,200 130,240 90,200"
+              fill="#fff"
+              stroke="var(--p)"
+              strokeWidth="2.5"
+            />
+            <text
+              x="130"
+              y="206"
+              textAnchor="middle"
+              fontSize="11"
+              fill="var(--p)"
+              fontWeight="700"
+            >
+              R
+            </text>
+          </g>
+
+          {/* 3 branch lines — 우측으로 펼침 */}
+          <line x1="170" y1="200" x2="430" y2="100" className={`${styles.mockBranch} ${styles.mockBranch1}`} />
+          <line x1="170" y1="200" x2="430" y2="200" className={`${styles.mockBranch} ${styles.mockBranch2}`} />
+          <line x1="170" y1="200" x2="430" y2="300" className={`${styles.mockBranch} ${styles.mockBranch3}`} />
+
+          {/* 3 Step nodes — 우측 세로 정렬 */}
+          <g className={`${styles.mockStep} ${styles.mockStep1}`}>
+            <circle cx="460" cy="100" r="28" fill="#fff" stroke="var(--p)" strokeWidth="2" />
+            <text x="460" y="105" textAnchor="middle" fontSize="11" fill="var(--p)">
+              S1
+            </text>
+          </g>
+          <g className={`${styles.mockStep} ${styles.mockStep2}`}>
+            <circle cx="460" cy="200" r="28" fill="#fff" stroke="var(--p)" strokeWidth="2" />
+            <text x="460" y="205" textAnchor="middle" fontSize="11" fill="var(--p)">
+              S2
+            </text>
+          </g>
+          <g className={`${styles.mockStep} ${styles.mockStep3}`}>
+            <circle cx="460" cy="300" r="28" fill="#fff" stroke="var(--p)" strokeWidth="2" />
+            <text x="460" y="305" textAnchor="middle" fontSize="11" fill="var(--p)">
+              S3
+            </text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+// ===== Panel 2 Screen — S2 노드 클릭 → 우측 사이드패널 슬라이드 인 =====
+function PanelScreen2({ playing }) {
+  return (
+    <div className={`${styles.mock} ${playing ? styles.mockPlaying : ''}`}>
+      <div className={styles.mockNav}>
+        <div className={styles.mockNavTitle}>Stages</div>
+        {['아이디어 구체화', '프로젝트 계획', '요구사항 정의', '설계', '개발', '테스트 및 검증'].map(
+          (label, i) => (
+            <div
+              key={label}
+              className={`${styles.mockNavItem} ${i === 1 ? styles.mockNavActive : ''}`}
+            >
+              <span className={styles.mockNavNum}>{i + 1}</span>
+              <span>{label}</span>
+            </div>
+          )
+        )}
+      </div>
+
+      <div className={styles.mockCanvas}>
+        <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid meet" className={styles.mockSvg}>
+          <defs>
+            <pattern id="grid2" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1" fill="rgba(108, 99, 181, 0.08)" />
+            </pattern>
+          </defs>
+          <rect width="600" height="400" fill="url(#grid2)" />
+
+          {/* Diamond + 3 Step nodes — Panel 1 결과 상태에서 시작 */}
+          <polygon points="180,72 220,110 180,148 140,110" fill="#fff" stroke="var(--p)" strokeWidth="2.5" />
+          <text x="180" y="116" textAnchor="middle" fontSize="11" fill="var(--p)" fontWeight="700">R</text>
+          <line x1="180" y1="148" x2="80" y2="280" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
+          <line x1="180" y1="148" x2="180" y2="280" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
+          <line x1="180" y1="148" x2="280" y2="280" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
+          <g><circle cx="80" cy="310" r="24" fill="#fff" stroke="var(--p)" strokeWidth="1.5" opacity="0.55" /><text x="80" y="314" textAnchor="middle" fontSize="10" fill="var(--p)" opacity="0.55">S1</text></g>
+          <g><circle cx="280" cy="310" r="24" fill="#fff" stroke="var(--p)" strokeWidth="1.5" opacity="0.55" /><text x="280" y="314" textAnchor="middle" fontSize="10" fill="var(--p)" opacity="0.55">S3</text></g>
+          {/* S2 — 강조될 노드 */}
+          <circle cx="180" cy="310" r="32" className={styles.mockSelectedRing} fill="none" stroke="var(--p)" strokeWidth="2" />
+          <g><circle cx="180" cy="310" r="24" fill="#fff" stroke="var(--p)" strokeWidth="2" /><text x="180" y="314" textAnchor="middle" fontSize="10" fill="var(--p)" fontWeight="700">S2</text></g>
+
+          {/* Side Panel — 우측에서 슬라이드 인 */}
+          <g className={styles.mockSidePanel}>
+            <rect x="360" y="20" width="220" height="360" rx="14" fill="#fff" stroke="var(--border)" />
+            {/* Header */}
+            <rect x="378" y="40" width="80" height="10" rx="3" fill="var(--p-faint)" />
+            <rect x="378" y="60" width="140" height="14" rx="3" fill="var(--t-strong)" />
+            {/* Tabs */}
+            <rect x="378" y="92" width="50" height="6" rx="2" fill="var(--p)" />
+            <rect x="438" y="92" width="44" height="6" rx="2" fill="var(--border)" />
+            {/* Content lines — typing stagger */}
+            <rect x="378" y="118" width="60" height="8" rx="2" fill="var(--t-strong)" className={styles.mockLine1} />
+            <rect x="378" y="138" width="180" height="6" rx="2" fill="var(--border-soft)" className={styles.mockLine2} />
+            <rect x="378" y="152" width="170" height="6" rx="2" fill="var(--border-soft)" className={styles.mockLine3} />
+            <rect x="378" y="166" width="120" height="6" rx="2" fill="var(--border-soft)" className={styles.mockLine4} />
+            <rect x="378" y="198" width="80" height="8" rx="2" fill="var(--t-strong)" className={styles.mockLine5} />
+            <rect x="378" y="218" width="180" height="6" rx="2" fill="var(--border-soft)" className={styles.mockLine6} />
+            <rect x="378" y="232" width="160" height="6" rx="2" fill="var(--border-soft)" className={styles.mockLine7} />
+            {/* Term chips */}
+            <g className={styles.mockChip1}>
+              <rect x="378" y="266" width="60" height="20" rx="10" fill="var(--p-faint)" />
+              <text x="408" y="280" textAnchor="middle" fontSize="9" fill="var(--p)" fontWeight="700">용어</text>
+            </g>
+            <g className={styles.mockChip2}>
+              <rect x="446" y="266" width="72" height="20" rx="10" fill="var(--p-faint)" />
+              <text x="482" y="280" textAnchor="middle" fontSize="9" fill="var(--p)" fontWeight="700">Term</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+// ===== Panel 3 Screen — 여러 분기 → 롤백 =====
+function PanelScreen3({ playing }) {
+  return (
+    <div className={`${styles.mock} ${playing ? styles.mockPlaying : ''}`}>
+      <div className={styles.mockNav}>
+        <div className={styles.mockNavTitle}>Stages</div>
+        {['아이디어 구체화', '프로젝트 계획', '요구사항 정의', '설계', '개발', '테스트 및 검증'].map(
+          (label, i) => (
+            <div
+              key={label}
+              className={`${styles.mockNavItem} ${i === 2 ? styles.mockNavActive : ''}`}
+            >
+              <span className={styles.mockNavNum}>{i + 1}</span>
+              <span>{label}</span>
+            </div>
+          )
+        )}
+      </div>
+
+      <div className={styles.mockCanvas}>
+        <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid meet" className={styles.mockSvg}>
+          <defs>
+            <pattern id="grid3" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1" fill="rgba(108, 99, 181, 0.08)" />
+            </pattern>
+          </defs>
+          <rect width="600" height="400" fill="url(#grid3)" />
+
+          {/* Root diamond */}
+          <polygon points="300,40 332,72 300,104 268,72" fill="#fff" stroke="var(--p)" strokeWidth="2" />
+          <text x="300" y="78" textAnchor="middle" fontSize="10" fill="var(--p)" fontWeight="700">R1</text>
+
+          {/* Level 1 lines */}
+          <line x1="300" y1="104" x2="180" y2="160" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+          <line x1="300" y1="104" x2="420" y2="160" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+
+          {/* Level 1 nodes */}
+          <g className={styles.mockBranchKeep}>
+            <circle cx="180" cy="180" r="20" fill="var(--p)" stroke="var(--p)" strokeWidth="2" />
+            <text x="180" y="184" textAnchor="middle" fontSize="9" fill="#fff" fontWeight="700">A1</text>
+          </g>
+          <g className={styles.mockBranchRollback}>
+            <circle cx="420" cy="180" r="20" fill="#fff" stroke="var(--p)" strokeWidth="2" />
+            <text x="420" y="184" textAnchor="middle" fontSize="9" fill="var(--p)" fontWeight="700">B1</text>
+          </g>
+
+          {/* Level 2 — right side (will be canceled on rollback) */}
+          <g className={styles.mockToRollback}>
+            <line x1="420" y1="200" x2="350" y2="260" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+            <line x1="420" y1="200" x2="490" y2="260" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+            <circle cx="350" cy="280" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" />
+            <text x="350" y="284" textAnchor="middle" fontSize="9" fill="var(--p)">B2</text>
+            <circle cx="490" cy="280" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" />
+            <text x="490" y="284" textAnchor="middle" fontSize="9" fill="var(--p)">B3</text>
+          </g>
+
+          {/* Click ripple on B1 (rollback target) */}
+          <circle cx="420" cy="180" r="28" className={styles.mockRollbackRipple} fill="none" stroke="var(--p)" strokeWidth="2" />
+
+          {/* Replacement branch — appears after rollback */}
+          <g className={styles.mockNewBranch}>
+            <line x1="420" y1="200" x2="420" y2="260" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+            <circle cx="420" cy="280" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" strokeDasharray="3 3" />
+            <text x="420" y="284" textAnchor="middle" fontSize="9" fill="var(--p)">?</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  )
+}
+
+// ===== Panel 4 Screen — Step 영역 선택 → .md 다운로드 =====
+function PanelScreen4({ playing }) {
+  return (
+    <div className={`${styles.mock} ${playing ? styles.mockPlaying : ''}`}>
+      <div className={styles.mockNav}>
+        <div className={styles.mockNavTitle}>Stages</div>
+        {['아이디어 구체화', '프로젝트 계획', '요구사항 정의', '설계', '개발', '테스트 및 검증'].map(
+          (label, i) => (
+            <div
+              key={label}
+              className={`${styles.mockNavItem} ${i === 3 ? styles.mockNavActive : ''}`}
+            >
+              <span className={styles.mockNavNum}>{i + 1}</span>
+              <span>{label}</span>
+            </div>
+          )
+        )}
+      </div>
+
+      <div className={styles.mockCanvas}>
+        <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid meet" className={styles.mockSvg}>
+          <defs>
+            <pattern id="grid4" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1" fill="rgba(108, 99, 181, 0.08)" />
+            </pattern>
+          </defs>
+          <rect width="600" height="400" fill="url(#grid4)" />
+
+          {/* Faint background tree (dim while modal up) */}
+          <g opacity="0.18">
+            <polygon points="120,80 145,105 120,130 95,105" fill="#fff" stroke="var(--p)" strokeWidth="1.5" />
+            <circle cx="120" cy="180" r="16" fill="#fff" stroke="var(--p)" strokeWidth="1.5" />
+            <circle cx="120" cy="240" r="16" fill="var(--p)" stroke="var(--p)" />
+            <circle cx="120" cy="300" r="16" fill="#fff" stroke="var(--p)" strokeWidth="1.5" />
+            <line x1="120" y1="105" x2="120" y2="295" stroke="var(--p)" strokeWidth="1" />
+          </g>
+
+          {/* Export Modal */}
+          <g className={styles.mockModal}>
+            <rect x="220" y="60" width="320" height="280" rx="16" fill="#fff" stroke="var(--border)" />
+            {/* Modal title */}
+            <rect x="240" y="84" width="120" height="14" rx="3" fill="var(--t-strong)" />
+            <rect x="240" y="106" width="220" height="6" rx="2" fill="var(--border-soft)" />
+            {/* Checklist rows */}
+            <g className={styles.mockCheck1}>
+              <rect x="240" y="138" width="14" height="14" rx="3" className={styles.mockCheckBox} />
+              <rect x="262" y="142" width="180" height="6" rx="2" fill="var(--t-strong)" />
+            </g>
+            <g className={styles.mockCheck2}>
+              <rect x="240" y="166" width="14" height="14" rx="3" className={styles.mockCheckBox} />
+              <rect x="262" y="170" width="200" height="6" rx="2" fill="var(--t-strong)" />
+            </g>
+            <g className={styles.mockCheck3}>
+              <rect x="240" y="194" width="14" height="14" rx="3" className={styles.mockCheckBox} />
+              <rect x="262" y="198" width="160" height="6" rx="2" fill="var(--t-strong)" />
+            </g>
+            {/* Download button */}
+            <g className={styles.mockDownloadBtn}>
+              <rect x="380" y="280" width="140" height="36" rx="18" fill="var(--p)" />
+              <text x="450" y="303" textAnchor="middle" fontSize="11" fill="#fff" fontWeight="700">
+                내보내기
+              </text>
+            </g>
+          </g>
+
+          {/* Download toast (slides in bottom right after click) */}
+          <g className={styles.mockToast}>
+            <rect x="380" y="350" width="180" height="36" rx="10" fill="#fff" stroke="var(--border)" />
+            <circle cx="400" cy="368" r="6" fill="var(--p)" />
+            <rect x="414" y="364" width="110" height="6" rx="2" fill="var(--t-strong)" />
+            <rect x="414" y="374" width="80" height="4" rx="2" fill="var(--border-soft)" />
+          </g>
+        </svg>
+      </div>
+    </div>
+  )
+}
 
 const PERSONAS = [
   { glyph: '🤔', title: '캡스톤을 준비 중인 대학생', body: '첫 팀 프로젝트, 어디서부터 시작해야 할지 모를 때.' },
@@ -285,6 +645,7 @@ export default function LandingPage() {
           <span>Poco</span>
         </div>
         <ul className={styles.navMenu}>
+          <li><a href="#scene-1" onClick={(e) => handleAnchorClick(e, 'scene-1')}>서비스</a></li>
           <li><a href="#scene-3" onClick={(e) => handleAnchorClick(e, 'scene-3')}>기능</a></li>
           <li><a href="#scene-4" onClick={(e) => handleAnchorClick(e, 'scene-4')}>근거</a></li>
           <li><a href="#scene-5" onClick={(e) => handleAnchorClick(e, 'scene-5')}>사용자</a></li>
@@ -302,13 +663,18 @@ export default function LandingPage() {
         <div className={styles.scene1Inner}>
           <Reveal as="h1" className={styles.heroTitle}>
             AI가 다 만들어주는 시대,<br />
-            무엇을·왜 만들지 정의하고 계신가요?
+            무엇을 · 왜 만들지 정의하고 계신가요?
           </Reveal>
           <Reveal as="p" delay={1} className={styles.heroSub}>
             Poco — 조금씩, 한 걸음씩 사고를 정리해주는 AI 캔버스.
           </Reveal>
           <Reveal delay={2} className={styles.heroVis}>
-            <img src="/assets/hero-imac.png" alt="" />
+            <div className={styles.heroDevice}>
+              <img src="/assets/hero-imac.png" alt="" />
+              <div className={styles.heroDisplay}>
+                <HeroScreen />
+              </div>
+            </div>
           </Reveal>
           <Reveal delay={3} className={styles.heroCtas}>
             <button type="button" className={styles.btnPrimary} onClick={handleStart}>
@@ -401,16 +767,17 @@ export default function LandingPage() {
                 <img className={styles.deviceFrame} src="/assets/show-imac.png" alt="" />
                 <div className={styles.deviceDisplay}>
                   <div className={styles.screens}>
-                    {PANELS.map((panel, i) => (
-                      <div
-                        key={i}
-                        className={`${styles.screen} ${i === activePanel ? styles.screenActive : ''}`}
-                      >
-                        <div className={styles.ph}>
-                          <span className={styles.phLabel}>{panel.screenLabel}</span>
+                    {PANELS.map((_, i) => {
+                      const Screen = [PanelScreen1, PanelScreen2, PanelScreen3, PanelScreen4][i]
+                      return (
+                        <div
+                          key={i}
+                          className={`${styles.screen} ${i === activePanel ? styles.screenActive : ''}`}
+                        >
+                          <Screen playing={i === activePanel} />
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>
@@ -451,8 +818,24 @@ export default function LandingPage() {
               Poco의 6단계 Stage와 24개 핵심 관문은, 미국 법무부(DOJ)의 SDLC Guidance Document를 재검토·선별하고, SWEBOK V4.0a의 토픽 구조를 참고하여 팀이 자체 설계했습니다.
             </p>
             <ol>
-              <li>U.S. Department of Justice — SDLC Guidance Document</li>
-              <li>SWEBOK V4.0a — IEEE Software Engineering Body of Knowledge</li>
+              <li>
+                <a
+                  href="https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  U.S. Department of Justice — SDLC Guidance Document
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.computer.org/education/bodies-of-knowledge/software-engineering#about"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  SWEBOK V4.0a — IEEE Software Engineering Body of Knowledge
+                </a>
+              </li>
             </ol>
           </Reveal>
         </div>
@@ -478,7 +861,6 @@ export default function LandingPage() {
       <section className={styles.scene6} id="scene-6">
         <div className={styles.scene6Inner}>
           <Reveal as="h2">
-            조금씩, 한 걸음씩<br />
             첫 한 걸음을 시작하세요.
           </Reveal>
           <Reveal as="p" delay={1} className={styles.scene6Sub}>
@@ -492,9 +874,14 @@ export default function LandingPage() {
           </Reveal>
         </div>
         <Reveal delay={3} className={styles.scene6Footer}>
-          <button type="button" onClick={handleGitHub}>GitHub</button>
-          <span className={styles.scene6FooterSep} />
-          <span>© 2026 국민대학교 AWS 분반 캡스톤 59팀</span>
+          <p className={styles.scene6FooterTagline}>
+            아이디어를 설계까지 쌓아가는 사고의 캔버스.
+          </p>
+          <div className={styles.scene6FooterMeta}>
+            <button type="button" onClick={handleGitHub}>GitHub</button>
+            <span className={styles.scene6FooterSep} />
+            <span>국민대학교 캡스톤 디자인 2026 AWS Team 59</span>
+          </div>
         </Reveal>
       </section>
     </div>
