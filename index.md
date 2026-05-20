@@ -326,7 +326,7 @@ body .wrapper sup a:hover {
 &nbsp;
 
 <p align="center">
-  <img src="./assets/poster.svg" alt="Poco 포스터" width="100%" style="max-width:900px;" />
+  <img src="./assets/poster.png" alt="Poco 포스터" width="100%" style="max-width:900px;" />
 </p>
 
 ## 1. 프로젝트 소개
