@@ -1,18 +1,12 @@
 <p align="center">
-  <a href="https://kookmin-sw.github.io/2026-capstone-59/">
+  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
     <img src="./assets/logo.png" alt="Poco 로고" width="320" />
   </a>
 </p>
 
-<h3 align="center">조금씩, 한 걸음씩 — 아이디어를 설계까지 쌓아가는 사고의 캔버스</h3>
-
-<p align="center">
-  <b>AI가 다 만들어주는 시대, 무엇을 · 왜 만들지 정의하고 계신가요?</b>
-</p>
-
 <p align="center">
   <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
-  <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
+  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_분반_59팀-FF9900?logo=amazon-aws" alt="AWS 분반" /></a>
 </p>
 
@@ -200,6 +194,24 @@ docker-compose up -d
     <td align="center">Backend, DB</td>
   </tr>
 </table>
+
+&nbsp;
+
+---
+
+&nbsp;
+
+<p align="center">
+  <br/>
+  <b style="font-size:1.4em;">조금씩, 한 걸음씩 — 첫 한 걸음을 시작하세요.</b>
+  <br/><br/>
+  <span style="color: #6c63b5;">Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.</span>
+  <br/><br/><br/>
+  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
+    <img src="https://img.shields.io/badge/▶_시작하기-6c63b5?style=for-the-badge&logoColor=white" alt="시작하기" height="44" />
+  </a>
+  <br/><br/>
+</p>
 
 &nbsp;
 
