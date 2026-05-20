@@ -321,10 +321,10 @@
    여유 0.2% 정도 인셋하여 베젤 침범 방지. */
 .heroDisplay {
   position: absolute;
-  left: 13.4%;
-  top: 2.85%;
-  width: 84.1%;
-  height: 58.5%;
+  left: 13.2%;
+  top: 2.65%;
+  width: 84.7%;
+  height: 59.5%;
   overflow: hidden;
   background: #15103a;
 }
@@ -658,10 +658,10 @@
 /* show-imac.png 측정 좌표: L=2.75% T=2.96% W=94.5% H=62.72% */
 .deviceDisplay {
   position: absolute;
-  left: 2.75%;
-  top: 2.96%;
-  width: 94.5%;
-  height: 62.72%;
+  left: 2.6%;
+  top: 2.8%;
+  width: 94.8%;
+  height: 64%;
   overflow: hidden;
   background: var(--s0);
   z-index: 2;

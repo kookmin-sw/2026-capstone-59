@@ -119,7 +119,7 @@ function DemoVideo({ index, playing, fallback: Fallback }) {
       loop
       playsInline
       onError={() => setVideoError(true)}
-      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }}
     >
       <source src={`${DEMO_VIDEOS[index]}.mp4`} type="video/mp4" />
       <source src={`${DEMO_VIDEOS[index]}.webm`} type="video/webm" />
