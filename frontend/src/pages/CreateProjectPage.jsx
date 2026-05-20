@@ -222,8 +222,12 @@ export default function CreateProjectPage() {
     <div className={styles.page}>
       <nav className={styles.nav}>
         {Logo}
-        <button type="button" className={styles.btnBack} onClick={() => setStep(1)}>
-          <span>{'<'}</span> 이전으로
+        <button className={styles.btnBack}
+          onClick={() => navigate(-1)}
+          onMouseEnter={e => e.currentTarget.style.background = '#F0EFFE'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          ‹  이전으로
         </button>
       </nav>
 
@@ -264,7 +268,8 @@ export default function CreateProjectPage() {
           <div className={styles.promptExamples}>
             <p className={styles.promptTipLine}>|</p>
             <p className={styles.promptTip}>
-              💡 친구한테 "이런 거 만들어보려고…" 하고 얘기한다 생각하고 풀어보세요. 디테일은 poco와 진행하면서 단계별로 정리해 나가요!<br />             
+              💡 친구한테 "이런 거 만들어보려고…" 하고 얘기한다 생각하고 풀어보세요.<br />
+              <span style={{ paddingLeft: '1.5em' }}>디테일은 poco와 진행하면서 단계별로 정리해 나가요!</span>
             </p>
           </div>
         </form>
