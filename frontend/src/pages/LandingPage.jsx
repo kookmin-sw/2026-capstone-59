@@ -84,6 +84,72 @@ function HeroScreen() {
   )
 }
 
+// ===== Demo Video — 영상이 있으면 video, 없으면 fallback 애니메이션 =====
+// 영상 파일: public/assets/demo-panel-1.webm ~ demo-panel-4.webm
+// 영상이 준비되면 해당 경로에 파일만 넣으면 자동 재생됨
+const DEMO_VIDEOS = [
+  '/assets/demo-panel-1',
+  '/assets/demo-panel-2',
+  '/assets/demo-panel-3',
+  '/assets/demo-panel-4',
+]
+
+function DemoVideo({ index, playing, fallback: Fallback }) {
+  const videoRef = useRef(null)
+  const [videoError, setVideoError] = useState(false)
+
+  useEffect(() => {
+    if (!videoRef.current) return
+    if (playing) {
+      videoRef.current.currentTime = 0
+      videoRef.current.play().catch(() => {})
+    } else {
+      videoRef.current.pause()
+    }
+  }, [playing])
+
+  if (videoError) {
+    return <Fallback playing={playing} />
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      muted
+      loop
+      playsInline
+      onError={() => setVideoError(true)}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+    >
+      <source src={`${DEMO_VIDEOS[index]}.mp4`} type="video/mp4" />
+      <source src={`${DEMO_VIDEOS[index]}.webm`} type="video/webm" />
+    </video>
+  )
+}
+
+// Hero iMac 영상 — public/assets/demo-hero.mp4 (또는 .webm) 이 있으면 영상, 없으면 HeroScreen fallback
+function HeroDemoVideo() {
+  const [videoError, setVideoError] = useState(false)
+
+  if (videoError) {
+    return <HeroScreen />
+  }
+
+  return (
+    <video
+      autoPlay
+      muted
+      loop
+      playsInline
+      onError={() => setVideoError(true)}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+    >
+      <source src="/assets/demo-hero.mp4" type="video/mp4" />
+      <source src="/assets/demo-hero.webm" type="video/webm" />
+    </video>
+  )
+}
+
 // ===== Panel 1 Screen — 다이아 노드 클릭 → 3개 분기 애니메이션 =====
 // 7s 루프: 다이아 등장 → 클릭 펄스 → 3개 분기 라인 → 3개 Step 노드 등장 → 페이드아웃
 function PanelScreen1({ playing }) {
@@ -641,8 +707,7 @@ export default function LandingPage() {
       {/* ===== NAV ===== */}
       <nav className={`${styles.nav} ${navScrolled ? styles.navScrolled : ''}`}>
         <div className={styles.brand}>
-          <span className={styles.brandDot} aria-hidden="true" />
-          <span>Poco</span>
+          <img src="/poco-logo-text.svg" alt="poco" height={24} />
         </div>
         <ul className={styles.navMenu}>
           <li><a href="#scene-1" onClick={(e) => handleAnchorClick(e, 'scene-1')}>서비스</a></li>
@@ -672,7 +737,7 @@ export default function LandingPage() {
             <div className={styles.heroDevice}>
               <img src="/assets/hero-imac.png" alt="" />
               <div className={styles.heroDisplay}>
-                <HeroScreen />
+                <HeroDemoVideo />
               </div>
             </div>
           </Reveal>
@@ -768,13 +833,13 @@ export default function LandingPage() {
                 <div className={styles.deviceDisplay}>
                   <div className={styles.screens}>
                     {PANELS.map((_, i) => {
-                      const Screen = [PanelScreen1, PanelScreen2, PanelScreen3, PanelScreen4][i]
+                      const Fallback = [PanelScreen1, PanelScreen2, PanelScreen3, PanelScreen4][i]
                       return (
                         <div
                           key={i}
                           className={`${styles.screen} ${i === activePanel ? styles.screenActive : ''}`}
                         >
-                          <Screen playing={i === activePanel} />
+                          <DemoVideo index={i} playing={i === activePanel} fallback={Fallback} />
                         </div>
                       )
                     })}
