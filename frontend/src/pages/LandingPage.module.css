@@ -81,6 +81,11 @@
   border-bottom: 1px solid transparent;
   font-family: var(--f-sans);
 }
+.nav .navMenu {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
 .navScrolled {
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: saturate(140%) blur(14px);
@@ -632,7 +637,10 @@
 /* RIGHT: pinned iMac frame */
 .stageDevice {
   position: sticky;
-  top: 8vh;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
   align-self: start;
 }
 .device {

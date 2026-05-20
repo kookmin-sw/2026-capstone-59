@@ -707,7 +707,7 @@ export default function LandingPage() {
       {/* ===== NAV ===== */}
       <nav className={`${styles.nav} ${navScrolled ? styles.navScrolled : ''}`}>
         <div className={styles.brand}>
-          <img src="/poco-logo-text.svg" alt="poco" height={24} />
+          <img src="/poco-logo-text.svg" alt="poco" height={25} />
         </div>
         <ul className={styles.navMenu}>
           <li><a href="#scene-1" onClick={(e) => handleAnchorClick(e, 'scene-1')}>서비스</a></li>
@@ -759,7 +759,9 @@ export default function LandingPage() {
         <div className={styles.heroMeta}>
           <span>국민대학교 AWS 분반 캡스톤</span>
           <span className={styles.heroMetaDot} />
-          <span>59팀 · 2026</span>
+          <span>59팀</span>
+          <span className={styles.heroMetaDot} />
+          <span>2026</span>
         </div>
       </section>
 
