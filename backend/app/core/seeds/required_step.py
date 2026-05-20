@@ -11,8 +11,8 @@ REQUIRED_STEP_DATA: list[dict] = [
     {
         "stage_sequence": 1,
         "sequence": 1,
-        "name": "문제/기회 정의",
-        "toast_message": "문제/기회 정의를 완료했습니다! 🎯",
+        "name": "문제·기회 정의",
+        "toast_message": "문제·기회 정의를 완료했습니다! 🎯",
         "template_description": "프로젝트가 해결하려는 문제 또는 포착한 기회를 명확하게 정의하는 문서입니다. 문제의 배경, 중요도, 기존 대안의 한계 등을 정리합니다.",
         "goal": "프로젝트가 해결하려는 문제 또는 포착한 기회를 명확하게 정의한다.",
         "entry_criteria": "Stage 1의 출발점이므로 별도 선행 맥락 없이 초기 프롬프트만으로 진입 가능하다.",
@@ -304,7 +304,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         "toast_message": "일정 계획 수립을 완료했습니다! 📅",
         "template_description": "프로젝트 전체 기간을 Stage/마일스톤 단위로 배분하는 일정 뼈대를 정의하는 문서입니다. 마일스톤, 공수 추정, 일정 도구를 포함합니다.",
         "goal": "프로젝트 전체 기간을 Stage/마일스톤 단위로 배분하는 일정 뼈대를 만든다.",
-        "entry_criteria": "Step 히스토리에 \"무엇을 얼마나 만들 것인지\"에 대한 컨셉·실현 가능성 맥락이 존재한다.",
+        "entry_criteria": 'Step 히스토리에 "무엇을 얼마나 만들 것인지"에 대한 컨셉·실현 가능성 맥락이 존재한다.',
         "fulfillment_criteria": [
             "전체 일정을 Stage/구간으로 분할",
             "주요 마일스톤 또는 데드라인 설정",
@@ -442,7 +442,7 @@ REQUIRED_STEP_DATA: list[dict] = [
         "toast_message": "위험 식별을 완료했습니다! ⚠️",
         "template_description": "프로젝트 진행을 방해할 수 있는 주요 리스크를 미리 식별하고 대응 방향을 정하는 문서입니다.",
         "goal": "프로젝트 진행을 방해할 수 있는 주요 리스크를 미리 식별하고 대응 방향을 정한다.",
-        "entry_criteria": "Step 히스토리에 일정·역할·기술 선택 등 \"깨질 수 있는 계획\"이 존재한다.",
+        "entry_criteria": 'Step 히스토리에 일정·역할·기술 선택 등 "깨질 수 있는 계획"이 존재한다.',
         "fulfillment_criteria": [
             "기술 리스크 식별 (난이도·학습 곡선 등)",
             "일정 리스크 식별 (딜레이 요인·병목)",
@@ -503,8 +503,8 @@ REQUIRED_STEP_DATA: list[dict] = [
     {
         "stage_sequence": 2,
         "sequence": 4,
-        "name": "개발 환경/도구 결정",
-        "toast_message": "개발 환경/도구 결정을 완료했습니다! 🛠️",
+        "name": "개발 환경·도구 결정",
+        "toast_message": "개발 환경·도구 결정을 완료했습니다! 🛠️",
         "template_description": "프로젝트에서 공통으로 사용할 기술 스택과 협업 도구를 확정하는 문서입니다.",
         "goal": "프로젝트에서 공통으로 사용할 기술 스택과 협업 도구를 확정한다.",
         "entry_criteria": "Step 히스토리에 컨셉·실현 가능성 맥락이 존재하여 어떤 기술 영역이 필요할지 판단 가능하다.",
@@ -1624,8 +1624,8 @@ REQUIRED_STEP_DATA: list[dict] = [
     {
         "stage_sequence": 6,
         "sequence": 4,
-        "name": "수용 테스트/최종 검토",
-        "toast_message": "수용 테스트/최종 검토를 완료했습니다! 🎉",
+        "name": "최종 검토",
+        "toast_message": "최종 검토를 완료했습니다! 🎉",
         "template_description": "초기 문제/기회와 요구사항이 실제로 해결되었는지, 프로젝트 목표 달성 여부를 판단하는 문서입니다.",
         "goal": "초기 문제/기회와 요구사항이 실제로 해결되었는지, 프로젝트 목표 달성 여부를 판단한다.",
         "entry_criteria": "Step 히스토리에 결함 기록과 주요 결함 처리에 대한 맥락이 존재한다.",
