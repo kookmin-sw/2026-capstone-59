@@ -4,7 +4,11 @@
   </a>
 </p>
 
-<h3 align="center">아이디어를 설계까지 쌓아가는 사고의 캔버스</h3>
+<h3 align="center">조금씩, 한 걸음씩 — 아이디어를 설계까지 쌓아가는 사고의 캔버스</h3>
+
+<p align="center">
+  <b>AI가 다 만들어주는 시대, 무엇을 · 왜 만들지 정의하고 계신가요?</b>
+</p>
 
 <p align="center">
   <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
@@ -209,7 +213,7 @@ docker-compose up -d
   <br/>
   <b style="font-size:1.4em; color: #6c63b5;">첫 한 걸음을 시작하세요.</b>
   <br/><br/>
-  <span style="color: #6c63b5;">Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.</span>
+  <img src="https://img.shields.io/badge/Poco%EB%8A%94_%EA%B7%B8_%EB%8B%B5%EC%9D%84_%EC%8A%A4%EC%8A%A4%EB%A1%9C_%EC%B0%BE%EC%95%84%EA%B0%80%EB%8A%94_%EA%B5%AC%EC%A1%B0%EB%A5%BC_%EC%A0%9C%EA%B3%B5%ED%95%A9%EB%8B%88%EB%8B%A4-6c63b5?style=flat-square&labelColor=ffffff" alt="Poco는 그 답을 스스로 찾아가는 구조를 제공합니다" />
   <br/><br/><br/>
   <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
     <img src="https://img.shields.io/badge/▶_시작하기-6c63b5?style=for-the-badge&logoColor=white" alt="시작하기" height="44" />
