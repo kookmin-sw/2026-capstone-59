@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="140" height="42" viewBox="0 0 140 42">
-  <rect width="140" height="42" rx="21" fill="#9b8ec4"/>
+  <rect width="140" height="42" rx="21" fill="#6c63b5"/>
   <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle"
         font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', sans-serif"
         font-size="15" font-weight="500" fill="#ffffff" letter-spacing="0.5">시작하기  →</text>
