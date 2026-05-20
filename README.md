@@ -1,6 +1,6 @@
 <p align="center">
   <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
-    <img src="./assets/logo.png" alt="Poco 로고" width="320" />
+    <img src="./assets/logo.png" alt="Poco 로고" width="380" />
   </a>
 </p>
 
@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
-  <!-- <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a> -->
+  <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_분반_59팀-FF9900?logo=amazon-aws" alt="AWS 분반" /></a>
 </p>
 
@@ -20,7 +20,7 @@
 
 ## 💨 목차
 
-1. [서비스 소개](#-서비스-소개)
+1. [포스터](#-포스터)
 1. [한 줄 요약](#-한-줄-요약)
 2. [핵심 기능](#-핵심-기능)
 3. [시스템 아키텍처](#-시스템-아키텍처)
@@ -31,7 +31,7 @@
 
 &nbsp;
 
-## 🐾 서비스 소개
+## 🐾 포스터
 
 <p align="center">
   <img src="./assets/poster.png" alt="Poco 포스터" width="100%" style="max-width:900px;" />
@@ -206,7 +206,7 @@ docker-compose up -d
 
 &nbsp;
 
----
+<!-- ---
 
 &nbsp;
 
@@ -228,8 +228,8 @@ $${\color{#6c63b5}\textsf{Poco는 그 답을 스스로 찾아가는 구조를 �
   <br/><br/>
 </p>
 
-&nbsp;
+&nbsp; -->
 
 ---
 
-<sub>*본 프로젝트는 <a href="https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm">미국 법무부(<b>DOJ</b>) <b>SDLC Guidance Document</b></a>의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, <a href="https://www.computer.org/education/bodies-of-knowledge/software-engineering#about"><b>SWEBOK V4.0a</b> (2024, IEEE Computer Society)</a>의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
+<sub>*본 프로젝트는 미국 법무부 SDLC Guidance Document의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, SWEBOK V4.0a (2024, IEEE Computer Society)</a>의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
