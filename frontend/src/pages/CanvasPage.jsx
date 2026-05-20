@@ -23,6 +23,7 @@ import { getStages } from '../api/stage'
 import { getStepTree, getStepDetail, acceptStep, rollbackStep, createSidePanelStream, keepStep, getSidePanelContent } from '../api/step'
 import { createShare, deleteShare, getShareStatus } from '../api/projects'
 import { createDesignExportStream, getDesignExportJobId, startDesignExport } from '../api/exports'
+import { getMe } from '../api/auth'
 import { BsLink45Deg, BsCheck } from 'react-icons/bs'
 
 import { 
@@ -58,6 +59,9 @@ export default function CanvasPage() {
   const [navCollapsed, setNavCollapsed] = useState(
     () => localStorage.getItem('navCollapsed') === 'true'
   )
+  const [user, setUser] = useState(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const userWrapperRef = useRef(null)
   const [selectedStep, setSelectedStep] = useState(null)
   const [stepDetail, setStepDetail] = useState(null)
   const [streamingText, setStreamingText] = useState(null)
@@ -392,6 +396,22 @@ export default function CanvasPage() {
   }
 
   useEffect(() => {
+    getMe().then(setUser).catch(() => {})
+  }, [])
+
+  // 아바타 메뉴 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!userMenuOpen) return
+    function handleClose(e) {
+      if (userWrapperRef.current && !userWrapperRef.current.contains(e.target)) {
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClose)
+    return () => document.removeEventListener('mousedown', handleClose)
+  }, [userMenuOpen])
+
+  useEffect(() => {
     if (!projectId) return
     getStages(projectId).then((data) => {
       const list = data.stages ?? []
@@ -569,10 +589,30 @@ export default function CanvasPage() {
   }, [nodes, edges, rfInstance])
 
   useEffect(() => {
-    if (!selectedStageId || !projectId) return
-    shouldFitViewRef.current = true
-    fetchAndRenderTree(selectedStageId)
-  }, [selectedStageId, projectId])
+  // if (!selectedStageId || !projectId) return
+  shouldFitViewRef.current = true
+
+  // 더미 필수 노드 1개 (디자인 확인용)
+  setNodes([
+    {
+      id: 'dummy-required',
+      type: 'requiredStepNode',
+      position: { x: 100, y: 300 },
+      data: {
+        label: '문제/기회 정의',
+        status: 'ACCEPTED',
+        is_required: true,
+        stageNumber: 1,
+        step_id: 'dummy-required',
+        keep: false,
+      },
+    },
+  ])
+  setEdges([])
+
+  // fetchAndRenderTree(selectedStageId)   // ← 잠시 주석
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [selectedStageId, projectId])
 
   useEffect(() => {
     clearTyping()
@@ -601,15 +641,24 @@ export default function CanvasPage() {
   const activeStage = getLatestActiveStage(stages)
   const currentStageId = activeStage?.stage_id ?? null
 
-  const uiStages = stages.map((s) => ({
-    id: s.stage_id,
-    sequence: s.stage_sequence,
-    name: s.stage_name,
-    englishName: STAGE_ENGLISH[s.stage_sequence] ?? '',
-    status: activeStage?.stage_id === s.stage_id ? 'active'
-      : s.stage_sequence < currentStageSequence ? 'completed'
-      : 'locked',
-  }))
+  // const uiStages = stages.map((s) => ({
+  //   id: s.stage_id,
+  //   sequence: s.stage_sequence,
+  //   name: s.stage_name,
+  //   englishName: STAGE_ENGLISH[s.stage_sequence] ?? '',
+  //   status: activeStage?.stage_id === s.stage_id ? 'active'
+  //     : s.stage_sequence < currentStageSequence ? 'completed'
+  //     : 'locked',
+  // }))
+  // 더미 데이터 (디자인 확인용) — 1·2 완료, 3 진행중, 4~6 잠김
+const uiStages = [
+  { id: 'd1', sequence: 1, name: '아이디어 구체화', englishName: 'Ideation',    status: 'completed' },
+  { id: 'd2', sequence: 2, name: '프로젝트 계획',   englishName: 'Planning',    status: 'completed' },
+  { id: 'd3', sequence: 3, name: '요구사항 정의',   englishName: 'Requirement', status: 'active' },
+  { id: 'd4', sequence: 4, name: '설계',           englishName: 'Design',      status: 'locked' },
+  { id: 'd5', sequence: 5, name: '개발',           englishName: 'Development', status: 'locked' },
+  { id: 'd6', sequence: 6, name: '테스트 및 검증', englishName: 'Test',        status: 'locked' },
+]
 
   function focusOnNode(node) {
     if (!rfInstance || !node?.position) return
@@ -824,8 +873,8 @@ export default function CanvasPage() {
       
       if (stageName) {
         const msg = rsName
-          ? `📌 ${stageName} 중 ${rsName}${josa(rsName, '(으)로')} 돌아왔어요!`
-          : `📌 ${stageName}${josa(stageName, '(으)로')} 돌아왔어요!`
+          ? `🔥 ${stageName} 중 ${rsName}${josa(rsName, '(으)로')} 돌아왔어요!`
+          : `🔥 ${stageName}${josa(stageName, '(으)로')} 돌아왔어요!`
         showTimedToast(msg, 5500)
       }
     }
@@ -903,9 +952,9 @@ export default function CanvasPage() {
             clearTimeout(justCompletedRSRef.current.nextMsgTimer)
             justCompletedRSRef.current = null
           }
-          persistentMsgRef.current = `🤔 ${stepName}${josa(stepName, '을/를')} 진행 중이에요!`
+          persistentMsgRef.current = `✨ ${stepName}${josa(stepName, '을/를')} 진행 중이에요!`
 
-          showTimedToast(`📌 ${stepName}${josa(stepName, '이/가')} 시작됐어요!`, 5500)
+          showTimedToast(`🔔 ${stepName}${josa(stepName, '이/가')} 시작됐어요!`, 5500)
         }
       }
 
@@ -969,8 +1018,8 @@ export default function CanvasPage() {
             : findRequiredStep(selectedStep.id, nodes, edges)?.data?.label
 
           if (selectedRSName && selectedRSName !== prevRSName) {
-            persistentMsgRef.current = `🤔 ${selectedRSName}${josa(selectedRSName, '을/를')} 진행 중이에요!`
-            showTimedToast(`📌 ${selectedRSName}${josa(selectedRSName, '(으)로')} 돌아왔어요!`, 5500)
+            persistentMsgRef.current = `✨ ${selectedRSName}${josa(selectedRSName, '을/를')} 진행 중이에요!`
+            showTimedToast(`🔥 ${selectedRSName}${josa(selectedRSName, '(으)로')} 돌아왔어요!`, 5500)
           } else {
             persistentMsgRef.current = null
           }
@@ -1234,8 +1283,18 @@ export default function CanvasPage() {
           onClick={handleShareOpen}>
             공유하기
         </button>
-        <div className={styles.avatar}>
-          <HiOutlineUser size={20} />
+        <div className={styles.userWrapper} ref={userWrapperRef}>
+          <button
+            className={styles.avatar}
+            onClick={() => setUserMenuOpen((v) => !v)}
+          >
+            <HiOutlineUser size={20} />
+          </button>
+          {userMenuOpen && (
+            <div className={styles.userDropdown}>
+              <p className={styles.userEmail}>{user?.email ?? '-'}</p>
+            </div>
+          )}
         </div>
       </div>
       </header>

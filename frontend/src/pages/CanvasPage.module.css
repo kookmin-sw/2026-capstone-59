@@ -378,3 +378,27 @@
 :global(.react-flow__node) {
   transition: transform 0.3s ease;
 }
+
+.userWrapper {
+  position: relative;
+}
+
+.userDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--color-border, #ECE9F9);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(41, 28, 128, 0.12);
+  padding: 12px 14px;
+  min-width: 180px;
+  z-index: 100;
+}
+
+.userEmail {
+  font-size: 12px;
+  color: var(--color-text-secondary, #6E5BFD);
+  margin: 0;
+  word-break: break-all;
+}
