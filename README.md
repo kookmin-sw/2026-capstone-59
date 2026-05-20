@@ -10,11 +10,11 @@
   <b>AI가 다 만들어주는 시대, 무엇을 · 왜 만들지 정의하고 계신가요?</b>
 </p>
 
-<!-- <p align="center">
+<p align="center">
   <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
-  <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
+  <!-- <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a> -->
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_분반_59팀-FF9900?logo=amazon-aws" alt="AWS 분반" /></a>
-</p> -->
+</p>
 
 &nbsp;
 
@@ -216,9 +216,15 @@ docker-compose up -d
   <br/>
   <b style="font-size:1.4em;">첫 한 걸음을 시작하세요.</b>
   <br/><br/>
-  Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.
-  <br/><br/><br/>
-  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
+</p>
+
+$${\color{#9b8ec4}\textsf{Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.}}$$
+
+<p align="center">
+  <br/>
+  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
+    <img src="./assets/btn-start.svg" alt="시작하기" height="64" />
+  </a>
   <br/><br/>
 </p>
 
