@@ -4,6 +4,8 @@
   </a>
 </p>
 
+<h3 align="center">아이디어를 설계까지 쌓아가는 사고의 캔버스</h3>
+
 <p align="center">
   <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
   <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
@@ -203,7 +205,9 @@ docker-compose up -d
 
 <p align="center">
   <br/>
-  <b style="font-size:1.4em;">조금씩, 한 걸음씩 — 첫 한 걸음을 시작하세요.</b>
+  <b style="font-size:1.4em; color: #6c63b5;">조금씩, 한 걸음씩</b>
+  <br/>
+  <b style="font-size:1.4em; color: #6c63b5;">첫 한 걸음을 시작하세요.</b>
   <br/><br/>
   <span style="color: #6c63b5;">Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.</span>
   <br/><br/><br/>
@@ -217,4 +221,4 @@ docker-compose up -d
 
 ---
 
-<sub>*본 프로젝트는 미국 법무부(<b>DOJ</b>) <b>SDLC Guidance Document</b>의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, <b>SWEBOK V4.0a</b> (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
+<sub>*본 프로젝트는 미국 법무부(<b>DOJ</b>) <b><a href="https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm">SDLC Guidance Document</a></b>의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, <b><a href="https://www.computer.org/education/bodies-of-knowledge/software-engineering#about">SWEBOK V4.0a</a></b> (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
