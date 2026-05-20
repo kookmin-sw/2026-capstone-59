@@ -218,7 +218,7 @@ docker-compose up -d
   <br/><br/>
 </p>
 
-$${\color{#9b8ec4}\textsf{Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.}}$$
+$${\color{#6c63b5}\textsf{Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.}}$$
 
 <p align="center">
   <br/>
