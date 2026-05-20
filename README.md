@@ -223,7 +223,7 @@ $${\color{#6c63b5}\textsf{Poco는 그 답을 스스로 찾아가는 구조를 �
 <p align="center">
   <br/>
   <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
-    <img src="./assets/btn-start.svg" alt="시작하기" height="42" />
+    <img src="./assets/btn-start.svg?v=2" alt="시작하기" height="42" />
   </a>
   <br/><br/>
 </p>
