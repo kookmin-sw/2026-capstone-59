@@ -278,7 +278,7 @@ export default function ProjectListPage() {
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
-        <img src="/poco-logo-text.svg" alt="poco" height={25} onClick={() => navigate('/projects')}/>
+        <object data="/poco-logo-text.svg" alt="poco" height={25} onClick={() => navigate('/projects')}></object>
       </header>
 
       <div className={styles.body}>

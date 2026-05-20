@@ -707,7 +707,7 @@ export default function LandingPage() {
       {/* ===== NAV ===== */}
       <nav className={`${styles.nav} ${navScrolled ? styles.navScrolled : ''}`}>
         <div className={styles.brand}>
-          <img src="/poco-logo-text.svg" alt="poco" height={25} />
+          <object data="/poco-logo-text.svg" alt="poco" height={25}></object>
         </div>
         <ul className={styles.navMenu}>
           <li><a href="#scene-1" onClick={(e) => handleAnchorClick(e, 'scene-1')}>서비스</a></li>
@@ -735,7 +735,7 @@ export default function LandingPage() {
           </Reveal>
           <Reveal delay={2} className={styles.heroVis}>
             <div className={styles.heroDevice}>
-              <img src="/assets/hero-imac.png" alt="" />
+              <object data="/assets/hero-imac.png" alt=""></object>
               <div className={styles.heroDisplay}>
                 <HeroDemoVideo />
               </div>

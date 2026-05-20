@@ -1266,7 +1266,7 @@ const uiStages = [
     <div className={styles.layout}>
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <img src="/poco-logo-text.svg" alt="poco" height={25} onClick={() => navigate('/projects')}/>
+          <object data="/poco-logo-text.svg" alt="poco" height={25} onClick={() => navigate('/projects')}></object>
           <span>|</span>
           <span className={styles.projectName}>{projectName}</span>
         </div>
