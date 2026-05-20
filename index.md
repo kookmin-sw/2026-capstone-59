@@ -305,7 +305,7 @@ body .wrapper sup a:hover {
       <img src="./assets/github_logo.png" alt="" />
       <span>GitHub 리포지토리</span>
     </a>
-    <a class="poco-btn" href="https://poco.example.com" target="_blank" rel="noopener">
+    <a class="poco-btn" href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/" target="_blank" rel="noopener">
       <span>서비스 바로가기</span>
     </a>
   </div>
@@ -938,7 +938,7 @@ other/#n-other-example       → 문서 수정 및 기타
 
 ### 10-1. 배포 버전
 
-> 📌 *현재 개발 중입니다. 배포 완료 후 서비스 링크를 추가할 예정입니다.*
+> [Poco 서비스 바로가기 →](http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/)
 
 ### 10-2. 로컬 실행
 
