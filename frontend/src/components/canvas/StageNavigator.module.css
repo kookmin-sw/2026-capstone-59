@@ -122,7 +122,7 @@
   font-weight: 600;
   flex-shrink: 0;
   background: #E2DFFE;
-  color: #5C45E8;
+  color: var(--color-primary);
 }
 
 .collapsed .selected .badge {
@@ -133,7 +133,7 @@
 }
 
 .badgeCompleted {
-  background: #5C45E8;
+  background: #7a6bdf;
   color: #fff;
 }
 

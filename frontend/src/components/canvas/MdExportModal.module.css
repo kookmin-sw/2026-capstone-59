@@ -101,7 +101,7 @@
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: #7868c0;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -110,7 +110,7 @@
 }
 
 .closeBtn:hover {
-  color: var(--color-text);
+  color: #5f4ea8;
 }
 
 .controlRow {
@@ -134,7 +134,7 @@
 
 .count {
   font-size: 12.5px;
-  color: #6E5BFD;
+  color: var(--color-primary);
   font-weight: 500;
 }
 
@@ -176,7 +176,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  color: #3c2ab0;
+  color: var(--color-primary);
 }
 
 .chevron {
@@ -222,7 +222,7 @@
 }
 
 .downloadBtn {
-  background: #6E5BFD;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -236,7 +236,7 @@
   transition: background 0.15s, opacity 0.15s;
 }
 .downloadBtn:hover:not(:disabled) {
-  background: #5C4AE0;
+  background: var(--color-primary-hover);
 }
 .downloadBtn:disabled {
   background: #C5BDFB;
@@ -264,11 +264,11 @@
   flex-shrink: 0;
 }
 .checkbox:hover:not(:disabled) {
-  border-color: #6E5BFD;
+  border-color: var(--color-primary);
 }
 .checkbox.checked {
-  background: #6E5BFD;
-  border-color: #6E5BFD;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 .checkbox.checkboxDisabled {
   cursor: not-allowed;
