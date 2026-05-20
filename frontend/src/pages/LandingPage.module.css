@@ -310,13 +310,16 @@
   width: 100%;
   height: auto;
 }
-/* hero-imac.png 측정 좌표: L=13.21% T=1.18% W=84.36% H=60.24% */
+/* hero-imac.png 측정 좌표 (베젤 제외 순수 스크린 영역):
+   pure black pixel 범위 → T=46/1700=2.71% B=1044/1700=61.41%
+   순수 검정 좌측 279/2104=13.26% 우측 2053/2104=97.58%
+   여유 0.2% 정도 인셋하여 베젤 침범 방지. */
 .heroDisplay {
   position: absolute;
-  left: 13.21%;
-  top: 1.18%;
-  width: 84.36%;
-  height: 60.24%;
+  left: 13.4%;
+  top: 2.85%;
+  width: 84.1%;
+  height: 58.5%;
   overflow: hidden;
   background: #15103a;
 }
@@ -781,7 +784,7 @@
 }
 
 @keyframes mockBranchDraw {
-  0%, 37% { stroke-dashoffset: 220; opacity: 0; }
+  0%, 37% { stroke-dashoffset: 300; opacity: 0; }
   50% { stroke-dashoffset: 0; opacity: 0.55; }
   85% { stroke-dashoffset: 0; opacity: 0.55; }
   100% { stroke-dashoffset: 0; opacity: 0; }
@@ -816,8 +819,8 @@
 .mockBranch {
   stroke: var(--p);
   stroke-width: 1.5;
-  stroke-dasharray: 220;
-  stroke-dashoffset: 220;
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
 }
 .mockPlaying .mockBranch1 { animation: mockBranchDraw 7s ease-in-out infinite; animation-delay: 0s; }
 .mockPlaying .mockBranch2 { animation: mockBranchDraw 7s ease-in-out infinite; animation-delay: 0.1s; }
@@ -932,13 +935,13 @@
   transform-box: fill-box;
   transform-origin: center;
 }
-.mockToRollback { opacity: 1; transform-origin: 420px 240px; }
+.mockToRollback { opacity: 1; transform-origin: 430px 275px; }
 .mockBranchKeep { transform-box: fill-box; transform-origin: center; }
 
 .mockPlaying .mockRollbackRipple { animation: mockRollbackRipple 7s ease-out infinite; }
 .mockPlaying .mockToRollback { animation: mockToRollback 7s ease-in-out infinite; }
-.mockPlaying .mockNewBranch { animation: mockNewBranch 7s ease-out infinite; transform-origin: 420px 280px; }
-.mockPlaying .mockBranchKeep { animation: mockBranchKeep 7s ease-in-out infinite; transform-origin: 180px 180px; }
+.mockPlaying .mockNewBranch { animation: mockNewBranch 7s ease-out infinite; transform-origin: 430px 270px; }
+.mockPlaying .mockBranchKeep { animation: mockBranchKeep 7s ease-in-out infinite; transform-origin: 260px 130px; }
 
 /* ===== Panel 4 — Export 모달 → 체크 → 다운로드 토스트 (7s 루프) =====
    0.0–1.0s : 모달 fade-in

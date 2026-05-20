@@ -263,17 +263,17 @@ function PanelScreen2({ playing }) {
           </defs>
           <rect width="600" height="400" fill="url(#grid2)" />
 
-          {/* Diamond + 3 Step nodes — Panel 1 결과 상태에서 시작 */}
-          <polygon points="180,72 220,110 180,148 140,110" fill="#fff" stroke="var(--p)" strokeWidth="2.5" />
-          <text x="180" y="116" textAnchor="middle" fontSize="11" fill="var(--p)" fontWeight="700">R</text>
-          <line x1="180" y1="148" x2="80" y2="280" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
-          <line x1="180" y1="148" x2="180" y2="280" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
-          <line x1="180" y1="148" x2="280" y2="280" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
-          <g><circle cx="80" cy="310" r="24" fill="#fff" stroke="var(--p)" strokeWidth="1.5" opacity="0.55" /><text x="80" y="314" textAnchor="middle" fontSize="10" fill="var(--p)" opacity="0.55">S1</text></g>
-          <g><circle cx="280" cy="310" r="24" fill="#fff" stroke="var(--p)" strokeWidth="1.5" opacity="0.55" /><text x="280" y="314" textAnchor="middle" fontSize="10" fill="var(--p)" opacity="0.55">S3</text></g>
-          {/* S2 — 강조될 노드 */}
-          <circle cx="180" cy="310" r="32" className={styles.mockSelectedRing} fill="none" stroke="var(--p)" strokeWidth="2" />
-          <g><circle cx="180" cy="310" r="24" fill="#fff" stroke="var(--p)" strokeWidth="2" /><text x="180" y="314" textAnchor="middle" fontSize="10" fill="var(--p)" fontWeight="700">S2</text></g>
+          {/* Diamond + 3 Step nodes — 좌측에서 우측으로 수평 분기 */}
+          <polygon points="90,160 130,200 90,240 50,200" fill="#fff" stroke="var(--p)" strokeWidth="2.5" />
+          <text x="90" y="206" textAnchor="middle" fontSize="11" fill="var(--p)" fontWeight="700">R</text>
+          <line x1="130" y1="200" x2="230" y2="110" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
+          <line x1="130" y1="200" x2="230" y2="200" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
+          <line x1="130" y1="200" x2="230" y2="290" stroke="var(--p)" strokeWidth="1.5" opacity="0.4" />
+          <g><circle cx="250" cy="110" r="22" fill="#fff" stroke="var(--p)" strokeWidth="1.5" opacity="0.55" /><text x="250" y="114" textAnchor="middle" fontSize="10" fill="var(--p)" opacity="0.55">S1</text></g>
+          <g><circle cx="250" cy="290" r="22" fill="#fff" stroke="var(--p)" strokeWidth="1.5" opacity="0.55" /><text x="250" y="294" textAnchor="middle" fontSize="10" fill="var(--p)" opacity="0.55">S3</text></g>
+          {/* S2 — 강조될 노드 (중앙) */}
+          <circle cx="250" cy="200" r="30" className={styles.mockSelectedRing} fill="none" stroke="var(--p)" strokeWidth="2" />
+          <g><circle cx="250" cy="200" r="22" fill="#fff" stroke="var(--p)" strokeWidth="2" /><text x="250" y="204" textAnchor="middle" fontSize="10" fill="var(--p)" fontWeight="700">S2</text></g>
 
           {/* Side Panel — 우측에서 슬라이드 인 */}
           <g className={styles.mockSidePanel}>
@@ -336,42 +336,42 @@ function PanelScreen3({ playing }) {
           </defs>
           <rect width="600" height="400" fill="url(#grid3)" />
 
-          {/* Root diamond */}
-          <polygon points="300,40 332,72 300,104 268,72" fill="#fff" stroke="var(--p)" strokeWidth="2" />
-          <text x="300" y="78" textAnchor="middle" fontSize="10" fill="var(--p)" fontWeight="700">R1</text>
+          {/* Root diamond — 좌측 시작점 */}
+          <polygon points="70,170 100,200 70,230 40,200" fill="#fff" stroke="var(--p)" strokeWidth="2" />
+          <text x="70" y="205" textAnchor="middle" fontSize="10" fill="var(--p)" fontWeight="700">R1</text>
 
-          {/* Level 1 lines */}
-          <line x1="300" y1="104" x2="180" y2="160" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
-          <line x1="300" y1="104" x2="420" y2="160" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+          {/* Level 1 lines — 우측 상하 분기 */}
+          <line x1="100" y1="200" x2="240" y2="130" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+          <line x1="100" y1="200" x2="240" y2="270" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
 
           {/* Level 1 nodes */}
           <g className={styles.mockBranchKeep}>
-            <circle cx="180" cy="180" r="20" fill="var(--p)" stroke="var(--p)" strokeWidth="2" />
-            <text x="180" y="184" textAnchor="middle" fontSize="9" fill="#fff" fontWeight="700">A1</text>
+            <circle cx="260" cy="130" r="20" fill="var(--p)" stroke="var(--p)" strokeWidth="2" />
+            <text x="260" y="134" textAnchor="middle" fontSize="9" fill="#fff" fontWeight="700">A1</text>
           </g>
           <g className={styles.mockBranchRollback}>
-            <circle cx="420" cy="180" r="20" fill="#fff" stroke="var(--p)" strokeWidth="2" />
-            <text x="420" y="184" textAnchor="middle" fontSize="9" fill="var(--p)" fontWeight="700">B1</text>
+            <circle cx="260" cy="270" r="20" fill="#fff" stroke="var(--p)" strokeWidth="2" />
+            <text x="260" y="274" textAnchor="middle" fontSize="9" fill="var(--p)" fontWeight="700">B1</text>
           </g>
 
-          {/* Level 2 — right side (will be canceled on rollback) */}
+          {/* Level 2 — B1 의 자식 (rollback 시 취소될 분기) */}
           <g className={styles.mockToRollback}>
-            <line x1="420" y1="200" x2="350" y2="260" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
-            <line x1="420" y1="200" x2="490" y2="260" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
-            <circle cx="350" cy="280" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" />
-            <text x="350" y="284" textAnchor="middle" fontSize="9" fill="var(--p)">B2</text>
-            <circle cx="490" cy="280" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" />
-            <text x="490" y="284" textAnchor="middle" fontSize="9" fill="var(--p)">B3</text>
+            <line x1="280" y1="270" x2="410" y2="230" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+            <line x1="280" y1="270" x2="410" y2="320" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+            <circle cx="430" cy="230" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" />
+            <text x="430" y="234" textAnchor="middle" fontSize="9" fill="var(--p)">B2</text>
+            <circle cx="430" cy="320" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" />
+            <text x="430" y="324" textAnchor="middle" fontSize="9" fill="var(--p)">B3</text>
           </g>
 
           {/* Click ripple on B1 (rollback target) */}
-          <circle cx="420" cy="180" r="28" className={styles.mockRollbackRipple} fill="none" stroke="var(--p)" strokeWidth="2" />
+          <circle cx="260" cy="270" r="28" className={styles.mockRollbackRipple} fill="none" stroke="var(--p)" strokeWidth="2" />
 
-          {/* Replacement branch — appears after rollback */}
+          {/* Replacement branch — appears after rollback (B1 우측에 새 ? 노드) */}
           <g className={styles.mockNewBranch}>
-            <line x1="420" y1="200" x2="420" y2="260" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
-            <circle cx="420" cy="280" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" strokeDasharray="3 3" />
-            <text x="420" y="284" textAnchor="middle" fontSize="9" fill="var(--p)">?</text>
+            <line x1="280" y1="270" x2="410" y2="270" stroke="var(--p)" strokeWidth="1.5" opacity="0.5" />
+            <circle cx="430" cy="270" r="18" fill="#fff" stroke="var(--p)" strokeWidth="1.8" strokeDasharray="3 3" />
+            <text x="430" y="274" textAnchor="middle" fontSize="9" fill="var(--p)">?</text>
           </g>
         </svg>
       </div>
@@ -926,6 +926,7 @@ export default function LandingPage() {
       <section className={styles.scene6} id="scene-6">
         <div className={styles.scene6Inner}>
           <Reveal as="h2">
+            조금씩, 한 걸음씩<br />
             첫 한 걸음을 시작하세요.
           </Reveal>
           <Reveal as="p" delay={1} className={styles.scene6Sub}>
