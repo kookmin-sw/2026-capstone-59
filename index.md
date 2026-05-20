@@ -305,7 +305,7 @@ body .wrapper sup a:hover {
       <img src="./assets/github_logo.png" alt="" />
       <span>GitHub 리포지토리</span>
     </a>
-    <a class="poco-btn" href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/" target="_blank" rel="noopener">
+    <a class="poco-btn" href="https://poco.example.com" target="_blank" rel="noopener">
       <span>서비스 바로가기</span>
     </a>
   </div>
@@ -339,7 +339,7 @@ body .wrapper sup a:hover {
 
 > 만들고 싶은 건 있는데 어디서부터 정리해야 할지 모를 때, AI가 **문제 정의부터 다음 할 일을 단계별로 추천**하고 그 과정을 트리 형태로 시각화해주는 사고의 캔버스.
 >
-> 각 단계마다 **용어 설명 · 멘토링 · 템플릿**을 제공해서, 처음 시작하는 사람도 **검증된 소프트웨어 개발 프로세스**를 자연스럽게 따라갈 수 있다.
+> 각 단계마다 **용어 설명 · 멘토링 · 템플릿**을 제공해서, 기획 경험이 없어도 **검증된 소프트웨어 개발 프로세스**를 자연스럽게 따라갈 수 있다.
 >
 > **"어떤 결정을 해왔고, 지금 어디까지 왔는지"** 가 캔버스 위에 트리로 뻗어나가며 한눈에 정리된다.
 
@@ -353,9 +353,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 ### 소개 영상
 
-[![Poco 시연 영상](https://img.youtube.com/vi/s793EX8OvLs/maxresdefault.jpg)](https://youtu.be/s793EX8OvLs)
-
-> 영상이 보이지 않는다면 [YouTube에서 직접 보기 →](https://youtu.be/s793EX8OvLs)
+> 📌 *소개 영상은 추후 첨부할 예정입니다.*
 
 &nbsp;
 
@@ -588,8 +586,8 @@ Poco가 What · Why를 정의하도록 돕는 방식의 본질은 *"검증된 �
 |---|---|---|
 | **소프트웨어 개발 방법론** | DOJ SDLC, Agile, Scrum, XP, V-Model | 캡스톤 · 사이드 프로젝트 · 인디 창업팀 (현재 Poco의 출발점) |
 | **타 도메인 표준 프로세스** | PMBOK(제품 기획), IMRaD(연구 프로젝트), Double Diamond(UX 리서치), 학술 논문 구조 | 연구실 · 제품 기획팀 · UX 팀 |
-| **기업 온보딩 문화** | 구글, 토스, 아마존의 신입 온보딩 프레임 | 기업 신입 사원 · 입사 준비 중인 취준생 |
-| **유명인의 사고** | 워렌 버핏의 가치투자, 일론 머스크의 first-principles, 제프 베이조스의 고객 집착 | 누구든 — *"저 사람처럼 생각해보고 싶다"* 는 모든 사용자 |
+| **조직의 업무 사고 프레임** | 토스만의 신입 온보딩 프레임, 학교 · 교수님의 캡스톤 평가 프레임 | 기업 신입 사원 · 학교 학생 |
+| **개인의 사고 절차** | 일론 머스크의 first-principles, 워렌 버핏의 가치투자 의사결정 | 누구든 — *"저 사람처럼 생각해보고 싶다"* 는 모든 사용자 |
 
 각 경우에서 *"프레임은 정해두지만, 사고는 사용자 자유"* 라는 Poco의 원칙은 그대로 유지된다. 프레임을 바꾸면 시장이 바뀌고, 그 결과물(사용자의 의사결정 궤적)은 동일한 .md 추출 기능으로 외부 AI까지 자연스럽게 이어진다.
 
@@ -940,8 +938,7 @@ other/#n-other-example       → 문서 수정 및 기타
 
 ### 10-1. 배포 버전
 
-> [Poco 서비스 바로가기 →](http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/)
->
+> 📌 *현재 개발 중입니다. 배포 완료 후 서비스 링크를 추가할 예정입니다.*
 
 ### 10-2. 로컬 실행
 
@@ -979,4 +976,4 @@ docker-compose up -d
 
 ---
 
-<sub>*본 프로젝트는 미국 법무부(**DOJ**) **[SDLC Guidance Document](https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm)** 의 10단계 Phase를 재검토 · 선별하여 6단계로 재구성하고, **[SWEBOK V4.0a](https://www.computer.org/education/bodies-of-knowledge/software-engineering#about)** (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
+<sub>*본 프로젝트는 [미국 법무부(**DOJ**) **SDLC Guidance Document**](https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm)의 10단계 Phase를 재검토 · 선별하여 6단계로 재구성하고, [**SWEBOK V4.0a** (2024, IEEE Computer Society)](https://www.computer.org/education/bodies-of-knowledge/software-engineering#about)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>

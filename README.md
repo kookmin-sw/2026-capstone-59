@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
+  <a href="https://kookmin-sw.github.io/2026-capstone-59/">
     <img src="./assets/logo.png" alt="Poco 로고" width="320" />
   </a>
 </p>
@@ -10,22 +10,17 @@
   <b>AI가 다 만들어주는 시대, 무엇을 · 왜 만들지 정의하고 계신가요?</b>
 </p>
 
-<p align="center">
+<!-- <p align="center">
   <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
-  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
+  <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_분반_59팀-FF9900?logo=amazon-aws" alt="AWS 분반" /></a>
-</p>
-
-&nbsp;
-
-<p align="center">
-  <img src="./assets/poster.svg" alt="Poco 포스터" width="100%" style="max-width:900px;" />
-</p>
+</p> -->
 
 &nbsp;
 
 ## 💨 목차
 
+1. [서비스 소개](#-서비스-소개)
 1. [한 줄 요약](#-한-줄-요약)
 2. [핵심 기능](#-핵심-기능)
 3. [시스템 아키텍처](#-시스템-아키텍처)
@@ -33,6 +28,14 @@
 5. [빠른 시작](#-빠른-시작)
 6. [레포지토리 구조](#-레포지토리-구조)
 7. [팀원](#-팀원)
+
+&nbsp;
+
+## 🐾 서비스 소개
+
+<p align="center">
+  <img src="./assets/poster.svg" alt="Poco 포스터" width="100%" style="max-width:900px;" />
+</p>
 
 &nbsp;
 
@@ -209,15 +212,13 @@ docker-compose up -d
 
 <p align="center">
   <br/>
-  <b style="font-size:1.4em; color: #6c63b5;">조금씩, 한 걸음씩</b>
+  <b style="font-size:1.4em;">조금씩, 한 걸음씩</b>
   <br/>
-  <b style="font-size:1.4em; color: #6c63b5;">첫 한 걸음을 시작하세요.</b>
+  <b style="font-size:1.4em;">첫 한 걸음을 시작하세요.</b>
   <br/><br/>
-  <img src="https://img.shields.io/badge/Poco%EB%8A%94_%EA%B7%B8_%EB%8B%B5%EC%9D%84_%EC%8A%A4%EC%8A%A4%EB%A1%9C_%EC%B0%BE%EC%95%84%EA%B0%80%EB%8A%94_%EA%B5%AC%EC%A1%B0%EB%A5%BC_%EC%A0%9C%EA%B3%B5%ED%95%A9%EB%8B%88%EB%8B%A4-6c63b5?style=flat-square&labelColor=ffffff" alt="Poco는 그 답을 스스로 찾아가는 구조를 제공합니다" />
+  Poco는 그 답을 스스로 찾아가는 구조를 제공합니다.
   <br/><br/><br/>
-  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
-    <img src="https://img.shields.io/badge/▶_시작하기-6c63b5?style=for-the-badge&logoColor=white" alt="시작하기" height="44" />
-  </a>
+  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
   <br/><br/>
 </p>
 
@@ -225,4 +226,4 @@ docker-compose up -d
 
 ---
 
-<sub>*본 프로젝트는 미국 법무부(<b>DOJ</b>) <b><a href="https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm">SDLC Guidance Document</a></b>의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, <b><a href="https://www.computer.org/education/bodies-of-knowledge/software-engineering#about">SWEBOK V4.0a</a></b> (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
+<sub>*본 프로젝트는 <a href="https://www.justice.gov/archive/jmd/irm/lifecycle/table.htm">미국 법무부(<b>DOJ</b>) <b>SDLC Guidance Document</b></a>의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, <a href="https://www.computer.org/education/bodies-of-knowledge/software-engineering#about"><b>SWEBOK V4.0a</b> (2024, IEEE Computer Society)</a>의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
