@@ -1,18 +1,18 @@
 <p align="center">
   <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
-    <img src="./assets/logo.png" alt="Poco 로고" width="380" />
+    <img src="./assets/logo.png" alt="Poco 로고" width="400" />
   </a>
 </p>
 
 <h3 align="center">조금씩, 한 걸음씩 — 아이디어를 설계까지 쌓아가는 사고의 캔버스</h3>
 
 <p align="center">
-  <b>AI가 다 만들어주는 시대, 무엇을 · 왜 만들지 정의하고 계신가요?</b>
+  AI가 다 만들어주는 시대, 무엇을 · 왜 만들지 정의하고 계신가요?
 </p>
 
 <p align="center">
   <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
-  <a href="https://poco.example.com"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
+  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_분반_59팀-FF9900?logo=amazon-aws" alt="AWS 분반" /></a>
 </p>
 
