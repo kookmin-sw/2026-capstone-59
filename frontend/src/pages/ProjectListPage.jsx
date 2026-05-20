@@ -65,6 +65,30 @@ export default function ProjectListPage() {
   const [user, setUser] = useState(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
+  const userWrapperRef = useRef(null)
+
+  useEffect(() => {
+    if (!userMenuOpen) return
+    function handleClickOutside(e) {
+      if (userWrapperRef.current && !userWrapperRef.current.contains(e.target)) {
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [userMenuOpen])
+
+  useEffect(() => {
+    if (!openMenuId) return
+    function handleClose(e) {
+      if (!e.target.closest('[data-more-menu]')) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClose)
+    return () => document.removeEventListener('mousedown', handleClose)
+  }, [openMenuId])
+
   // 첫 진입 가이드 투어
   const [tourOpen, setTourOpen] = useState(false)
   useEffect(() => {
@@ -75,6 +99,7 @@ export default function ProjectListPage() {
       return () => clearTimeout(t)
     }
   }, [])
+
   const handleTourClose = () => {
     setTourOpen(false)
     localStorage.setItem('poco.tour.projectList', '1')
@@ -269,13 +294,12 @@ export default function ProjectListPage() {
               <HiOutlineTrash size={18} /> 휴지통
             </button>
           </nav>
-          <div className={styles.userWrapper}>
+          <div className={styles.userWrapper} ref={userWrapperRef}>
             <button
               className={styles.userBtn}
               onClick={() => setUserMenuOpen((v) => !v)}
             >
               <HiOutlineUser size={18} />
-              <span>{user?.email ?? 'User'}</span>
             </button>
             {userMenuOpen && (
               <div className={styles.userDropdown}>
@@ -363,7 +387,7 @@ export default function ProjectListPage() {
                       <p className={styles.cardName}>{p.name ?? 'Project 1'}</p>
                       <p className={styles.cardMeta}>{timeAgo(p.updated_at)} 편집됨</p>
                     </div>
-                    <div className={styles.moreWrapper}>
+                    <div className={styles.moreWrapper} data-more-menu>
                       <button className={styles.moreBtn} onClick={(e) => handleMoreClick(e, p.project_id)}>
                         <BsThreeDotsVertical size={16} />
                       </button>
@@ -403,7 +427,7 @@ export default function ProjectListPage() {
                     <td>{timeAgo(p.updated_at)}</td>
                     <td>{new Date(p.created_at).toLocaleDateString()}</td>
                     <td>
-                      <div className={styles.moreWrapper}>
+                      <div className={styles.moreWrapper} data-more-menu>
                         <button className={styles.moreBtn} onClick={(e) => handleMoreClick(e, p.project_id)}>
                           <BsThreeDotsVertical size={16} />
                         </button>
@@ -578,8 +602,7 @@ export default function ProjectListPage() {
             {isEditing && (
               <>
                 <p className={styles.editInfoTip}>
-                  💡 수정한 내용은 즉시 반영돼서, 다음에 만들어지는 Step부터 새 정보를 기반으로 추천돼요.<br />
-                  이전에 진행한 결정들은 그대로 보존되니 걱정하지 않으셔도 돼요!
+                  💡 수정한 내용은 즉시 반영돼서, 다음에 만들어지는 Step부터 새 정보를 기반으로 추천돼요. 이전에 진행한 결정들은 그대로 보존되니 걱정하지 않으셔도 돼요!
                 </p>
                 <div className={styles.modalFooter}>
                   <button className={styles.cancelBtn} onClick={handleCancelEdit}>취소</button>

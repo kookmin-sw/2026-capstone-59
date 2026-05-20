@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { HiOutlineFolder, HiOutlineTrash } from 'react-icons/hi'
 import { HiOutlineUser } from 'react-icons/hi'
@@ -6,6 +6,7 @@ import { BsGrid, BsList } from 'react-icons/bs'
 import { MdOutlineSettingsBackupRestore } from "react-icons/md";
 import styles from './ProjectListPage.module.css'
 import { getProjects, restoreProject } from '../api/projects'
+import { getMe, logout } from '../api/auth'
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -20,12 +21,26 @@ function timeAgo(dateStr) {
 
 export default function TrashPage() {
   const navigate = useNavigate()
+  const [user, setUser] = useState(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [projects, setProjects] = useState([])
   const [viewMode, setViewMode] = useState('grid')
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [toast, setToast] = useState(null)
+  const userWrapperRef = useRef(null)
   const size = 8
+
+  useEffect(() => {
+    if (!userMenuOpen) return
+    function handleClickOutside(e) {
+      if (userWrapperRef.current && !userWrapperRef.current.contains(e.target)) {
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [userMenuOpen])
 
   useEffect(() => {
     getProjects({ page, size, is_deleted: true }).then((data) => {
@@ -33,6 +48,10 @@ export default function TrashPage() {
       setTotalCount(data.total_count ?? 0)
     })
     }, [page, size])
+
+  useEffect(() => {
+    getMe().then(setUser).catch(() => {})
+  }, [])
 
   const totalPages = Math.max(1, Math.ceil(totalCount / size))
 
@@ -79,9 +98,27 @@ export default function TrashPage() {
               <HiOutlineTrash size={18} /> 휴지통
             </button>
           </nav>
-          <div className={styles.user}>
-            <HiOutlineUser size={20} />
-            <span>User</span>
+          <div className={styles.userWrapper} ref={userWrapperRef}>
+            <button
+              className={styles.userBtn}
+              onClick={() => setUserMenuOpen((v) => !v)}
+            >
+              <HiOutlineUser size={18} />
+            </button>
+            {userMenuOpen && (
+              <div className={styles.userDropdown}>
+                <p className={styles.userEmail}>{user?.email ?? '-'}</p>
+                <button
+                  className={styles.logoutBtn}
+                  onClick={async () => {
+                    await logout()
+                    navigate('/')
+                  }}
+                >
+                  로그아웃
+                </button>
+              </div>
+            )}
           </div>
         </aside>
 
