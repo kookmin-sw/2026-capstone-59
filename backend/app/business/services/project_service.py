@@ -37,7 +37,9 @@ def create_project(
     db: Session, payload: ProjectCreateRequest, user_id: UUID
 ) -> ProjectResponse:
     if payload.name:
-        existing = project_repo.get_own_active_project_by_name(db, payload.name)
+        existing = project_repo.get_own_active_project_by_name(
+            db, payload.name, user_id
+        )
         if existing:
             logger.warning(
                 "project: create rejected — duplicate name",
@@ -169,7 +171,7 @@ def update_project(
 
     if payload.name is not None:
         existing = project_repo.get_own_active_project_by_name(
-            db, payload.name, exclude_id=project_id
+            db, payload.name, user_id, exclude_id=project_id
         )
         if existing:
             logger.warning(
