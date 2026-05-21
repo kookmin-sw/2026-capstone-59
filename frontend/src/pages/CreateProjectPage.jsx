@@ -68,7 +68,22 @@ export default function CreateProjectPage() {
   if (step === 1) {
     return (
       <div className={styles.page}>
-        <nav className={styles.nav}>{Logo}</nav>
+        <nav className={styles.nav}>
+          <button
+            className={styles.logoBtn}
+            onClick={() => navigate('/projects')}
+            aria-label="홈으로"
+          >
+            <object
+              data="/poco-logo-text.svg"
+              type="image/svg+xml"
+              height={25}
+              style={{ pointerEvents: 'none' }}
+            >
+              poco
+            </object>
+          </button>
+        </nav>
 
         <div className={styles.content}>
           <h1 className={styles.title}>
@@ -223,7 +238,7 @@ export default function CreateProjectPage() {
       <nav className={styles.nav}>
         {Logo}
         <button className={styles.btnBack}
-          onClick={() => navigate(-1)}
+          onClick={() => setStep(1)}
           onMouseEnter={e => e.currentTarget.style.background = '#F0EFFE'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
