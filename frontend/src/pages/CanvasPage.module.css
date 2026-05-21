@@ -411,3 +411,75 @@
   display: flex;
   align-items: center;
 }
+
+.sharedInfoModal {
+  background: #fff;
+  border-radius: 16px;
+  width: 520px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 28px 28px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sharedInfoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.sharedInfoTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-strong);
+  margin: 0;
+}
+
+.sharedInfoTable {
+  display: flex;
+  flex-direction: column;
+}
+
+.sharedInfoRow {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 16px;
+  padding: 12px 0;
+  align-items: start;
+}
+
+.sharedInfoLabel {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.sharedInfoValue {
+  font-size: 15px;
+  color: var(--color-text-strong);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: keep-all;
+}
+
+.sharedPromptSection {
+  border-top: 1px solid #EEEDF8;
+  margin-top: 16px;
+  padding-top: 20px;
+}
+
+.sharedPromptLabel {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-strong);
+  margin: 0 0 12px;
+}
+
+.sharedPromptText {
+  font-size: 15px;
+  color: var(--color-text);
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+}

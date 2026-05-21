@@ -34,6 +34,7 @@ export default function SharedCanvasPage() {
   const [error, setError] = useState(false)
   const [selectedStep, setSelectedStep] = useState(null)
   const [stepDetail, setStepDetail] = useState(null)
+  const [projectInfoOpen, setProjectInfoOpen] = useState(false)
 
   const shouldFitViewRef = useRef(false)
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -101,8 +102,8 @@ export default function SharedCanvasPage() {
     sequence: s.stage_sequence,
     name: s.stage_name,
     englishName: STAGE_ENGLISH[s.stage_sequence] ?? '',
-    status:
-      activeStage?.stage_id === s.stage_id ? 'active'
+    status: s.is_completed ? 'completed'
+      : activeStage?.stage_id === s.stage_id ? 'active'
       : s.stage_sequence < currentStageSequence ? 'completed'
       : 'locked',
   }))
@@ -129,6 +130,16 @@ export default function SharedCanvasPage() {
           <span>|</span>
           <span className={styles.projectName}>{project?.name ?? ''}</span>
           <span className={styles.readOnlyBadge}>view only</span>
+        </div>
+
+        <div className={styles.headerRight}>
+          <button
+            type="button"
+            className={styles.shareBtn}
+            onClick={() => setProjectInfoOpen(true)}
+          >
+            프로젝트 정보
+          </button>
         </div>
       </header>
 
@@ -176,6 +187,65 @@ export default function SharedCanvasPage() {
           </ReactFlow>
         </div>
       </div>
+      {projectInfoOpen && (
+        <div className={styles.overlay} onClick={() => setProjectInfoOpen(false)}>
+          <div className={styles.sharedInfoModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.sharedInfoHeader}>
+              <p className={styles.sharedInfoTitle}>프로젝트 정보</p>
+              <button
+                type="button"
+                className={styles.closeBtn}
+                onClick={() => setProjectInfoOpen(false)}
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.sharedInfoTable}>
+              <div className={styles.sharedInfoRow}>
+                <span className={styles.sharedInfoLabel}>프로젝트 이름</span>
+                <span className={styles.sharedInfoValue}>{project?.name || '-'}</span>
+              </div>
+
+              <div className={styles.sharedInfoRow}>
+                <span className={styles.sharedInfoLabel}>프로젝트 설명</span>
+                <span className={styles.sharedInfoValue}>{project?.description || '-'}</span>
+              </div>
+
+              <div className={styles.sharedInfoRow}>
+                <span className={styles.sharedInfoLabel}>프로젝트 인원</span>
+                <span className={styles.sharedInfoValue}>
+                  {project?.member_count ? `${project.member_count}명` : '-'}
+                </span>
+              </div>
+
+              <div className={styles.sharedInfoRow}>
+                <span className={styles.sharedInfoLabel}>프로젝트 기간</span>
+                <span className={styles.sharedInfoValue}>
+                  {project?.duration_month === 0
+                    ? '기간 없음'
+                    : project?.duration_month
+                    ? `약 ${project.duration_month}개월`
+                    : '-'}
+                </span>
+              </div>
+
+              <div className={styles.sharedInfoRow}>
+                <span className={styles.sharedInfoLabel}>제약 사항</span>
+                <span className={styles.sharedInfoValue}>
+                  {project?.constraints?.length ? project.constraints.join(', ') : '-'}
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.sharedPromptSection}>
+              <p className={styles.sharedPromptLabel}>프로젝트 프롬프트</p>
+              <p className={styles.sharedPromptText}>{project?.prompt || '-'}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
