@@ -28,6 +28,7 @@ content/
 
 # Personal work context (not for public repo)
 CLAUDE.md
+ai/PROMPT_CHANGELOG.md
 
 # Presentation working files (local only — not for public repo)
 presentation/
