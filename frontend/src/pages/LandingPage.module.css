@@ -1341,7 +1341,7 @@
 }
 
 /* 좁아지면: 데스크탑 메뉴 숨기고 햄버거 표시 */
-@media (max-width: 750px) {
+@media (max-width: 850px) {
   .navMenu,
   .navRight {
     display: none;

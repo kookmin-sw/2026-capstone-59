@@ -563,6 +563,8 @@ export default function LandingPage() {
   const [sdlcActive, setSdlcActive] = useState(new Set())
   const [sdlcLit, setSdlcLit] = useState(new Set())
 
+  const [menuOpen, setMenuOpen] = useState(false)
+
   const stageRef = useRef(null)
   const panelRefs = useRef([])
   const sdlcRef = useRef(null)
@@ -732,7 +734,34 @@ export default function LandingPage() {
           ) : null}
           <button type="button" className={styles.navCta} onClick={handleStart}>시작하기</button>
         </div>
+
+        {/* 햄버거 (좁을 때만 CSS로 표시) */}
+        <button className={styles.hamburger} onClick={() => setMenuOpen(true)} aria-label="메뉴 열기">
+          <HiMenu size={26} />
+        </button>
       </nav>
+
+      {/* 우측 드로어 */}
+      <div
+        className={`${styles.drawerOverlay} ${menuOpen ? styles.drawerOpen : ''}`}
+        onClick={() => setMenuOpen(false)}
+      />
+      <aside className={`${styles.drawer} ${menuOpen ? styles.drawerOpen : ''}`}>
+        <button className={styles.drawerClose} onClick={() => setMenuOpen(false)} aria-label="메뉴 닫기">
+          <HiX size={24} />
+        </button>
+        <ul className={styles.drawerMenu}>
+          <li><a href="#scene-1" onClick={(e) => { handleAnchorClick(e, 'scene-1'); setMenuOpen(false) }}>서비스</a></li>
+          <li><a href="#scene-3" onClick={(e) => { handleAnchorClick(e, 'scene-3'); setMenuOpen(false) }}>기능</a></li>
+          <li><a href="#scene-4" onClick={(e) => { handleAnchorClick(e, 'scene-4'); setMenuOpen(false) }}>근거</a></li>
+          <li><a href="#scene-5" onClick={(e) => { handleAnchorClick(e, 'scene-5'); setMenuOpen(false) }}>사용자</a></li>
+          <li><a href="/usecase" onClick={(e) => { e.preventDefault(); navigate('/usecase') }}>사용사례</a></li>
+        </ul>
+        <div className={styles.drawerActions}>
+          {isLoggedIn ? <button className={styles.navLogout} onClick={() => { handleLogout(); setMenuOpen(false) }}>로그아웃</button> : null}
+          <button className={styles.navCta} onClick={() => { handleStart(); setMenuOpen(false) }}>시작하기</button>
+        </div>
+      </aside>
 
       {/* ===== SCENE 1 — Opening ===== */}
       <section className={styles.scene1} id="scene-1">
