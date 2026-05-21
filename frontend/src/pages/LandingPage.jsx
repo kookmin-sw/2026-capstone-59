@@ -579,6 +579,11 @@ export default function LandingPage() {
     return () => { cancelled = true }
   }, [])
 
+  useEffect(() => {
+    document.documentElement.style.scrollbarGutter = 'stable'
+    return () => { document.documentElement.style.scrollbarGutter = '' }
+  }, [])
+
   // CTA 동작 — 로그인 상태에 따라 분기
   const handleStart = useCallback(() => {
     navigate(isLoggedIn ? '/projects' : '/login')

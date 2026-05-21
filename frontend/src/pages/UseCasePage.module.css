@@ -49,10 +49,6 @@
   font-size: 18px;
 }
 
-html {
-  scrollbar-gutter: stable;
-}
-
 /* 햄버거 — 기본 숨김 */
 .hamburger {
   display: none;
@@ -93,7 +89,6 @@ html {
   height: 100%;
   width: 260px;                 /* 화면 다 안 차지 */
   background: #fff;
-  box-shadow: -4px 0 24px rgba(41, 28, 128, 0.15);
   transform: translateX(100%);  /* 오른쪽 밖에 숨김 */
   transition: transform 0.28s ease;
   z-index: 1001;

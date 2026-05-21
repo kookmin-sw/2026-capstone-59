@@ -32,6 +32,11 @@ export default function UseCasePage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    document.documentElement.style.scrollbarGutter = 'stable'
+    return () => { document.documentElement.style.scrollbarGutter = '' }
+  }, [])
+
   const handleStart = useCallback(() => {
     navigate(isLoggedIn ? '/projects' : '/login')
   }, [isLoggedIn, navigate])
