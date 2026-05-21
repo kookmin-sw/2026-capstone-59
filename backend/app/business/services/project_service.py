@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import StepStatus
 from app.core.exceptions import (
-    DuplicateProjectNameError, 
+    DuplicateProjectNameError,
     ProjectNotFoundError,
     ConstraintTooLongError,
     ConstraintsLimitError,
@@ -37,7 +37,7 @@ def create_project(
     db: Session, payload: ProjectCreateRequest, user_id: UUID
 ) -> ProjectResponse:
     if payload.name:
-        existing = project_repo.get_active_project_by_name(db, payload.name)
+        existing = project_repo.get_own_active_project_by_name(db, payload.name)
         if existing:
             logger.warning(
                 "project: create rejected — duplicate name",
@@ -55,7 +55,7 @@ def create_project(
             duration_month=payload.duration_months,
             member_count=payload.member_count,
             description=payload.description,
-            constraints=payload.constraints, 
+            constraints=payload.constraints,
             prompt=payload.prompt,
         ),
     )
@@ -168,7 +168,7 @@ def update_project(
         raise ProjectNotFoundError()
 
     if payload.name is not None:
-        existing = project_repo.get_active_project_by_name(
+        existing = project_repo.get_own_active_project_by_name(
             db, payload.name, exclude_id=project_id
         )
         if existing:

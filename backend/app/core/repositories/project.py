@@ -29,11 +29,13 @@ def get_project_by_id(db: Session, project_id: UUID) -> Project | None:
     return db.get(Project, project_id)
 
 
-def get_active_project_by_name(
-    db: Session, name: str, exclude_id: UUID | None = None
+def get_own_active_project_by_name(
+    db: Session, name: str, user_id: UUID, exclude_id: UUID | None = None
 ) -> Project | None:
     query = db.query(Project).filter(
-        Project.name == name, Project.is_deleted.is_(False)
+        Project.name == name,
+        Project.is_deleted.is_(False),
+        Project.user_id == user_id,
     )
     if exclude_id is not None:
         query = query.filter(Project.id != exclude_id)
