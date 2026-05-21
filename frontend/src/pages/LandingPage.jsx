@@ -735,7 +735,7 @@ export default function LandingPage() {
           </Reveal>
           <Reveal delay={2} className={styles.heroVis}>
             <div className={styles.heroDevice}>
-              <object data="/assets/hero-imac.png" alt=""></object>
+              <img src="/assets/hero-imac.png" alt="" />
               <div className={styles.heroDisplay}>
                 <HeroDemoVideo />
               </div>
