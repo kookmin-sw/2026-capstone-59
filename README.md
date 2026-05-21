@@ -146,7 +146,7 @@ docker-compose up -d
 │   └── docs/           →  Swagger 보조 자료
 │
 ├── ai/                → AI 모듈 독립 개발·검증 공간 (Bedrock + RAG)
-│   ├── services/       →  step_generator, required_step_judge, side_panel_generator, design_export_generator
+│   ├── services/       →  step_generator, required_step_judge, side_panel_generator, design_export_generator, position_label
 │   ├── clients/        →  Bedrock Claude · Knowledge Base 공통 클라이언트
 │   ├── prompts/        →  시나리오별 프롬프트 템플릿 (.txt)
 │   ├── schemas/        →  Pydantic 스키마 (generate, accept, side_panel, design_export)

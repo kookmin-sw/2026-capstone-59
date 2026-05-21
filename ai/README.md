@@ -43,7 +43,8 @@ ai/
 │   ├── step_generator.py       #   generate 시나리오
 │   ├── required_step_judge.py  #   accept 시나리오
 │   ├── side_panel_generator.py #   side_panel 시나리오 (sync + stream)
-│   └── design_export_generator.py #   design_export 시나리오 (.md 다운로드)
+│   ├── design_export_generator.py #   design_export 시나리오 (.md 다운로드)
+│   └── position_label.py       #   사이드패널 위치감 라벨 deterministic 결정
 │
 ├── schemas/                    # Pydantic 입출력 스키마
 │   ├── common.py               #   ProjectInfo, StageInfo, DecisionHistoryItem ...
@@ -57,7 +58,8 @@ ai/
 │   ├── accept.txt
 │   ├── side_panel.txt
 │   ├── design_export.txt
-│   └── template.py             #   PromptTemplate.load_and_render
+│   ├── template.py             #   PromptTemplate.load_and_render
+│   └── activity_guides.py      #   24개 R 활동 가이드 + 나쁜 예 기반 R-blocklist
 │
 ├── data/                       # RAG 인덱싱 원본 (Bedrock Knowledge Base 업로드용)
 │   ├── doj/                    #   DOJ Data Source: DOJ SDLC Guidance Document 마크다운 변환본
