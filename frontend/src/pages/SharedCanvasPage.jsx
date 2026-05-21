@@ -36,23 +36,73 @@ export default function SharedCanvasPage() {
   const [stepDetail, setStepDetail] = useState(null)
   const [projectInfoOpen, setProjectInfoOpen] = useState(false)
 
+  const detailCacheRef = useRef({})
+  const detailRequestRef = useRef(0)
+
   const shouldFitViewRef = useRef(false)
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   async function handleNodeClick(event, node) {
     setSelectedStep(node)
+
+    const requestId = ++detailRequestRef.current
+
+    if (detailCacheRef.current[node.id]) {
+      setStepDetail(detailCacheRef.current[node.id])
+      return
+    }
+
     setStepDetail(null)
+
     try {
       const detail = await getSharedStepDetail(shareToken, node.id)
+      if (requestId !== detailRequestRef.current) return
+
       setStepDetail(detail)
+
+      if (shouldCacheDetail(detail, node)) {
+        detailCacheRef.current[node.id] = detail
+      }
     } catch {
       //
     }
   }
 
+  function hasValidMentoring(detail) {
+    const description = detail?.mentoring?.description
+    return typeof description === 'string' && description.trim().length > 0
+  }
+
+  function hasValidDictionary(detail) {
+    return Array.isArray(detail?.dictionary) &&
+      detail.dictionary.some((item) =>
+        typeof item?.term === 'string' &&
+        item.term.trim().length > 0 &&
+        typeof item?.definition === 'string' &&
+        item.definition.trim().length > 0
+      )
+  }
+
+  function hasValidSidePanelDetail(detail) {
+    return hasValidMentoring(detail) && hasValidDictionary(detail)
+  }
+
+  function shouldCacheDetail(detail, node) {
+    if (node?.type === 'requiredStepNode') return true
+    return hasValidSidePanelDetail(detail)
+  }
+
   useEffect(() => {
     if (!shareToken) return
+
+    detailCacheRef.current = {}
+    detailRequestRef.current += 1
+    const resetTimer = setTimeout(() => {
+      setSelectedStep(null)
+      setStepDetail(null)
+    }, 0)
+
     Promise.all([
       getSharedProject(shareToken),
       getSharedStages(shareToken),
@@ -66,6 +116,8 @@ export default function SharedCanvasPage() {
         setSelectedStageId(latestActive.stage_id)
       }
     }).catch(() => setError(true))
+
+    return () => clearTimeout(resetTimer)
   }, [shareToken])
 
   useEffect(() => {

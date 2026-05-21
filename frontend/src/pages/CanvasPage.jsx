@@ -305,6 +305,34 @@ export default function CanvasPage() {
     typingDrainCallbackRef.current = null
   }
 
+  function hasValidMentoring(detail) {
+    const description = detail?.mentoring?.description
+    return typeof description === 'string' && description.trim().length > 0
+  }
+
+  function hasValidDictionary(detail) {
+    return Array.isArray(detail?.dictionary) &&
+      detail.dictionary.some((item) =>
+        typeof item?.term === 'string' &&
+        item.term.trim().length > 0 &&
+        typeof item?.definition === 'string' &&
+        item.definition.trim().length > 0
+      )
+  }
+
+  function hasValidSidePanelDetail(detail) {
+    return hasValidMentoring(detail) && hasValidDictionary(detail)
+  }
+
+  function shouldCacheDetail(detail, node) {
+    if (node?.type === 'requiredStepNode') return true
+    return hasValidSidePanelDetail(detail)
+  }
+
+  function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
   function showTimedToast(message, duration = 5500, { resetGlobalToast = true } = {}) {
     if (resetGlobalToast) clearAllStagesCompleteToast()
 
@@ -387,17 +415,6 @@ export default function CanvasPage() {
         b.onUpdate = null
         b.onComplete = null
         await complete?.()
-        if (!detailCacheRef.current[nodeId]) {
-          try {
-            const full = JSON.parse(b.text)
-            detailCacheRef.current[nodeId] = {
-              mentoring: full.mentoring ?? {},
-              dictionary: full.dictionary ?? [],
-            }
-          } catch {
-            //
-          }
-        }
       },
       onError: async () => {
         const b = streamBuffers.current.get(nodeId)
@@ -442,6 +459,36 @@ export default function CanvasPage() {
       else if (latestActive) setSelectedStageId(latestActive.stage_id)
     })
   }, [projectId])
+
+  async function fetchDetailWithRetry(node, requestId, retries = 2) {
+    let detail = await getStepDetail(node.id)
+    if (requestId !== detailRequestRef.current) return null
+
+    setStepDetail(detail)
+
+    if (shouldCacheDetail(detail, node)) {
+      detailCacheRef.current[node.id] = detail
+      return detail
+    }
+
+    for (let i = 0; i < retries; i += 1) {
+      await wait(700)
+
+      if (requestId !== detailRequestRef.current) return null
+
+      detail = await getStepDetail(node.id)
+      if (requestId !== detailRequestRef.current) return null
+
+      setStepDetail(detail)
+
+      if (shouldCacheDetail(detail, node)) {
+        detailCacheRef.current[node.id] = detail
+        return detail
+      }
+    }
+
+    return detail
+  }
 
   async function fetchAndRenderTree(stageId, { animateNew = false } = {}) {
     const treeData = await getStepTree(projectId, stageId)
@@ -718,10 +765,7 @@ export default function CanvasPage() {
       setIsStreamMode(false)
       if (detailCacheRef.current[node.id]) return
       try {
-        const detail = await getStepDetail(node.id)
-        if (requestId !== detailRequestRef.current) return
-        setStepDetail(detail)
-        detailCacheRef.current[node.id] = detail
+        await fetchDetailWithRetry(node, requestId)
       } catch {
         //
       }
@@ -748,12 +792,24 @@ export default function CanvasPage() {
             mentoring: full.mentoring ?? {},
             dictionary: full.dictionary ?? [],
           }
-          detailCacheRef.current[node.id] = detail
+
           if (requestId !== detailRequestRef.current) return
           setStepDetail(detail)
           setStreamingText(null)
+          if (shouldCacheDetail(detail, node)) {
+            detailCacheRef.current[node.id] = detail
+          } else {
+            await fetchDetailWithRetry(node, requestId)
+          }
         } catch {
           setStreamingText(null)
+          if (requestId !== detailRequestRef.current) return
+
+          try {
+            await fetchDetailWithRetry(node, requestId)
+          } catch {
+            //
+          }
         }
         }
         if (!typingQueueRef.current && !typingTimerRef.current) {
@@ -767,10 +823,7 @@ export default function CanvasPage() {
       setIsStreamMode(false)
       if (detailCacheRef.current[node.id]) return
       try {
-        const detail = await getStepDetail(node.id)
-        if (requestId !== detailRequestRef.current) return
-        setStepDetail(detail)
-        detailCacheRef.current[node.id] = detail
+        await fetchDetailWithRetry(node, requestId)
       } catch {
         //
       }
