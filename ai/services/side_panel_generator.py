@@ -17,6 +17,7 @@ from ai.clients.rag import RAGClient
 from ai.prompts.template import PromptTemplate
 from ai.schemas.common import RetrievedChunk
 from ai.schemas.side_panel import SidePanelInput, SidePanelOutput
+from ai.services.position_label import resolve_position_label
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,11 @@ class SidePanelGenerator:
 
         rag_context_text = _format_rag_context(doj_chunks, custom_chunks)
 
+        position_label = resolve_position_label(
+            stage_sequence=stage.stage_sequence,
+            current_required_step=input_data.current_required_step,
+        )
+
         return PromptTemplate.load_and_render(
             _SCENARIO,
             project_name=_coerce(project.name),
@@ -118,6 +124,7 @@ class SidePanelGenerator:
             decision_history=decision_history_json,
             current_required_step_info=required_step_info,
             rag_context=rag_context_text,
+            position_label=position_label,
         )
 
     async def generate_side_panel(self, input_data: SidePanelInput) -> SidePanelOutput:
