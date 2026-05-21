@@ -21,6 +21,7 @@ from ai.schemas.generate import GenerateInput, GenerateOutput
 from ai.services.step_generator import (
     StepGenerator,
     _extract_content_tokens,
+    _has_duplicate,
     _is_semantic_duplicate,
     _normalize_step_name,
 )
@@ -99,7 +100,7 @@ def _input_without_required() -> GenerateInput:
 def _valid_output() -> GenerateOutput:
     return GenerateOutput(
         generated_steps=[
-            GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스를 조사하는 활동"),
+            GeneratedStep(name="문제 상황 정리", description="문제 상황을 정리하는 활동"),
             GeneratedStep(name="사용자 인터뷰 계획", description="타겟 사용자 인터뷰 설계"),
             GeneratedStep(name="기술 스택 비교", description="후보 기술 스택을 비교 분석"),
         ]
@@ -416,7 +417,7 @@ class TestLiteralDuplicateRetry:
         duplicate_output = GenerateOutput(
             generated_steps=[
                 GeneratedStep(name="문제 정의 정리", description="부모와 동일한 이름"),
-                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
                 GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
             ]
         )
@@ -440,7 +441,7 @@ class TestLiteralDuplicateRetry:
         duplicate_output = GenerateOutput(
             generated_steps=[
                 GeneratedStep(name="문제 정의", description="히스토리 항목과 동일"),
-                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
                 GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
             ]
         )
@@ -476,7 +477,7 @@ class TestLiteralDuplicateRetry:
         duplicate_output = GenerateOutput(
             generated_steps=[
                 GeneratedStep(name=dup_name, description="부모와 동일"),
-                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
                 GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
             ]
         )
@@ -531,7 +532,7 @@ class TestSemanticDuplicateRetry:
         duplicate_output = GenerateOutput(
             generated_steps=[
                 GeneratedStep(name="Ncurses 기능 제약 정리", description="literal 다름·의미 동일"),
-                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
                 GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
             ]
         )
@@ -566,13 +567,13 @@ class TestSemanticDuplicateRetry:
         duplicate_output = GenerateOutput(
             generated_steps=[
                 GeneratedStep(name="사용자 인터뷰 계획", description="진행↔계획 swap"),
-                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
                 GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
             ]
         )
         ok_output = GenerateOutput(
             generated_steps=[
-                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
                 GeneratedStep(name="문제 사례 정리", description="문제 사례 수집"),
                 GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
             ]
@@ -608,7 +609,7 @@ class TestSemanticDuplicateRetry:
         ok_output = GenerateOutput(
             generated_steps=[
                 GeneratedStep(name="사용자 페르소나 작성", description="페르소나 1개 토큰 겹침"),
-                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
                 GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
             ]
         )
@@ -659,3 +660,103 @@ class TestIsSemanticDuplicate:
             _is_semantic_duplicate("Ncurses 라이브러리 제약 정리", "Ncurses 라이브러리 제약 검토")
             is True
         )
+
+
+# ---------------------------------------------------------------------------
+# blocklist 체크 통합 테스트
+# ---------------------------------------------------------------------------
+
+
+def _input_with_r1() -> GenerateInput:
+    """1-R1 '문제/기회 정의' 진행 중인 입력."""
+    return GenerateInput(
+        project_info=_project(),
+        current_stage=_stage(),
+        decision_history=[],
+        current_step=StepInfo(step_id="s1", name="프로젝트 시작"),
+        current_required_step=RequiredStepInfo(
+            step_id="rs-r1",
+            name="문제/기회 정의",
+            is_completed=False,
+            goal="문제 정의",
+            entry_criteria="없음",
+            fulfillment_criteria=["문제 서술", "임팩트 정의", "배경 설명", "기존 대안 한계"],
+            minimum_fulfillment_count=2,
+        ),
+    )
+
+
+class TestBlocklistMatch:
+    @pytest.mark.asyncio
+    async def test_blocklist_match_in_1_r1_triggers_retry(self, caplog):
+        """1-R1 blocklist에 있는 '타겟 사용자 정의' → 재호출 + blocklist_match 로그."""
+        duplicate_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="타겟 사용자 정의", description="blocklist 항목"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
+                GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
+            ]
+        )
+        ok_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 정리"),
+                GeneratedStep(name="문제 상황 정리", description="문제 상황 조사"),
+                GeneratedStep(name="기존 해결책 한계 조사", description="기존 해결책 한계"),
+            ]
+        )
+
+        service, llm, _ = _make_service(llm_side_effect=[duplicate_output, ok_output])
+
+        with caplog.at_level(logging.WARNING, logger="ai.services.step_generator"):
+            result = await service.generate_steps(_input_with_r1())
+
+        assert llm.invoke.await_count == 2
+        assert result is ok_output
+        assert any(
+            "step_generator_blocklist_match" in r.message for r in caplog.records
+        )
+        assert any(
+            "step_generator_literal_duplicate_detected" in r.message for r in caplog.records
+        )
+
+    @pytest.mark.asyncio
+    async def test_blocklist_match_normalized_forms_all_blocked(self):
+        """공백 변형 모두 blocklist에서 잡힘."""
+        inp = _input_with_r1()
+        forbidden_normalized: set[str] = set()
+        forbidden_raw: list[str] = [inp.current_step.name]
+        req = inp.current_required_step
+
+        for name_variant in ["타겟 사용자 정의", "타겟사용자정의", " 타겟  사용자  정의 "]:
+            assert _has_duplicate(name_variant, forbidden_normalized, forbidden_raw, req), (
+                f"'{name_variant}' 이 blocklist에서 잡히지 않음"
+            )
+
+    @pytest.mark.asyncio
+    async def test_blocklist_no_match_skips_retry(self):
+        """blocklist에 없는 정상 이름 → 1회 호출."""
+        ok_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="문제 상황 정리", description="문제 정리"),
+                GeneratedStep(name="기존 해결책 한계 조사", description="기존 해결책"),
+                GeneratedStep(name="문제 임팩트 분석", description="임팩트"),
+            ]
+        )
+
+        service, llm, _ = _make_service(llm_return=ok_output)
+
+        result = await service.generate_steps(_input_with_r1())
+
+        assert llm.invoke.await_count == 1
+        assert result is ok_output
+
+    @pytest.mark.asyncio
+    async def test_blocklist_with_none_required_step(self):
+        """current_required_step=None → blocklist 체크 skip, literal/semantic만 작동."""
+        ok_output = _valid_output()
+        service, llm, _ = _make_service(llm_return=ok_output)
+
+        result = await service.generate_steps(_input_without_required())
+
+        assert llm.invoke.await_count == 1
+        assert result is ok_output

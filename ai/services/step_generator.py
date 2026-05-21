@@ -12,9 +12,9 @@ from typing import Any, Optional
 
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
-from ai.prompts.activity_guides import resolve_activity_guide
+from ai.prompts.activity_guides import get_blocklist, resolve_activity_guide
 from ai.prompts.template import PromptTemplate
-from ai.schemas.common import RetrievedChunk
+from ai.schemas.common import RequiredStepInfo, RetrievedChunk
 from ai.schemas.generate import GenerateInput, GenerateOutput
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,24 @@ def _is_semantic_duplicate(new_name: str, forbidden_name: str) -> bool:
     a = _extract_content_tokens(new_name)
     b = _extract_content_tokens(forbidden_name)
     return len(a & b) >= 2
+
+
+def _has_duplicate(
+    step_name: str,
+    forbidden_normalized: "set[str]",
+    forbidden_raw_names: "list[str]",
+    current_required_step: Optional[RequiredStepInfo],
+) -> bool:
+    """literal·semantic·blocklist 3단계 중복 검사."""
+    normalized = _normalize_step_name(step_name)
+    if normalized in forbidden_normalized:
+        return True
+    if any(_is_semantic_duplicate(step_name, f) for f in forbidden_raw_names):
+        return True
+    if current_required_step is not None:
+        if normalized in get_blocklist(current_required_step.name):
+            return True
+    return False
 
 
 def _format_rag_context(chunks: list[RetrievedChunk]) -> str:
@@ -168,16 +186,26 @@ class StepGenerator:
         forbidden_raw_names: list[str] = [input_data.current_step.name] + [
             item.name for item in input_data.decision_history
         ]
+        req_step = input_data.current_required_step
 
-        def _has_duplicate(step_name: str) -> bool:
-            if _normalize_step_name(step_name) in forbidden_normalized:
-                return True
-            return any(
-                _is_semantic_duplicate(step_name, f) for f in forbidden_raw_names
-            )
+        def _check(step_name: str) -> bool:
+            return _has_duplicate(step_name, forbidden_normalized, forbidden_raw_names, req_step)
 
-        duplicates = [s.name for s in output.generated_steps if _has_duplicate(s.name)]
+        duplicates = [s.name for s in output.generated_steps if _check(s.name)]
         if duplicates:
+            blocklist = get_blocklist(req_step.name) if req_step is not None else frozenset()
+            blocklist_matches = [d for d in duplicates if _normalize_step_name(d) in blocklist]
+            if blocklist_matches:
+                logger.warning(
+                    json.dumps(
+                        {
+                            "event": "step_generator_blocklist_match",
+                            "matches": blocklist_matches,
+                            "required_step": req_step.name if req_step is not None else None,
+                        },
+                        ensure_ascii=False,
+                    )
+                )
             logger.warning(
                 json.dumps(
                     {
@@ -199,9 +227,7 @@ class StepGenerator:
                 + f"\n  - {input_data.current_step.name}\n"
             )
             output = await self.llm.invoke(retry_prompt, GenerateOutput, max_tokens=1024)
-            still_duplicates = [
-                s.name for s in output.generated_steps if _has_duplicate(s.name)
-            ]
+            still_duplicates = [s.name for s in output.generated_steps if _check(s.name)]
             if still_duplicates:
                 logger.error(
                     json.dumps(

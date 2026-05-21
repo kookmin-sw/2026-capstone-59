@@ -7,8 +7,10 @@ import re
 import pytest
 
 from ai.prompts.activity_guides import (
+    ACTIVITY_BLOCKLIST,
     ACTIVITY_GUIDES,
     _FREE_MODE_GUIDE,
+    get_blocklist,
     resolve_activity_guide,
 )
 from ai.schemas.common import RequiredStepInfo
@@ -187,7 +189,7 @@ class TestBadExampleDisambiguation:
             f"전체 화살표 {arrow_count}개 중 표준 {canonical_count}개."
         )
 
-    def test_problem_definition_blocks_user_segment_invasion(self):
+    def test_problem_definition_blocks_user_segment_invasion_bad_line(self):
         """1-R1 회귀 방지: 사용자 정의/페르소나 → 1-R2 침범 case 명시."""
         guide = ACTIVITY_GUIDES["문제/기회 정의"]
         bad_line = _extract_bad_example_line(guide)
@@ -196,3 +198,47 @@ class TestBadExampleDisambiguation:
         assert any(
             kw in bad_line for kw in ["사용자", "페르소나"]
         ), "1-R1 나쁜 예에 사용자/페르소나 침범 케이스가 명시되지 않음"
+
+
+# ---------------------------------------------------------------------------
+# ACTIVITY_BLOCKLIST — deterministic blocklist 검증
+# ---------------------------------------------------------------------------
+
+
+class TestActivityBlocklist:
+    def test_blocklist_extracted_from_bad_examples(self):
+        blocklist = get_blocklist("문제/기회 정의")
+        assert len(blocklist) > 0
+
+    def test_blocklist_contains_normalized_name(self):
+        """'타겟 사용자 정의' → 정규화 후 '타겟사용자정의'로 저장."""
+        blocklist = get_blocklist("문제/기회 정의")
+        assert "타겟사용자정의" in blocklist
+
+    def test_blocklist_normalization(self):
+        """blocklist는 공백 제거 + 소문자 형태로만 저장."""
+        for r_name in ACTIVITY_BLOCKLIST:
+            for entry in ACTIVITY_BLOCKLIST[r_name]:
+                assert " " not in entry, f"{r_name}: blocklist에 공백 포함 항목 '{entry}'"
+                assert entry == entry.lower(), f"{r_name}: 소문자화 안 된 항목 '{entry}'"
+
+    def test_unknown_r_returns_empty_frozenset(self):
+        assert get_blocklist("존재하지 않는 R") == frozenset()
+
+    def test_blocklist_covers_all_24_r(self):
+        assert len(ACTIVITY_BLOCKLIST) == 24
+        for r_name, entries in ACTIVITY_BLOCKLIST.items():
+            assert len(entries) > 0, f"{r_name}: blocklist가 비어 있음"
+
+    def test_blocklist_specific_r_1_r1(self):
+        """1-R1 회귀 케이스 4개 모두 blocklist에 포함."""
+        blocklist = get_blocklist("문제/기회 정의")
+        for normalized in [
+            "타겟사용자정의",
+            "타겟사용자페르소나",
+            "사용자행동조사",
+            "사용자페르소나작성",
+        ]:
+            assert normalized in blocklist, (
+                f"'문제/기회 정의' blocklist에 '{normalized}' 없음"
+            )

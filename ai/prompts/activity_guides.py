@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Optional
 
 from ai.schemas.common import RequiredStepInfo
@@ -155,6 +156,35 @@ ACTIVITY_GUIDES: dict[str, str] = {
 - 좋은 예: "문제 해결 여부 점검", "요구사항 충족 확인", "사용자 시연 진행", "프로젝트 회고"
 - 나쁜 예: "추가 결함 기록" ← 6-R3 침범 / "추가 기능 구현" ← Stage 5 침범 / "결함 재현 정리" ← 6-R3 침범 / "추가 코드 작성" ← Stage 5 침범""",
 }
+
+
+_BAD_EXAMPLE_PATTERN = re.compile(r'"([^"]+?)"\s*←')
+
+
+def _normalize_step_name(name: str) -> str:
+    """공백 제거 + 소문자화. step_generator._normalize_step_name과 동일 규칙."""
+    return "".join(name.lower().split())
+
+
+def _build_blocklist_from_guides() -> dict[str, frozenset[str]]:
+    """ACTIVITY_GUIDES의 나쁜 예 라인에서 침범 이름을 추출하여 blocklist 생성."""
+    result: dict[str, frozenset[str]] = {}
+    for r_name, guide in ACTIVITY_GUIDES.items():
+        names: list[str] = []
+        for line in guide.splitlines():
+            if "나쁜 예" in line:
+                names.extend(_BAD_EXAMPLE_PATTERN.findall(line))
+                break
+        result[r_name] = frozenset(_normalize_step_name(n) for n in names)
+    return result
+
+
+ACTIVITY_BLOCKLIST: dict[str, frozenset[str]] = _build_blocklist_from_guides()
+
+
+def get_blocklist(required_step_name: str) -> frozenset[str]:
+    """현재 R의 deterministic blocklist 반환. 등록 안 된 R은 빈 frozenset."""
+    return ACTIVITY_BLOCKLIST.get(required_step_name, frozenset())
 
 
 def resolve_activity_guide(current_required_step: Optional[RequiredStepInfo]) -> str:
