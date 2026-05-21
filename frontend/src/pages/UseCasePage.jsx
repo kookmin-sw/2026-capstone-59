@@ -6,10 +6,8 @@ import navStyles from './LandingPage.module.css'
 import styles from './UseCasePage.module.css'
 
 const USE_CASES = [
-  { title: '사례 1 — 사이드 프로젝트 기획', url: 'https://...' },
-  { title: '사례 2 — 캡스톤 졸업작품', url: 'https://...' },
-  { title: '사례 3 — 1인 창업 아이디어', url: 'https://...' },
-  { title: '사례 4 — 팀 해커톤', url: 'https://...' },
+  { title: '사례 1 — 스타트업 팀 MVP 설계 및 의사결정 기록', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/A-jXWf49y-hHqt9CKeChk4v2eRBmJSv5jum0oY0fxa0' },
+  { title: '사례 2 — 캡스톤 졸업작품', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/LZG7zgH8f3rKh9elfWu4O9MeQAW_7jZ8Wv8gxAOHSuY' },
 ]
 
 export default function UseCasePage() {
