@@ -589,30 +589,11 @@ export default function CanvasPage() {
   }, [nodes, edges, rfInstance])
 
   useEffect(() => {
-  // if (!selectedStageId || !projectId) return
-  shouldFitViewRef.current = true
-
-  // 더미 필수 노드 1개 (디자인 확인용)
-  setNodes([
-    {
-      id: 'dummy-required',
-      type: 'requiredStepNode',
-      position: { x: 100, y: 300 },
-      data: {
-        label: '문제/기회 정의',
-        status: 'ACCEPTED',
-        is_required: true,
-        stageNumber: 1,
-        step_id: 'dummy-required',
-        keep: false,
-      },
-    },
-  ])
-  setEdges([])
-
-  // fetchAndRenderTree(selectedStageId)   // ← 잠시 주석
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [selectedStageId, projectId])
+    if (!selectedStageId || !projectId) return
+    shouldFitViewRef.current = true
+    fetchAndRenderTree(selectedStageId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStageId, projectId])
 
   useEffect(() => {
     clearTyping()
@@ -641,24 +622,15 @@ export default function CanvasPage() {
   const activeStage = getLatestActiveStage(stages)
   const currentStageId = activeStage?.stage_id ?? null
 
-  // const uiStages = stages.map((s) => ({
-  //   id: s.stage_id,
-  //   sequence: s.stage_sequence,
-  //   name: s.stage_name,
-  //   englishName: STAGE_ENGLISH[s.stage_sequence] ?? '',
-  //   status: activeStage?.stage_id === s.stage_id ? 'active'
-  //     : s.stage_sequence < currentStageSequence ? 'completed'
-  //     : 'locked',
-  // }))
-  // 더미 데이터 (디자인 확인용) — 1·2 완료, 3 진행중, 4~6 잠김
-const uiStages = [
-  { id: 'd1', sequence: 1, name: '아이디어 구체화', englishName: 'Ideation',    status: 'completed' },
-  { id: 'd2', sequence: 2, name: '프로젝트 계획',   englishName: 'Planning',    status: 'completed' },
-  { id: 'd3', sequence: 3, name: '요구사항 정의',   englishName: 'Requirement', status: 'active' },
-  { id: 'd4', sequence: 4, name: '설계',           englishName: 'Design',      status: 'locked' },
-  { id: 'd5', sequence: 5, name: '개발',           englishName: 'Development', status: 'locked' },
-  { id: 'd6', sequence: 6, name: '테스트 및 검증', englishName: 'Test',        status: 'locked' },
-]
+  const uiStages = stages.map((s) => ({
+    id: s.stage_id,
+    sequence: s.stage_sequence,
+    name: s.stage_name,
+    englishName: STAGE_ENGLISH[s.stage_sequence] ?? '',
+    status: activeStage?.stage_id === s.stage_id ? 'active'
+      : s.stage_sequence < currentStageSequence ? 'completed'
+      : 'locked',
+  }))
 
   function focusOnNode(node) {
     if (!rfInstance || !node?.position) return
@@ -1266,7 +1238,20 @@ const uiStages = [
     <div className={styles.layout}>
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <object data="/poco-logo-text.svg" alt="poco" height={25} onClick={() => navigate('/projects')}></object>
+          <button
+            className={styles.logoBtn}
+            onClick={() => navigate('/projects')}
+            aria-label="홈으로"
+          >
+            <object
+              data="/poco-logo-text.svg"
+              type="image/svg+xml"
+              height={25}
+              style={{ pointerEvents: 'none' }}
+            >
+              poco
+            </object>
+          </button>
           <span>|</span>
           <span className={styles.projectName}>{projectName}</span>
         </div>
