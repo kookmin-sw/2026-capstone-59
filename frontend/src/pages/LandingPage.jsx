@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { getMe, logout } from '../api/auth'
+import PocoLogo from '../components/PocoLogo'
 import styles from './LandingPage.module.css'
 
 // ===== Static copy (Claude Design 결과 그대로 박제) =====
@@ -603,6 +604,14 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  //
+  const location = useLocation()
+  useEffect(() => {
+    if (location.state?.scrollTo) {
+      document.getElementById(location.state.scrollTo)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [location.state])
+
   // Sticky showcase: 가장 viewport 중심에 가까운 panel을 active로,
   // stage scroll progress를 timeline fill 높이로 변환.
   useEffect(() => {
@@ -707,13 +716,14 @@ export default function LandingPage() {
       {/* ===== NAV ===== */}
       <nav className={`${styles.nav} ${navScrolled ? styles.navScrolled : ''}`}>
         <div className={styles.brand}>
-          <object data="/poco-logo-text.svg" alt="poco" height={25}></object>
+          <PocoLogo height={25} />
         </div>
         <ul className={styles.navMenu}>
           <li><a href="#scene-1" onClick={(e) => handleAnchorClick(e, 'scene-1')}>서비스</a></li>
           <li><a href="#scene-3" onClick={(e) => handleAnchorClick(e, 'scene-3')}>기능</a></li>
           <li><a href="#scene-4" onClick={(e) => handleAnchorClick(e, 'scene-4')}>근거</a></li>
           <li><a href="#scene-5" onClick={(e) => handleAnchorClick(e, 'scene-5')}>사용자</a></li>
+          <li><a href="/usecase" onClick={(e) => { e.preventDefault(); navigate('/usecase') }}>사용사례</a></li>
         </ul>
         <div className={styles.navRight}>
           {isLoggedIn ? (
