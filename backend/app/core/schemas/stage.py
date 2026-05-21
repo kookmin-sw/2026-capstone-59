@@ -7,6 +7,7 @@ class StageListItem(BaseModel):
     stage_sequence: int
     stage_name: str
     is_active: bool
+    is_completed: bool
 
 
 class StageListResponse(BaseModel):
