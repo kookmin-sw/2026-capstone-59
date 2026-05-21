@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 24px;
   height: 56px;
   background: #fff;
   border-bottom: 1px solid #EEEDF8;
@@ -23,6 +23,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  padding-left: 8px;
+  margin-top: 2px;
 }
 
 .logo {

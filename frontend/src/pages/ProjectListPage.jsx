@@ -316,7 +316,7 @@ export default function ProjectListPage() {
               </div>
             )}
           </div>
-        </aside>.
+        </aside>
 
         <main className={styles.main}>
           <div className={styles.subHeader}>
