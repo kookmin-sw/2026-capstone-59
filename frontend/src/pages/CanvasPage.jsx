@@ -1005,8 +1005,8 @@ export default function CanvasPage() {
           if (!shownToastsRef.current.has(key)) {
             shownToastsRef.current.add(key)
             const nextMsg = nextRequiredStepName
-              ? `다음 단계인 ${nextRequiredStepName}${josa(nextRequiredStepName, '(으)로')} 이동할 수 있어요!`
-              : `다음 필수 단계로 이동할 수 있어요!`
+              ? `🐾 다음 단계인 ${nextRequiredStepName}${josa(nextRequiredStepName, '(으)로')} 이동할 수 있어요!`
+              : `🐾 다음 필수 단계로 이동할 수 있어요!`
             persistentMsgRef.current = nextMsg
 
             showTimedToast(`🎉 ${name}${josa(name, '이/가')} 종료됐어요!`, 3000)
