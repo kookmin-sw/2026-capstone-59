@@ -15,13 +15,13 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/usecase" element={<UseCasePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/projects" element={<PrivateRoute><ProjectListPage /></PrivateRoute>} />
         <Route path="/projects/create" element={<PrivateRoute><CreateProjectPage /></PrivateRoute>} />
         <Route path="/projects/trash" element={<PrivateRoute><TrashPage /></PrivateRoute>} />
         <Route path="/canvas/:projectId" element={<PrivateRoute><CanvasPage /></PrivateRoute>} />
-        <Route path="/usecase" element={<UseCasePage />} />
         <Route path="/shared/:shareToken" element={<SharedCanvasPage />} />
       </Routes>
     </BrowserRouter>

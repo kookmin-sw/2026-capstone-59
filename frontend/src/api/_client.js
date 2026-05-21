@@ -109,7 +109,7 @@ function refreshTokens() {
 function redirectToLogin() {
   if (typeof window === 'undefined') return
   const path = window.location.pathname
-  if (path === '/login' || path === '/' || path.startsWith('/shared/')) return
+  if (path === '/login' || path === '/' || path === '/usecase' || path.startsWith('/shared/')) return
   window.location.href = '/login'
 }
 
