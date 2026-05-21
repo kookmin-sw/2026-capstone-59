@@ -105,6 +105,7 @@ class SidePanelGenerator:
 
         rag_context_text = _format_rag_context(doj_chunks, custom_chunks)
 
+        # position_label은 LLM 참고용 (강제 X). description 첫 문장에 활용해도 좋음.
         position_label = resolve_position_label(
             stage_sequence=stage.stage_sequence,
             current_required_step=input_data.current_required_step,
