@@ -185,6 +185,7 @@ export default function CanvasPage() {
   const persistentMsgRef = useRef(null)
   const justCompletedRSRef = useRef(null)
   const lastToastByStageRef = useRef({})  // { stageId: { message, persistent } }
+  const allStagesCompleteToastRef = useRef(false)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -304,28 +305,43 @@ export default function CanvasPage() {
     typingDrainCallbackRef.current = null
   }
 
-  function showTimedToast(message, duration = 5500) {
+  function showTimedToast(message, duration = 5500, { resetGlobalToast = true } = {}) {
+    if (resetGlobalToast) clearAllStagesCompleteToast()
+
     if (timerRef.current) clearTimeout(timerRef.current)
     setToast(message)
     setToastDuration(duration)
     setToastPersistent(false)
     setToastVisible(true)
     timerRef.current = setTimeout(() => setToastVisible(false), duration)
+
     if (selectedStageId) {
       lastToastByStageRef.current[selectedStageId] = { message, persistent: false }
     }
   }
 
-  function showPersistentToast(message) {
+  function showPersistentToast(message, { resetGlobalToast = true } = {}) {
+    if (resetGlobalToast) clearAllStagesCompleteToast()
+
     if (timerRef.current) clearTimeout(timerRef.current)
     setToast(message)
     setToastPersistent(true)
     setToastVisible(true)
     persistentMsgRef.current = message
+
     if (selectedStageId) {
-    lastToastByStageRef.current[selectedStageId] = { message, persistent: true }
+      lastToastByStageRef.current[selectedStageId] = { message, persistent: true }
     }
   }
+
+  function clearAllStagesCompleteToast() {
+    if (!allStagesCompleteToastRef.current) return
+
+    allStagesCompleteToastRef.current = false
+    lastToastByStageRef.current = {}
+    persistentMsgRef.current = null
+  }
+
   function enqueueTyping(newChars) {
     typingQueueRef.current += newChars
     if (typingTimerRef.current) return  // 이미 돌고 있으면 큐에만 쌓음
@@ -954,20 +970,21 @@ export default function CanvasPage() {
             ? `🎉 6개 Stage, 모두 도착했어요. 조금씩, 한 걸음씩 — 고생 많으셨어요!`
             : `🎉 Stage가 종료됐어요! 이제 다음 Stage로 이동할 수 있어요!`
 
-          const stageReopenMessage = isLastStage
-            ? `🎉 6개 Stage, 모두 도착했어요. 조금씩, 한 걸음씩 — 고생 많으셨어요!`
-            : `이제 다음 Stage로 이동할 수 있어요!`
+          showPersistentToast(stageCompleteMessage, { resetGlobalToast: false })
 
-          showPersistentToast(stageCompleteMessage)
-          persistentMsgRef.current = stageReopenMessage
+          if (isLastStage) {
+            allStagesCompleteToastRef.current = true
+            persistentMsgRef.current = stageCompleteMessage
 
-          if (selectedStageId) {
-          lastToastByStageRef.current[selectedStageId] = {
-            message: stageReopenMessage,
-            persistent: true,
+            lastToastByStageRef.current = Object.fromEntries(
+              stages.map((stage) => [
+                stage.stage_id,
+                { message: stageCompleteMessage, persistent: true },
+              ])
+            )
           }
         }
-
+        
         currentRequiredStepName.current = null
         getStages(projectId).then((data) => {
           const list = data.stages ?? []
@@ -1339,7 +1356,7 @@ export default function CanvasPage() {
                 setToastVisible(false)
                 if (timerRef.current) clearTimeout(timerRef.current)
               } else if (persistentMsgRef.current) {
-                showPersistentToast(persistentMsgRef.current)
+                showPersistentToast(persistentMsgRef.current, { resetGlobalToast: false })
               }
             }}
             onClose={() => {
