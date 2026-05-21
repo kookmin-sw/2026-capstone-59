@@ -18,7 +18,12 @@ from ai.schemas.common import (
     StepInfo,
 )
 from ai.schemas.generate import GenerateInput, GenerateOutput
-from ai.services.step_generator import StepGenerator, _normalize_step_name
+from ai.services.step_generator import (
+    StepGenerator,
+    _extract_content_tokens,
+    _is_semantic_duplicate,
+    _normalize_step_name,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -505,3 +510,152 @@ class TestNormalizeStepName:
 
     def test_lowercases_english(self):
         assert _normalize_step_name("API 설계") == _normalize_step_name("api 설계")
+
+
+# ---------------------------------------------------------------------------
+# semantic 중복 탐지 및 재호출
+# ---------------------------------------------------------------------------
+
+
+class TestSemanticDuplicateRetry:
+    @pytest.mark.asyncio
+    async def test_semantic_duplicate_with_swapped_suffix_triggers_retry(self, caplog):
+        """동사형 접미사만 바꾼 자식 ('검토' → '정리') → semantic 중복 → 재호출."""
+        inp = GenerateInput(
+            project_info=_project(),
+            current_stage=_stage(),
+            decision_history=[],
+            current_step=StepInfo(step_id="s1", name="Ncurses 라이브러리 제약 검토"),
+            current_required_step=_required_step(),
+        )
+        duplicate_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="Ncurses 기능 제약 정리", description="literal 다름·의미 동일"),
+                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
+            ]
+        )
+        ok_output = _valid_output()
+
+        service, llm, _ = _make_service(llm_side_effect=[duplicate_output, ok_output])
+
+        with caplog.at_level(logging.WARNING, logger="ai.services.step_generator"):
+            result = await service.generate_steps(inp)
+
+        assert llm.invoke.await_count == 2
+        assert result is ok_output
+        assert any(
+            "step_generator_literal_duplicate_detected" in r.message
+            for r in caplog.records
+        )
+
+    @pytest.mark.asyncio
+    async def test_semantic_duplicate_with_decision_history_triggers_retry(self, caplog):
+        """decision_history 항목과 핵심 명사 2개 겹치는 자식 → semantic 중복."""
+        inp = GenerateInput(
+            project_info=_project(),
+            current_stage=_stage(),
+            decision_history=[
+                DecisionHistoryItem(
+                    step_id="s0", name="사용자 인터뷰 진행", status="ACCEPTED"
+                ),
+            ],
+            current_step=StepInfo(step_id="s1", name="프로젝트 컨셉 정리"),
+            current_required_step=_required_step(),
+        )
+        duplicate_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="사용자 인터뷰 계획", description="진행↔계획 swap"),
+                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
+            ]
+        )
+        ok_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="문제 사례 정리", description="문제 사례 수집"),
+                GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
+            ]
+        )
+
+        service, llm, _ = _make_service(llm_side_effect=[duplicate_output, ok_output])
+
+        with caplog.at_level(logging.WARNING, logger="ai.services.step_generator"):
+            result = await service.generate_steps(inp)
+
+        assert llm.invoke.await_count == 2
+        assert result is ok_output
+        assert any(
+            "step_generator_literal_duplicate_detected" in r.message
+            for r in caplog.records
+        )
+
+    @pytest.mark.asyncio
+    async def test_one_token_overlap_does_not_trigger(self):
+        """핵심 명사 1개만 겹치면 재호출 안 함 (threshold=2)."""
+        inp = GenerateInput(
+            project_info=_project(),
+            current_stage=_stage(),
+            decision_history=[
+                DecisionHistoryItem(
+                    step_id="s0", name="사용자 인터뷰 진행", status="ACCEPTED"
+                ),
+            ],
+            current_step=StepInfo(step_id="s1", name="프로젝트 컨셉 정리"),
+            current_required_step=_required_step(),
+        )
+        # "사용자 페르소나 작성" — '사용자'만 겹침 (1개), 재호출 X
+        ok_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="사용자 페르소나 작성", description="페르소나 1개 토큰 겹침"),
+                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
+            ]
+        )
+
+        service, llm, _ = _make_service(llm_return=ok_output)
+
+        result = await service.generate_steps(inp)
+
+        assert llm.invoke.await_count == 1
+        assert result is ok_output
+
+
+# ---------------------------------------------------------------------------
+# _extract_content_tokens / _is_semantic_duplicate 단위 테스트
+# ---------------------------------------------------------------------------
+
+
+class TestExtractContentTokens:
+    def test_filters_interchangeable_suffix(self):
+        assert _extract_content_tokens("Ncurses 라이브러리 제약 검토") == {
+            "ncurses",
+            "라이브러리",
+            "제약",
+        }
+
+    def test_filters_short_step_name(self):
+        assert _extract_content_tokens("기능 정리") == {"기능"}
+
+    def test_filters_user_interview_plan(self):
+        assert _extract_content_tokens("사용자 인터뷰 계획") == {"사용자", "인터뷰"}
+
+
+class TestIsSemanticDuplicate:
+    def test_one_token_overlap_returns_false(self):
+        # {"사용자", "페르소나"} ∩ {"사용자", "인터뷰"} = {"사용자"} (1개)
+        assert _is_semantic_duplicate("사용자 페르소나 작성", "사용자 인터뷰 진행") is False
+
+    def test_two_token_overlap_returns_true(self):
+        # {"ncurses", "라이브러리", "제약"} ∩ {"ncurses", "기능", "제약"} = 2개
+        assert (
+            _is_semantic_duplicate("Ncurses 기능 제약 정리", "Ncurses 라이브러리 제약 검토")
+            is True
+        )
+
+    def test_three_token_overlap_returns_true(self):
+        # {"ncurses", "라이브러리", "제약"} ∩ {"ncurses", "라이브러리", "제약"} = 3개
+        assert (
+            _is_semantic_duplicate("Ncurses 라이브러리 제약 정리", "Ncurses 라이브러리 제약 검토")
+            is True
+        )
