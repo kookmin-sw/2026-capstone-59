@@ -1,6 +1,7 @@
 """ai/services/step_generator.py 단위 테스트."""
 
 import json
+import logging
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -17,7 +18,7 @@ from ai.schemas.common import (
     StepInfo,
 )
 from ai.schemas.generate import GenerateInput, GenerateOutput
-from ai.services.step_generator import StepGenerator
+from ai.services.step_generator import StepGenerator, _normalize_step_name
 
 
 # ---------------------------------------------------------------------------
@@ -396,3 +397,111 @@ class TestIntegration:
 
         with pytest.raises(AIGenerationFailedError):
             await service.generate_steps(_input_with_required())
+
+
+# ---------------------------------------------------------------------------
+# literal 중복 탐지 및 재호출
+# ---------------------------------------------------------------------------
+
+
+class TestLiteralDuplicateRetry:
+    @pytest.mark.asyncio
+    async def test_literal_duplicate_with_parent_triggers_retry(self, caplog):
+        """직전 부모 이름과 literal 동일한 자식 → 1회 재호출, 최종 output 정상."""
+        duplicate_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="문제 정의 정리", description="부모와 동일한 이름"),
+                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
+            ]
+        )
+        ok_output = _valid_output()
+
+        service, llm, _ = _make_service(llm_side_effect=[duplicate_output, ok_output])
+
+        with caplog.at_level(logging.WARNING, logger="ai.services.step_generator"):
+            result = await service.generate_steps(_input_with_required())
+
+        assert llm.invoke.await_count == 2
+        assert result is ok_output
+        assert any(
+            "step_generator_literal_duplicate_detected" in r.message
+            for r in caplog.records
+        )
+
+    @pytest.mark.asyncio
+    async def test_literal_duplicate_with_decision_history_triggers_retry(self, caplog):
+        """decision_history 항목과 literal 동일한 자식 → 1회 재호출."""
+        duplicate_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name="문제 정의", description="히스토리 항목과 동일"),
+                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
+            ]
+        )
+        ok_output = _valid_output()
+
+        service, llm, _ = _make_service(llm_side_effect=[duplicate_output, ok_output])
+
+        with caplog.at_level(logging.WARNING, logger="ai.services.step_generator"):
+            result = await service.generate_steps(_input_with_required())
+
+        assert llm.invoke.await_count == 2
+        assert result is ok_output
+        assert any(
+            "step_generator_literal_duplicate_detected" in r.message
+            for r in caplog.records
+        )
+
+    @pytest.mark.asyncio
+    async def test_no_duplicate_skips_retry(self):
+        """중복 없음 → LLM 정확히 1회만 호출."""
+        ok_output = _valid_output()
+        service, llm, _ = _make_service(llm_return=ok_output)
+
+        result = await service.generate_steps(_input_with_required())
+
+        assert llm.invoke.await_count == 1
+        assert result is ok_output
+
+    @pytest.mark.asyncio
+    async def test_duplicate_persists_after_retry_logs_error(self, caplog):
+        """재호출 후에도 중복이면 error 로그 후 그대로 반환."""
+        dup_name = "문제 정의 정리"
+        duplicate_output = GenerateOutput(
+            generated_steps=[
+                GeneratedStep(name=dup_name, description="부모와 동일"),
+                GeneratedStep(name="경쟁 서비스 조사", description="유사 서비스 조사"),
+                GeneratedStep(name="기술 스택 비교", description="기술 후보 비교"),
+            ]
+        )
+
+        service, llm, _ = _make_service(llm_return=duplicate_output)
+
+        with caplog.at_level(logging.ERROR, logger="ai.services.step_generator"):
+            result = await service.generate_steps(_input_with_required())
+
+        assert llm.invoke.await_count == 2
+        assert isinstance(result, GenerateOutput)
+        assert any(
+            "step_generator_literal_duplicate_after_retry" in r.message
+            for r in caplog.records
+        )
+
+
+# ---------------------------------------------------------------------------
+# _normalize_step_name 단위 테스트
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizeStepName:
+    def test_strips_spaces_and_lowercases(self):
+        assert _normalize_step_name("호환성 요구사항") == _normalize_step_name("호환성요구사항")
+        assert _normalize_step_name("호환성  요구사항") == _normalize_step_name("호환성요구사항")
+
+    def test_same_name_different_spacing(self):
+        result = _normalize_step_name("주요 기능 상세 정의")
+        assert result == "주요기능상세정의"
+
+    def test_lowercases_english(self):
+        assert _normalize_step_name("API 설계") == _normalize_step_name("api 설계")
