@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { HiMenu, HiX} from 'react-icons/hi'
 import { getMe, logout } from '../api/auth'
 import PocoLogo from '../components/PocoLogo'
 import styles from './LandingPage.module.css'

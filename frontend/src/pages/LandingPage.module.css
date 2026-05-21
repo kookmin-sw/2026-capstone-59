@@ -58,7 +58,7 @@
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   letter-spacing: -0.01em;
-  min-width: 1280px;
+  /* min-width: 1280px; */
   word-break: keep-all;
 }
 
@@ -263,7 +263,9 @@
   padding: 157px var(--pad-x) 0;
   background: linear-gradient(180deg, var(--hero-tint) 0%, #f4f1fa 18%, #ffffff 72%);
   overflow: hidden;
+  overflow-x: hidden;
 }
+
 .scene1Inner {
   max-width: var(--maxw);
   margin: 0 auto;
@@ -1326,4 +1328,98 @@
 .page ::selection {
   background: var(--p-faintest);
   color: var(--t-primary);
+}
+
+/* 햄버거 — 기본 숨김 */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2A1F66;
+  padding: 4px;
+}
+
+/* 좁아지면: 데스크탑 메뉴 숨기고 햄버거 표시 */
+@media (max-width: 750px) {
+  .navMenu,
+  .navRight {
+    display: none;
+  }
+  .hamburger {
+    display: flex;
+  }
+}
+
+/* 오버레이 (반투명 배경) */
+.drawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 14, 60, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+  z-index: 1000;
+}
+
+/* 우측 드로어 */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 260px;                 /* 화면 다 안 차지 */
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(41, 28, 128, 0.15);
+  transform: translateX(100%);  /* 오른쪽 밖에 숨김 */
+  transition: transform 0.28s ease;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+}
+
+/* 열림 상태 */
+.drawerOverlay.drawerOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+.drawer.drawerOpen {
+  transform: translateX(0);     /* 슬라이드 인 */
+}
+
+.drawerClose {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2A1F66;
+  margin-bottom: 20px;
+}
+
+.drawerMenu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.drawerMenu li a {
+  display: block;
+  padding: 14px 8px;
+  font-size: 15px;
+  color: #2A1F66;
+  text-decoration: none;
+  border-radius: 8px;
+}
+.drawerMenu li a:hover {
+  background: #F4F1FD;
+}
+
+.drawerActions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
