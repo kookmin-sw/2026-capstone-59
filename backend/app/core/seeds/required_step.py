@@ -11,8 +11,8 @@ REQUIRED_STEP_DATA: list[dict] = [
     {
         "stage_sequence": 1,
         "sequence": 1,
-        "name": "문제·기회 정의",
-        "toast_message": "문제·기회 정의를 완료했습니다! 🎯",
+        "name": "문제/기회 정의",
+        "toast_message": "문제/기회 정의를 완료했습니다! 🎯",
         "template_description": "프로젝트가 해결하려는 문제 또는 포착한 기회를 명확하게 정의하는 문서입니다. 문제의 배경, 중요도, 기존 대안의 한계 등을 정리합니다.",
         "goal": "프로젝트가 해결하려는 문제 또는 포착한 기회를 명확하게 정의한다.",
         "entry_criteria": "Stage 1의 출발점이므로 별도 선행 맥락 없이 초기 프롬프트만으로 진입 가능하다.",
@@ -503,8 +503,8 @@ REQUIRED_STEP_DATA: list[dict] = [
     {
         "stage_sequence": 2,
         "sequence": 4,
-        "name": "개발 환경·도구 결정",
-        "toast_message": "개발 환경·도구 결정을 완료했습니다! 🛠️",
+        "name": "개발 환경/도구 결정",
+        "toast_message": "개발 환경/도구 결정을 완료했습니다! 🛠️",
         "template_description": "프로젝트에서 공통으로 사용할 기술 스택과 협업 도구를 확정하는 문서입니다.",
         "goal": "프로젝트에서 공통으로 사용할 기술 스택과 협업 도구를 확정한다.",
         "entry_criteria": "Step 히스토리에 컨셉·실현 가능성 맥락이 존재하여 어떤 기술 영역이 필요할지 판단 가능하다.",
