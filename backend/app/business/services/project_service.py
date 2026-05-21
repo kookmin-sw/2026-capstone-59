@@ -238,6 +238,11 @@ def to_project_response(db: Session, project: ProjectModel) -> ProjectResponse:
         is_deleted=project.is_deleted,
         created_at=project.created_at,
         updated_at=project.updated_at,
+        prompt=project.prompt,
+        duration_month=project.duration_month,
+        member_count=project.member_count,
+        description=project.description,
+        constraints=project.constraints,
     )
 
 

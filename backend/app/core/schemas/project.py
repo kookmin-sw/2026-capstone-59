@@ -28,6 +28,11 @@ class ProjectResponse(BaseModel):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
+    prompt: str
+    duration_month: int
+    member_count: int
+    description: str | None = None
+    constraints: list[str] | None = None
 
 
 class ProjectListItemResponse(BaseModel):
