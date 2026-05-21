@@ -627,7 +627,8 @@ export default function CanvasPage() {
     sequence: s.stage_sequence,
     name: s.stage_name,
     englishName: STAGE_ENGLISH[s.stage_sequence] ?? '',
-    status: activeStage?.stage_id === s.stage_id ? 'active'
+    status: s.is_completed ? 'completed'
+      : activeStage?.stage_id === s.stage_id ? 'active'
       : s.stage_sequence < currentStageSequence ? 'completed'
       : 'locked',
   }))
@@ -939,9 +940,34 @@ export default function CanvasPage() {
         const key = `stage_complete_${selectedStageId}`
         if (!shownToastsRef.current.has(key)) {
           shownToastsRef.current.add(key)
-          persistentMsgRef.current = `이제 다음 Stage로 이동할 수 있어요!`
-          showPersistentToast(`🎉 Stage가 종료됐어요! 이제 다음 Stage로 이동할 수 있어요!`)
+
+          const selectedStage = stages.find(
+            (stage) => stage.stage_id === selectedStageId
+          )
+
+          const lastStageSequence = Math.max(
+            ...stages.map((stage) => stage.stage_sequence)
+          )
+          const isLastStage = selectedStage?.stage_sequence === lastStageSequence
+
+          const stageCompleteMessage = isLastStage
+            ? `🎉 6개 Stage, 모두 도착했어요. 조금씩, 한 걸음씩 — 고생 많으셨어요!`
+            : `🎉 Stage가 종료됐어요! 이제 다음 Stage로 이동할 수 있어요!`
+
+          const stageReopenMessage = isLastStage
+            ? `🎉 6개 Stage, 모두 도착했어요. 조금씩, 한 걸음씩 — 고생 많으셨어요!`
+            : `이제 다음 Stage로 이동할 수 있어요!`
+
+          showPersistentToast(stageCompleteMessage)
+          persistentMsgRef.current = stageReopenMessage
+
+          if (selectedStageId) {
+          lastToastByStageRef.current[selectedStageId] = {
+            message: stageReopenMessage,
+            persistent: true,
+          }
         }
+
         currentRequiredStepName.current = null
         getStages(projectId).then((data) => {
           const list = data.stages ?? []
@@ -949,7 +975,6 @@ export default function CanvasPage() {
           const latestActive = getLatestActiveStage(list)
           if (latestActive) setCurrentStageSequence(latestActive.stage_sequence)
         })
-
       } else if (isRSComplete) {
         const name = (() => {
           if (selectedStep.type === 'requiredStepNode') return selectedStep.data.label
