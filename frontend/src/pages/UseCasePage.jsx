@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMe, logout } from '../api/auth'
+import { HiMenu, HiX} from 'react-icons/hi'
 import PocoLogo from '../components/PocoLogo'
 import navStyles from './LandingPage.module.css'
 import styles from './UseCasePage.module.css'
 
 const USE_CASES = [
-  { title: '사례 1 — 스타트업 팀 MVP 설계 및 의사결정 기록', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/A-jXWf49y-hHqt9CKeChk4v2eRBmJSv5jum0oY0fxa0' },
-  { title: '사례 2 — 캡스톤 졸업작품', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/LZG7zgH8f3rKh9elfWu4O9MeQAW_7jZ8Wv8gxAOHSuY' },
+  { title: '사례 1 — 반려동물 케어 플랫폼', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/A-jXWf49y-hHqt9CKeChk4v2eRBmJSv5jum0oY0fxa0' },
+  { title: '사례 2 — 실시간 강의실 질문 시스템', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/LZG7zgH8f3rKh9elfWu4O9MeQAW_7jZ8Wv8gxAOHSuY' },
 ]
 
 export default function UseCasePage() {
   const navigate = useNavigate()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [navScrolled, setNavScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -64,12 +66,39 @@ export default function UseCasePage() {
           ) : null}
           <button type="button" className={navStyles.navCta} onClick={handleStart}>시작하기</button>
         </div>
+
+        {/* 햄버거 (좁을 때만 CSS로 표시) */}
+        <button className={styles.hamburger} onClick={() => setMenuOpen(true)} aria-label="메뉴 열기">
+          <HiMenu size={26} />
+        </button>
       </nav>
+
+      {/* 우측 드로어 */}
+      <div
+        className={`${styles.drawerOverlay} ${menuOpen ? styles.drawerOpen : ''}`}
+        onClick={() => setMenuOpen(false)}
+      />
+      <aside className={`${styles.drawer} ${menuOpen ? styles.drawerOpen : ''}`}>
+        <button className={styles.drawerClose} onClick={() => setMenuOpen(false)} aria-label="메뉴 닫기">
+          <HiX size={24} />
+        </button>
+        <ul className={styles.drawerMenu}>
+          <li><a href="#scene-1" onClick={(e) => { e.preventDefault(); goToSection('scene-1'); setMenuOpen(false) }}>서비스</a></li>
+          <li><a href="#scene-3" onClick={(e) => { e.preventDefault(); goToSection('scene-3'); setMenuOpen(false) }}>기능</a></li>
+          <li><a href="#scene-4" onClick={(e) => { e.preventDefault(); goToSection('scene-4'); setMenuOpen(false) }}>근거</a></li>
+          <li><a href="#scene-5" onClick={(e) => { e.preventDefault(); goToSection('scene-5'); setMenuOpen(false) }}>사용자</a></li>
+          <li><a href="/usecase" onClick={(e) => { e.preventDefault(); navigate('/usecase'); setMenuOpen(false) }}>사용사례</a></li>
+        </ul>
+        <div className={styles.drawerActions}>
+          {isLoggedIn ? <button className={styles.navLogout} onClick={() => { handleLogout(); setMenuOpen(false) }}>로그아웃</button> : null}
+          <button className={styles.navCta} onClick={() => { handleStart(); setMenuOpen(false) }}>시작하기</button>
+        </div>
+      </aside>
 
       {/* ===== USECASE 본문 ===== */}
       <main className={styles.main}>
         <h1 className={styles.title}>usecase</h1>
-        <p className={styles.subtitle}>Poco로 진행된 실제 사용 사례를 살펴보세요.</p>
+        <p className={styles.subtitle}>Poco로 진행된 사용 사례를 살펴보세요.</p>
         <div className={styles.cards}>
           {USE_CASES.map((uc) => (
             <a
