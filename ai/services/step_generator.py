@@ -23,6 +23,19 @@ _SCENARIO = "generate"
 _NONE_LABEL = "없음"
 
 
+def _normalize_step_name(name: str) -> str:
+    """이름 정규화: 공백 모두 제거 + 소문자화. literal 중복 비교용."""
+    return "".join(name.lower().split())
+
+
+def _collect_forbidden_names(input_data: "GenerateInput") -> "set[str]":
+    """금지 이름 집합: 직전 부모 + decision_history 모든 항목."""
+    forbidden = {_normalize_step_name(input_data.current_step.name)}
+    for item in input_data.decision_history:
+        forbidden.add(_normalize_step_name(item.name))
+    return forbidden
+
+
 def _format_rag_context(chunks: list[RetrievedChunk]) -> str:
     """RAG 검색 결과를 프롬프트용 텍스트로 포맷팅."""
     if not chunks:
@@ -127,4 +140,48 @@ class StepGenerator:
             )
         )
 
-        return await self.llm.invoke(prompt, GenerateOutput, max_tokens=1024)
+        output = await self.llm.invoke(prompt, GenerateOutput, max_tokens=1024)
+
+        forbidden = _collect_forbidden_names(input_data)
+        duplicates = [
+            s.name for s in output.generated_steps
+            if _normalize_step_name(s.name) in forbidden
+        ]
+        if duplicates:
+            logger.warning(
+                json.dumps(
+                    {
+                        "event": "step_generator_literal_duplicate_detected",
+                        "duplicates": duplicates,
+                        "retrying": True,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            retry_prompt = prompt + (
+                "\n\n# ★★ 재시도 — 절대 금지 ★★\n"
+                "이전 시도에서 다음 이름이 동어 반복으로 폐기되었다.\n"
+                "이번 응답에서는 아래 이름과 literal 동일하거나 의미 동일한 Step을\n"
+                "**절대** 생성하지 마라:\n"
+                + "\n".join(f"  - {name}" for name in duplicates)
+                + "\n\n금지 이름 목록 (참고):\n"
+                + "\n".join(f"  - {item.name}" for item in input_data.decision_history)
+                + f"\n  - {input_data.current_step.name}\n"
+            )
+            output = await self.llm.invoke(retry_prompt, GenerateOutput, max_tokens=1024)
+            still_duplicates = [
+                s.name for s in output.generated_steps
+                if _normalize_step_name(s.name) in forbidden
+            ]
+            if still_duplicates:
+                logger.error(
+                    json.dumps(
+                        {
+                            "event": "step_generator_literal_duplicate_after_retry",
+                            "duplicates": still_duplicates,
+                        },
+                        ensure_ascii=False,
+                    )
+                )
+
+        return output
