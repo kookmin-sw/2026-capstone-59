@@ -36,6 +36,28 @@ def _collect_forbidden_names(input_data: "GenerateInput") -> "set[str]":
     return forbidden
 
 
+_INTERCHANGEABLE_SUFFIXES = frozenset({
+    "검토", "정리", "분석", "작성", "정의", "도출", "수립",
+    "명세", "명세화", "결정", "선정", "선택", "정립", "진행",
+    "평가", "점검", "식별", "매핑", "비교", "조사", "파악",
+    "확인", "구성", "설정", "수행", "구축",
+    "계획", "방안", "전략", "방향",
+})
+
+
+def _extract_content_tokens(name: str) -> "set[str]":
+    """이름에서 핵심 명사 토큰만 추출 (동사형 접미사 stopword 제외)."""
+    tokens = name.lower().split()
+    return {t for t in tokens if t not in _INTERCHANGEABLE_SUFFIXES}
+
+
+def _is_semantic_duplicate(new_name: str, forbidden_name: str) -> bool:
+    """핵심 명사 2개 이상 겹치면 의미 중복으로 판정."""
+    a = _extract_content_tokens(new_name)
+    b = _extract_content_tokens(forbidden_name)
+    return len(a & b) >= 2
+
+
 def _format_rag_context(chunks: list[RetrievedChunk]) -> str:
     """RAG 검색 결과를 프롬프트용 텍스트로 포맷팅."""
     if not chunks:
@@ -142,11 +164,19 @@ class StepGenerator:
 
         output = await self.llm.invoke(prompt, GenerateOutput, max_tokens=1024)
 
-        forbidden = _collect_forbidden_names(input_data)
-        duplicates = [
-            s.name for s in output.generated_steps
-            if _normalize_step_name(s.name) in forbidden
+        forbidden_normalized = _collect_forbidden_names(input_data)
+        forbidden_raw_names: list[str] = [input_data.current_step.name] + [
+            item.name for item in input_data.decision_history
         ]
+
+        def _has_duplicate(step_name: str) -> bool:
+            if _normalize_step_name(step_name) in forbidden_normalized:
+                return True
+            return any(
+                _is_semantic_duplicate(step_name, f) for f in forbidden_raw_names
+            )
+
+        duplicates = [s.name for s in output.generated_steps if _has_duplicate(s.name)]
         if duplicates:
             logger.warning(
                 json.dumps(
@@ -170,8 +200,7 @@ class StepGenerator:
             )
             output = await self.llm.invoke(retry_prompt, GenerateOutput, max_tokens=1024)
             still_duplicates = [
-                s.name for s in output.generated_steps
-                if _normalize_step_name(s.name) in forbidden
+                s.name for s in output.generated_steps if _has_duplicate(s.name)
             ]
             if still_duplicates:
                 logger.error(
