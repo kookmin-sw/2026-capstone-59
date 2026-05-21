@@ -148,7 +148,10 @@ export default function ProjectListPage() {
 
   // 검색어가 바뀌면 첫 페이지로
   useEffect(() => {
-    setPage(1)
+    const timer = setTimeout(() => {
+      setPage(1)
+    }, 0)
+    return () => clearTimeout(timer)
   }, [debouncedKeyword])
 
   useEffect(() => {
