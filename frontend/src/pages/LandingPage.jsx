@@ -96,7 +96,8 @@ const DEMO_VIDEOS = [
   '/assets/demo-panel-4',
 ]
 
-function DemoVideo({ index, playing, fallback: Fallback }) {
+function DemoVideo({ index, playing, fallback }) {
+  const Fallback = fallback
   const videoRef = useRef(null)
   const [videoError, setVideoError] = useState(false)
 
