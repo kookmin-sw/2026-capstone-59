@@ -80,7 +80,8 @@ function normalize(node) {
   const regular = children.filter((c) => !c.is_required)
   const required = children.find((c) => c.is_required)
 
-  // regular 슬롯 3개 채우기
+  // regular 슬롯 3개 채우기 (자식이 하나라도 있으면 항상 3 슬롯은 유지 —
+  // 부분 응답 / 누락 케이스에서도 가로 정렬을 유지하기 위함)
   const paddedRegular = [...regular]
   while (paddedRegular.length < 3) {
     paddedRegular.push({
@@ -92,18 +93,15 @@ function normalize(node) {
     })
   }
 
-  // required 슬롯 (있으면 실제 노드, 없으면 phantom)
-  const requiredSlot = required ?? {
-    step_id: `__phantom_required_${node.step_id}__`,
-    name: '',
-    is_required: true,
-    __phantom: true,
-    children: [],
-  }
+  // required 슬롯은 실제 required 자식이 존재할 때만 추가.
+  // (없으면 phantom 도 두지 않아 3-children 레이아웃이 부모 Y 기준 대칭이 됨.)
+  const finalChildren = required !== undefined
+    ? [...paddedRegular, required]
+    : paddedRegular
 
   return {
     ...node,
-    children: [...paddedRegular, requiredSlot],
+    children: finalChildren,
   }
 }
 
@@ -219,11 +217,19 @@ export function getLatestActiveStage(stageList) {
     : null
 }
 
-export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSequence) {
+// 한 번의 호출에서 두 가지 가상 레이아웃을 계산해 돌려준다.
+// - phase1 : regular 3개만 (required 슬롯 없음)        → ghost 단계에서 사용
+// - phase2 : regular 3개 + required 1개 (sibling reparent 또는 신규)
+//
+// regular 3 자리는 phase1 ↔ phase2 에서 위치가 약간 달라진다 (3-children 은
+// 부모 Y 기준 대칭, 4-children 은 살짝 압축되고 required 한 칸이 아래에 추가).
+// CanvasPage 에서 이를 활용해 ghost → regular(3-only) → required push-in 으로
+// 순차 reveal 한다.
+function buildPredictedLayout(acceptedNodeId, rfNodes, rfEdges, stageSequence, { withRequired }) {
   const realNodes = rfNodes.filter(n => n.type !== 'ghostNode')
   const realEdges = rfEdges.filter(e => e.type !== 'ghostEdge')
 
-  // accept 노드의 형제 중 READY 상태의 필수 노드 찾기 (reparent 대상)
+  // accept 노드의 형제 중 READY 상태의 필수 노드 (reparent 대상) — withRequired 인 경우만 의미 있음
   const acceptedParentEdge = realEdges.find(e => e.target === acceptedNodeId)
   const acceptedParentId = acceptedParentEdge?.source
   let siblingRequiredId = null
@@ -239,28 +245,34 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
     siblingRequiredId = siblingReq?.id ?? null
   }
 
-  // parent → children 인접 리스트 (sibling 필수 edge는 제거)
+  const reparentingSibling = withRequired && siblingRequiredId
+
+  // parent → children 인접 리스트
   const childrenMap = new Map()
   realNodes.forEach(n => childrenMap.set(n.id, []))
   realEdges.forEach(e => {
-    if (e.target === siblingRequiredId) return
+    // reparent 단계에서만 sibling required 의 기존 edge 를 끊고 새 자리로 옮긴다
+    if (reparentingSibling && e.target === siblingRequiredId) return
     childrenMap.get(e.source)?.push(e.target)
   })
 
-  // 가짜 자식: 일반 3개 + 필수 1개 (또는 sibling required reparent)
+  // 가짜 regular 자식 3개는 항상 추가
   const fakeIds = ['__gp0', '__gp1', '__gp2']
   fakeIds.forEach(id => childrenMap.set(id, []))
   childrenMap.get(acceptedNodeId)?.push(...fakeIds)
 
+  // 필수 슬롯은 withRequired 일 때만 추가
   const fakeRequiredId = '__gpR'
-  let requiredSlotId
-  if (siblingRequiredId) {
-    childrenMap.get(acceptedNodeId)?.push(siblingRequiredId)
-    requiredSlotId = siblingRequiredId
-  } else {
-    childrenMap.set(fakeRequiredId, [])
-    childrenMap.get(acceptedNodeId)?.push(fakeRequiredId)
-    requiredSlotId = fakeRequiredId
+  let requiredSlotId = null
+  if (withRequired) {
+    if (reparentingSibling) {
+      childrenMap.get(acceptedNodeId)?.push(siblingRequiredId)
+      requiredSlotId = siblingRequiredId
+    } else {
+      childrenMap.set(fakeRequiredId, [])
+      childrenMap.get(acceptedNodeId)?.push(fakeRequiredId)
+      requiredSlotId = fakeRequiredId
+    }
   }
 
   const hasParent = new Set()
@@ -296,7 +308,9 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
     .map(id => layoutNodes.find(n => n.id === id)?.position)
     .filter(Boolean)
 
-  const requiredSlot = layoutNodes.find(n => n.id === requiredSlotId)?.position ?? null
+  const requiredSlot = requiredSlotId
+    ? (layoutNodes.find(n => n.id === requiredSlotId)?.position ?? null)
+    : null
 
   const existingPositions = new Map(
     layoutNodes
@@ -305,4 +319,28 @@ export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSeq
   )
 
   return { ghostPositions, requiredSlot, existingPositions, siblingRequiredId }
+}
+
+export function predictGhostPositions(acceptedNodeId, rfNodes, rfEdges, stageSequence) {
+  // Phase 1 — required 미포함 (3-children 대칭 레이아웃)
+  const phase1 = buildPredictedLayout(acceptedNodeId, rfNodes, rfEdges, stageSequence, {
+    withRequired: false,
+  })
+  // Phase 2 — required 포함 (response 에 required 가 도착했을 때 사용)
+  const phase2 = buildPredictedLayout(acceptedNodeId, rfNodes, rfEdges, stageSequence, {
+    withRequired: true,
+  })
+
+  // 기존 시그니처와 하위호환을 위해 phase1 의 ghost/existing 좌표를 그대로 노출하면서,
+  // phase2 의 좌표를 함께 반환한다.
+  return {
+    // ghost 단계용 (3 슬롯)
+    ghostPositions: phase1.ghostPositions,
+    existingPositions: phase1.existingPositions,
+    // required 가 응답에 포함될 때 적용할 4-슬롯 좌표
+    phase2RegularPositions: phase2.ghostPositions, // 3 regulars 의 새 위치
+    phase2ExistingPositions: phase2.existingPositions,
+    requiredSlot: phase2.requiredSlot,
+    siblingRequiredId: phase2.siblingRequiredId,
+  }
 }

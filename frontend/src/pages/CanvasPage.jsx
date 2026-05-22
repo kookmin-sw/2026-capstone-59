@@ -100,6 +100,11 @@ export default function CanvasPage() {
   const movedPositionsRef = useRef(null)
   const requiredSlotRef = useRef(null)
   const siblingRequiredIdRef = useRef(null)
+  // required 가 응답에 포함될 때 적용할 phase2 (4-slot) 예상 좌표.
+  // ghost 단계에서는 phase1 (3-slot) 좌표만 사용하고, accept 응답에 required 가
+  // 있으면 phase2 좌표로 부드럽게 이동시킨다.
+  const phase2RegularPositionsRef = useRef(null)
+  const phase2ExistingPositionsRef = useRef(null)
 
   // 첫 진입 가이드 투어 (캔버스)
   const [tourOpen, setTourOpen] = useState(false)
@@ -194,7 +199,14 @@ export default function CanvasPage() {
 
   function addGhostNodes(acceptedNode) {
     const stage = stages.find(s => s.stage_id === selectedStageId)
-    const { ghostPositions, requiredSlot, existingPositions, siblingRequiredId } = predictGhostPositions(
+    const {
+      ghostPositions,                   // phase1 — 3-slot 대칭
+      existingPositions,                // phase1 의 다른 노드 위치
+      phase2RegularPositions,           // phase2 — 4-slot 일 때 regular 3 위치
+      phase2ExistingPositions,          // phase2 의 다른 노드 위치
+      requiredSlot,                     // phase2 의 required 자리
+      siblingRequiredId,
+    } = predictGhostPositions(
       acceptedNode.id,
       nodes,
       edges,
@@ -210,6 +222,8 @@ export default function CanvasPage() {
     movedPositionsRef.current = existingPositions
     requiredSlotRef.current = requiredSlot
     siblingRequiredIdRef.current = siblingRequiredId
+    phase2RegularPositionsRef.current = phase2RegularPositions
+    phase2ExistingPositionsRef.current = phase2ExistingPositions
 
     const ghostNodes = ghostPositions.map((pos, i) => ({
       id: `ghost-${i}`,
@@ -277,6 +291,8 @@ export default function CanvasPage() {
       movedPositionsRef.current = null
       requiredSlotRef.current = null
       siblingRequiredIdRef.current = null
+      phase2RegularPositionsRef.current = null
+      phase2ExistingPositionsRef.current = null
     }, 300)
   }
 
@@ -505,40 +521,201 @@ export default function CanvasPage() {
 
     let processedNodes
     const siblingReqId = animateNew ? siblingRequiredIdRef.current : null
-    if (animateNew) {
-      requiredSlotRef.current = null
-      siblingRequiredIdRef.current = null
-      movedPositionsRef.current = null
-      ghostPositionsRef.current = []
-      savedPositionsRef.current = null
+    // ghost 단계에서 잡아둔 phase1 (3-slot) 좌표 — accept 응답에 required 가
+    // 포함될 때 regular 3개의 초기 위치로 사용한다.
+    const phase1Positions = animateNew ? (ghostPositionsRef.current ?? []) : []
 
-      processedNodes = n.map(node => {
-        const isReparentedRequired = siblingReqId && node.id === siblingReqId
-        return {
-          ...node,
-          style: isReparentedRequired ? { transition: 'none' } : undefined,
-          data: {
-            ...node.data,
-            isNew: !existingIds.has(node.id),
-            isReparented: isReparentedRequired,
-          },
-        }
-      })
+    // accept 응답에 의해 새로 생긴 required (brand new 또는 sibling reparent)
+    const newRequiredNodes = animateNew
+      ? n.filter((node) =>
+          node.type === 'requiredStepNode' &&
+          (!existingIds.has(node.id) || node.id === siblingReqId)
+        )
+      : []
+    const hasNewRequired = newRequiredNodes.length > 0
+
+    // accept 응답에 의해 새로 생긴 regular (3개 또는 그 이하)
+    const newRegularNodes = animateNew
+      ? n.filter((node) =>
+          !existingIds.has(node.id) && node.type !== 'requiredStepNode'
+        )
+      : []
+
+    // 2-phase reveal: required 가 응답에 포함되면 regular 를 phase1 위치에 먼저
+    // 띄운 뒤 짧은 delay 후 phase2 위치로 슬라이드 + required push-in 한다.
+    const usePhaseSplit =
+      animateNew && hasNewRequired && phase1Positions.length > 0 && newRegularNodes.length > 0
+
+    if (animateNew) {
+      // ref 정리는 phase split 이 끝난 뒤로 미룬다 (phase B 에서 사용).
+      if (!usePhaseSplit) {
+        requiredSlotRef.current = null
+        siblingRequiredIdRef.current = null
+        movedPositionsRef.current = null
+        ghostPositionsRef.current = []
+        savedPositionsRef.current = null
+        phase2RegularPositionsRef.current = null
+        phase2ExistingPositionsRef.current = null
+      }
+
+      if (usePhaseSplit) {
+        // 새 regular 를 layout y 순으로 정렬해 phase1 positions 와 1:1 매핑
+        const sortedNewRegulars = [...newRegularNodes].sort(
+          (a, b) => a.position.y - b.position.y
+        )
+        const phase1ByNodeId = new Map()
+        sortedNewRegulars.forEach((node, idx) => {
+          if (phase1Positions[idx]) {
+            phase1ByNodeId.set(node.id, phase1Positions[idx])
+          }
+        })
+
+        // PHASE A — regular 3개는 phase1 좌표(ghost 자리)에서 등장,
+        // required 는 마운트는 하되 isWaiting 으로 표시되지 않게 한다.
+        processedNodes = n.map((node) => {
+          const phase1Pos = phase1ByNodeId.get(node.id)
+          const isNewRequired = newRequiredNodes.some((r) => r.id === node.id)
+          const isReparentedRequired = siblingReqId && node.id === siblingReqId
+
+          if (phase1Pos) {
+            return {
+              ...node,
+              position: phase1Pos,
+              // transform transition 으로 phase1 → phase2 슬라이드.
+              // required push-in (0.55s) 와 비슷한 호흡으로 맞춰 동시에 settle.
+              style: { transition: 'transform 0.55s cubic-bezier(0.34, 1.2, 0.64, 1)' },
+              data: {
+                ...node.data,
+                isNew: true,
+                isReparented: isReparentedRequired,
+                isWaiting: false,
+              },
+            }
+          }
+          if (isNewRequired) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                isNew: true,
+                isReparented: isReparentedRequired,
+                isWaiting: true,   // phase A 동안 숨김
+                isPushingIn: false,
+              },
+            }
+          }
+          return node
+        })
+      } else {
+        // 단일 phase — 기존 동작
+        processedNodes = n.map((node) => {
+          const isReparentedRequired = siblingReqId && node.id === siblingReqId
+          return {
+            ...node,
+            style: isReparentedRequired ? { transition: 'none' } : undefined,
+            data: {
+              ...node.data,
+              isNew: !existingIds.has(node.id),
+              isReparented: isReparentedRequired,
+            },
+          }
+        })
+      }
     } else {
       processedNodes = n
     }
 
     setNodes(processedNodes)
-      const processedEdges = animateNew
-    ? e.map(edge => {
-        const isReparentedTarget = siblingReqId && edge.target === siblingReqId
-        return isReparentedTarget
-          ? { ...edge, type: 'newEdge' }
-          : edge
-      })
-    : e
+
+    // 새 edge 분류: regular 자식 / required 자식 (각각 다른 phase 에서 등장)
+    const newRegularEdgeTargets = animateNew
+      ? new Set(newRegularNodes.map((node) => node.id))
+      : new Set()
+    const newRequiredEdgeTargets = animateNew
+      ? new Set(newRequiredNodes.map((node) => node.id))
+      : new Set()
+
+    let processedEdges
+    if (animateNew) {
+      if (usePhaseSplit) {
+        // PHASE A — regular 의 edge 만 newEdge 로 즉시 path-draw,
+        // required 와 그 edge 는 phase B 에서 동시에 등장
+        processedEdges = e
+          .filter((edge) => !newRequiredEdgeTargets.has(edge.target))
+          .map((edge) => {
+            const isReparentedTarget = siblingReqId && edge.target === siblingReqId
+            if (newRegularEdgeTargets.has(edge.target) || isReparentedTarget) {
+              return { ...edge, type: 'newEdge' }
+            }
+            return edge
+          })
+      } else {
+        processedEdges = e.map((edge) => {
+          const isReparentedTarget = siblingReqId && edge.target === siblingReqId
+          if (newRegularEdgeTargets.has(edge.target) || isReparentedTarget) {
+            return { ...edge, type: 'newEdge' }
+          }
+          return edge
+        })
+      }
+    } else {
+      processedEdges = e
+    }
 
     setEdges(processedEdges)
+
+    // PHASE B — required push-in + 그 edge 가 함께 좌→우로 그려짐.
+    // delay 는 regular 가 "자리 잡았다는 느낌" 직후로 잡아 자연스럽게 합류.
+    if (usePhaseSplit) {
+      const phaseBDelay = 380
+      setTimeout(() => {
+        setNodes((current) => {
+          // 현재 nodes 의 id 기준으로 phase B 적용. n 은 stale snapshot.
+          const nById = new Map(n.map((node) => [node.id, node]))
+          return current.map((node) => {
+            const target = nById.get(node.id)
+            if (!target) return node
+            const isNewRequired = newRequiredNodes.some((r) => r.id === node.id)
+            const isReparentedRequired = siblingReqId && node.id === siblingReqId
+            return {
+              ...node,
+              position: target.position, // phase2 좌표 (flattenTree 결과)
+              style: node.style, // phase A 에서 set 한 transition 유지
+              data: {
+                ...node.data,
+                isNew: !existingIds.has(node.id),
+                isReparented: isReparentedRequired,
+                isWaiting: false,
+                isPushingIn: isNewRequired,
+              },
+            }
+          })
+        })
+
+        // required 의 edge 를 newEdge 로 추가 — 다이아몬드 슬라이드인과 동시에
+        // 좌측(부모 우측 handle)에서 우측(required 좌측 handle) 으로 path-draw
+        setEdges(() =>
+          e.map((edge) => {
+            const isNewRegularTarget = newRegularEdgeTargets.has(edge.target)
+            const isNewRequiredTarget = newRequiredEdgeTargets.has(edge.target)
+            const isReparentedTarget = siblingReqId && edge.target === siblingReqId
+            if (isNewRegularTarget || isNewRequiredTarget || isReparentedTarget) {
+              return { ...edge, type: 'newEdge' }
+            }
+            return edge
+          })
+        )
+
+        // phase B 진입 후 ref 정리
+        requiredSlotRef.current = null
+        siblingRequiredIdRef.current = null
+        movedPositionsRef.current = null
+        ghostPositionsRef.current = []
+        savedPositionsRef.current = null
+        phase2RegularPositionsRef.current = null
+        phase2ExistingPositionsRef.current = null
+      }, phaseBDelay)
+    }
 
     const newNodeIds = new Set(n.map((node) => node.id))
     streamBuffers.current.forEach((buf, id) => {
