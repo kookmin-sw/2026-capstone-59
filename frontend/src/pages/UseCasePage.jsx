@@ -9,6 +9,8 @@ import styles from './UseCasePage.module.css'
 const USE_CASES = [
   { title: '사례 1 — 반려동물 케어 플랫폼', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/A-jXWf49y-hHqt9CKeChk4v2eRBmJSv5jum0oY0fxa0' },
   { title: '사례 2 — 실시간 강의실 질문 시스템', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/LZG7zgH8f3rKh9elfWu4O9MeQAW_7jZ8Wv8gxAOHSuY' },
+  { title: '사례 3 — C++ 프로그래밍 스네이크 게임', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/qCZDdOwRUeHTrJ89_m4PgEBMfUW9aXGndC5ZocUzkOc' },
+  { title: '사례 4 — 유치원 활동기록지 관리 프로그램', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/Ezy8uMxZoI5oflP1FbJMqSe5nt1nvtojC2gPOUkEelU' },
 ]
 
 export default function UseCasePage() {
