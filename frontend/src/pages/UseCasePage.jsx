@@ -7,7 +7,7 @@ import navStyles from './LandingPage.module.css'
 import styles from './UseCasePage.module.css'
 
 const USE_CASES = [
-  { title: '사례 1 — Poco - ', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/eJaFCWx-QrXiF-3BdjZLOirAMb7kSIVPyzX4nqZu8Uo' },
+  { title: '사례 1 — Poco를 Poco로', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/eJaFCWx-QrXiF-3BdjZLOirAMb7kSIVPyzX4nqZu8Uo' },
   { title: '사례 2 — 반려동물 케어 플랫폼', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/A-jXWf49y-hHqt9CKeChk4v2eRBmJSv5jum0oY0fxa0' },
   { title: '사례 3 — 실시간 강의실 질문 시스템', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/LZG7zgH8f3rKh9elfWu4O9MeQAW_7jZ8Wv8gxAOHSuY' },
   { title: '사례 4 — C++ 프로그래밍 스네이크 게임', url: 'http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/shared/qCZDdOwRUeHTrJ89_m4PgEBMfUW9aXGndC5ZocUzkOc' },
