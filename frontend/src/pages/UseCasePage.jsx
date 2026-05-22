@@ -108,14 +108,19 @@ export default function UseCasePage() {
         <h1 className={styles.title}>usecase</h1>
         <p className={styles.subtitle}>Poco로 진행된 사용 사례를 살펴보세요.</p>
         <div className={styles.cards}>
-          {USE_CASES.map((uc) => (
+          {USE_CASES.map((uc, i) => (
             <a
               key={uc.title}
-              className={styles.card}
+              className={`${styles.card} ${i === 0 ? styles.cardFeatured : ''}`}
               href={uc.url}
               target="_blank"
               rel="noopener noreferrer"
             >
+              {i === 0 && ((
+                <svg className={styles.borderGlow} aria-hidden="true">
+                  <rect pathLength="100" />
+                </svg>
+              ))}
               <span className={styles.cardTitle}>{uc.title}</span>
               <span className={styles.cardArrow}>→</span>
             </a>

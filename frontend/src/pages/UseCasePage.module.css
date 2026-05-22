@@ -1,7 +1,7 @@
 .main {
   max-width: 760px;
   margin: 0 auto;
-  padding: 140px 24px 80px;  /* 상단 nav 높이만큼 여백 */
+  padding: 120px 24px 80px;  /* 상단 nav 높이만큼 여백 */
 }
 
 .title {
@@ -39,9 +39,9 @@
 }
 
 .card:hover {
-  border-color: var(--color-primary);
+  border-color: #b2a2fb;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(117, 102, 234, 0.12);
+  box-shadow: 0 6px 15px rgba(143, 130, 243, 0.12);
 }
 
 .cardArrow {
@@ -140,4 +140,45 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.cardFeatured {
+  position: relative;
+  border: 1.5px solid #cec4fc;
+}
+
+/* 테두리를 따라 흐르는 빛 */
+.borderGlow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;        /* stroke 바깥 절반 안 잘리게 */
+  pointer-events: none;
+}
+
+.borderGlow rect {
+  x: -1px;
+  y: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  rx: 13px;                 /* 카드 radius(14) - 1 */
+  fill: none;
+  stroke: #b0a7fb;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-dasharray: 70 30;  /* 18% 빛 + 82% 빈 → 한 조각이 흐름 */
+  filter: drop-shadow(0 0 11px rgba(146, 131, 255, 0.8));  /* 글로우 */
+  animation: trace 3s linear infinite;
+}
+
+@keyframes trace {
+  to { stroke-dashoffset: -100; }  /* 둘레(pathLength 100)를 따라 한 바퀴 */
+}
+
+/* 내용이 빛 위로 보이게 */
+.cardTitle,
+.cardArrow {
+  position: relative;
+  z-index: 1;
 }
