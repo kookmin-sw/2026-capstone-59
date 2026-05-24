@@ -3,7 +3,8 @@
 실행: ``python -m ai.latency_simulator [--runs N] [--output PATH] [--baseline]``
 
 Stage 1 R1("문제/기회 정의") 고정 fixture 입력으로 Pipeline 1회(또는 N회)를
-실제 Bedrock에 대해 실행하고, stage별/call별 wall-clock elapsed를 기록한다.
+실제 Anthropic Direct API + Bedrock KB(RAG)에 대해 실행하고,
+stage별/call별 wall-clock elapsed를 기록한다.
 
 Pipeline 구조:
     Stage A — judge ∥ generate (asyncio.gather)
@@ -19,6 +20,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 import time
 import uuid
@@ -27,6 +29,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Dict, List, Optional, Tuple
 
 import boto3
+from anthropic import AsyncAnthropic
 
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
@@ -154,13 +157,14 @@ def _build_side_panel_input(generated: GeneratedStep) -> SidePanelInput:
 
 
 def _build_services() -> Tuple[StepGenerator, RequiredStepJudge, SidePanelGenerator]:
-    bedrock_runtime = boto3.client("bedrock-runtime", region_name=ai_settings.AWS_REGION)
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or ai_settings.ANTHROPIC_API_KEY
+    anthropic_client = AsyncAnthropic(api_key=api_key)
     bedrock_agent_runtime = boto3.client(
         "bedrock-agent-runtime", region_name=ai_settings.AWS_REGION
     )
 
     llm = LLMClient(
-        bedrock_client=bedrock_runtime,
+        anthropic_client=anthropic_client,
         model_id=ai_settings.MODEL_ID,
         max_tokens=ai_settings.MAX_TOKENS,
         temperature=ai_settings.TEMPERATURE,

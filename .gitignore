@@ -61,3 +61,6 @@ layer-build/
 
 # Lambda deployment packages (built locally, not tracked)
 *.zip
+
+# 개인 비용 측정 (클라우드셸 zip)
+cost_measurement/

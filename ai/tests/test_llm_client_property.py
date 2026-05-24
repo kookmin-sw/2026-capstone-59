@@ -1,8 +1,7 @@
-"""hypothesis 기반 LLMClient property 테스트."""
+"""hypothesis 기반 LLMClient property 테스트 — Anthropic Direct API 기반 (이슈 #232)."""
 
-import io
 import json
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from hypothesis import given, settings
@@ -83,27 +82,29 @@ def test_side_panel_output_roundtrip(output: SidePanelOutput):
 # ---------------------------------------------------------------------------
 
 
-def _schema_mismatch_bedrock_mock() -> MagicMock:
-    """invoke_model이 항상 빈 dict {}를 content[0].text로 반환하는 mock."""
+def _schema_mismatch_anthropic_mock() -> MagicMock:
+    """messages.create가 항상 빈 dict {}를 content[0].text로 반환하는 mock."""
 
     def _response(**_):
-        envelope = {"content": [{"type": "text", "text": json.dumps({})}]}
-        return {"body": io.BytesIO(json.dumps(envelope).encode())}
+        msg = MagicMock()
+        msg.content = [MagicMock(text=json.dumps({}))]
+        return msg
 
     mock = MagicMock()
-    mock.invoke_model.side_effect = _response
+    mock.messages = MagicMock()
+    mock.messages.create = AsyncMock(side_effect=_response)
     return mock
 
 
 @settings(max_examples=100)
 @given(st.data())
 def test_schema_mismatch_retry_count_and_failure(data):
-    bedrock_mock = _schema_mismatch_bedrock_mock()
-    client = LLMClient(bedrock_client=bedrock_mock, model_id="test-model")
+    anthropic_mock = _schema_mismatch_anthropic_mock()
+    client = LLMClient(anthropic_client=anthropic_mock, model_id="test-model")
 
     import asyncio
 
     with pytest.raises(AIGenerationFailedError):
         asyncio.run(client.invoke("{}", GenerateOutput, max_retries=2))
 
-    assert bedrock_mock.invoke_model.call_count == 3
+    assert anthropic_mock.messages.create.call_count == 3

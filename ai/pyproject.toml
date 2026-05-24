@@ -1,9 +1,10 @@
 [project]
 name = "poco-ai"
 version = "0.1.0"
-description = "Poco AI Orchestrator — Bedrock Claude 기반 독립 AI 모듈"
+description = "Poco AI Orchestrator — Anthropic Direct API + Bedrock KB 기반 독립 AI 모듈"
 requires-python = ">=3.13"
 dependencies = [
+    "anthropic>=0.40.0,<1.0.0",
     "boto3>=1.35.0,<2.0.0",
     "pydantic>=2.10.0,<3.0.0",
     "pydantic-settings>=2.5.0,<3.0.0",

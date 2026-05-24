@@ -1,18 +1,17 @@
-"""ai/clients/llm.py 단위 테스트."""
+"""ai/clients/llm.py 단위 테스트 — Anthropic Direct API 기반 (이슈 #232)."""
 
-import io
 import json
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from botocore.exceptions import ClientError
+from anthropic import APIStatusError
 from pydantic import BaseModel
 
 from ai.clients.llm import LLMClient
 from ai.exceptions import AIErrorCode, AIGenerationFailedError, BedrockAPIError
 
-MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+MODEL_ID = "claude-haiku-4-5-20251001"
 
 
 class _Schema(BaseModel):
@@ -22,34 +21,46 @@ class _Schema(BaseModel):
     score: int
 
 
-def _make_response(text_payload: str) -> dict:
-    """Bedrock invoke_model 응답 형태를 모방한 dict."""
-    envelope = {"content": [{"type": "text", "text": text_payload}]}
-    return {"body": io.BytesIO(json.dumps(envelope).encode("utf-8"))}
+def _make_message(text_payload: str) -> MagicMock:
+    """Anthropic messages.create 응답 형태를 모방."""
+    msg = MagicMock()
+    msg.content = [MagicMock(text=text_payload)]
+    return msg
 
 
-def _valid_response() -> dict:
-    return _make_response(json.dumps({"answer": "ok", "score": 42}))
+def _valid_response() -> MagicMock:
+    return _make_message(json.dumps({"answer": "ok", "score": 42}))
 
 
-def _malformed_json_response() -> dict:
-    return _make_response("{not valid json")
+def _malformed_json_response() -> MagicMock:
+    return _make_message("{not valid json")
 
 
-def _schema_violation_response() -> dict:
+def _schema_violation_response() -> MagicMock:
     # answer가 누락 → ValidationError 발생
-    return _make_response(json.dumps({"score": 1}))
+    return _make_message(json.dumps({"score": 1}))
+
+
+def _make_api_status_error(message: str = "rate limited", status: int = 429) -> APIStatusError:
+    """anthropic.APIStatusError 인스턴스를 생성."""
+    response = MagicMock()
+    response.status_code = status
+    return APIStatusError(message=message, response=response, body={"error": {"message": message}})
 
 
 @pytest.fixture
-def bedrock_mock() -> MagicMock:
-    return MagicMock()
+def anthropic_mock() -> MagicMock:
+    """AsyncAnthropic mock — messages.create를 AsyncMock으로 노출."""
+    mock = MagicMock()
+    mock.messages = MagicMock()
+    mock.messages.create = AsyncMock()
+    return mock
 
 
 @pytest.fixture
-def client(bedrock_mock: MagicMock) -> LLMClient:
+def client(anthropic_mock: MagicMock) -> LLMClient:
     return LLMClient(
-        bedrock_client=bedrock_mock,
+        anthropic_client=anthropic_mock,
         model_id=MODEL_ID,
         max_tokens=128,
         temperature=0.5,
@@ -59,9 +70,9 @@ def client(bedrock_mock: MagicMock) -> LLMClient:
 class TestInvokeSuccess:
     @pytest.mark.asyncio
     async def test_invoke_returns_validated_instance(
-        self, client: LLMClient, bedrock_mock: MagicMock
+        self, client: LLMClient, anthropic_mock: MagicMock
     ):
-        bedrock_mock.invoke_model.return_value = _valid_response()
+        anthropic_mock.messages.create.return_value = _valid_response()
 
         result = await client.invoke("hello", _Schema)
 
@@ -71,29 +82,25 @@ class TestInvokeSuccess:
 
     @pytest.mark.asyncio
     async def test_invoke_passes_correct_request_body(
-        self, client: LLMClient, bedrock_mock: MagicMock
+        self, client: LLMClient, anthropic_mock: MagicMock
     ):
-        bedrock_mock.invoke_model.return_value = _valid_response()
+        anthropic_mock.messages.create.return_value = _valid_response()
 
         await client.invoke("질문 내용", _Schema)
 
-        call_kwargs = bedrock_mock.invoke_model.call_args.kwargs
-        assert call_kwargs["modelId"] == MODEL_ID
-        assert call_kwargs["contentType"] == "application/json"
-
-        body = json.loads(call_kwargs["body"])
-        assert body["anthropic_version"] == "bedrock-2023-05-31"
-        assert body["max_tokens"] == 128
-        assert body["temperature"] == 0.5
-        assert body["messages"] == [{"role": "user", "content": "질문 내용"}]
+        call_kwargs = anthropic_mock.messages.create.call_args.kwargs
+        assert call_kwargs["model"] == MODEL_ID
+        assert call_kwargs["max_tokens"] == 128
+        assert call_kwargs["temperature"] == 0.5
+        assert call_kwargs["messages"] == [{"role": "user", "content": "질문 내용"}]
 
 
 class TestInvokeRetryOnRetryableErrors:
     @pytest.mark.asyncio
     async def test_json_decode_error_then_success(
-        self, client: LLMClient, bedrock_mock: MagicMock
+        self, client: LLMClient, anthropic_mock: MagicMock
     ):
-        bedrock_mock.invoke_model.side_effect = [
+        anthropic_mock.messages.create.side_effect = [
             _malformed_json_response(),
             _valid_response(),
         ]
@@ -101,13 +108,13 @@ class TestInvokeRetryOnRetryableErrors:
         result = await client.invoke("p", _Schema, max_retries=2)
 
         assert result.answer == "ok"
-        assert bedrock_mock.invoke_model.call_count == 2
+        assert anthropic_mock.messages.create.call_count == 2
 
     @pytest.mark.asyncio
     async def test_validation_error_then_success(
-        self, client: LLMClient, bedrock_mock: MagicMock
+        self, client: LLMClient, anthropic_mock: MagicMock
     ):
-        bedrock_mock.invoke_model.side_effect = [
+        anthropic_mock.messages.create.side_effect = [
             _schema_violation_response(),
             _valid_response(),
         ]
@@ -115,15 +122,15 @@ class TestInvokeRetryOnRetryableErrors:
         result = await client.invoke("p", _Schema, max_retries=2)
 
         assert result.answer == "ok"
-        assert bedrock_mock.invoke_model.call_count == 2
+        assert anthropic_mock.messages.create.call_count == 2
 
 
 class TestInvokeRetryExhaustion:
     @pytest.mark.asyncio
     async def test_schema_mismatch_three_attempts_then_fails(
-        self, client: LLMClient, bedrock_mock: MagicMock
+        self, client: LLMClient, anthropic_mock: MagicMock
     ):
-        bedrock_mock.invoke_model.side_effect = [
+        anthropic_mock.messages.create.side_effect = [
             _schema_violation_response(),
             _schema_violation_response(),
             _schema_violation_response(),
@@ -133,7 +140,7 @@ class TestInvokeRetryExhaustion:
             await client.invoke("p", _Schema, max_retries=2)
 
         # max_retries=2 → 1 + 2 = 3회 호출
-        assert bedrock_mock.invoke_model.call_count == 3
+        assert anthropic_mock.messages.create.call_count == 3
         err = exc_info.value
         assert err.code == AIErrorCode.AI_GENERATION_FAILED
         assert err.details["max_retries"] == 2
@@ -144,9 +151,9 @@ class TestInvokeRetryExhaustion:
 
     @pytest.mark.asyncio
     async def test_json_decode_error_exhausts_retries(
-        self, client: LLMClient, bedrock_mock: MagicMock
+        self, client: LLMClient, anthropic_mock: MagicMock
     ):
-        bedrock_mock.invoke_model.side_effect = [
+        anthropic_mock.messages.create.side_effect = [
             _malformed_json_response(),
             _malformed_json_response(),
             _malformed_json_response(),
@@ -155,31 +162,26 @@ class TestInvokeRetryExhaustion:
         with pytest.raises(AIGenerationFailedError) as exc_info:
             await client.invoke("p", _Schema, max_retries=2)
 
-        assert bedrock_mock.invoke_model.call_count == 3
+        assert anthropic_mock.messages.create.call_count == 3
         assert exc_info.value.details["last_error"]["type"] == "json_decode_error"
 
 
 class TestBedrockApiErrorImmediate:
     @pytest.mark.asyncio
-    async def test_client_error_raises_immediately_without_retry(
-        self, client: LLMClient, bedrock_mock: MagicMock
+    async def test_api_error_raises_immediately_without_retry(
+        self, client: LLMClient, anthropic_mock: MagicMock
     ):
-        client_error = ClientError(
-            error_response={
-                "Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}
-            },
-            operation_name="InvokeModel",
-        )
-        bedrock_mock.invoke_model.side_effect = client_error
+        api_error = _make_api_status_error("Rate exceeded", status=429)
+        anthropic_mock.messages.create.side_effect = api_error
 
         with pytest.raises(BedrockAPIError) as exc_info:
             await client.invoke("p", _Schema, max_retries=2)
 
         # 재시도 없음 — 정확히 1회만 호출
-        assert bedrock_mock.invoke_model.call_count == 1
+        assert anthropic_mock.messages.create.call_count == 1
         err = exc_info.value
         assert err.code == AIErrorCode.BEDROCK_API_ERROR
-        assert err.details["error_type"] == "ClientError"
+        assert err.details["error_type"] == "APIStatusError"
         assert "correlation_id" in err.details
 
 
@@ -188,10 +190,10 @@ class TestCorrelationIdLogging:
     async def test_correlation_id_present_in_start_and_success_logs(
         self,
         client: LLMClient,
-        bedrock_mock: MagicMock,
+        anthropic_mock: MagicMock,
         caplog: pytest.LogCaptureFixture,
     ):
-        bedrock_mock.invoke_model.return_value = _valid_response()
+        anthropic_mock.messages.create.return_value = _valid_response()
 
         with caplog.at_level(logging.INFO, logger="ai.clients.llm"):
             await client.invoke("p", _Schema)
@@ -214,12 +216,11 @@ class TestCorrelationIdLogging:
     async def test_correlation_id_in_error_logs(
         self,
         client: LLMClient,
-        bedrock_mock: MagicMock,
+        anthropic_mock: MagicMock,
         caplog: pytest.LogCaptureFixture,
     ):
-        bedrock_mock.invoke_model.side_effect = ClientError(
-            error_response={"Error": {"Code": "AccessDenied", "Message": "no"}},
-            operation_name="InvokeModel",
+        anthropic_mock.messages.create.side_effect = _make_api_status_error(
+            "no", status=403
         )
 
         with caplog.at_level(logging.INFO, logger="ai.clients.llm"):
@@ -238,9 +239,9 @@ class TestCorrelationIdLogging:
 
     @pytest.mark.asyncio
     async def test_correlation_id_unique_per_invocation(
-        self, client: LLMClient, bedrock_mock: MagicMock, caplog: pytest.LogCaptureFixture
+        self, client: LLMClient, anthropic_mock: MagicMock, caplog: pytest.LogCaptureFixture
     ):
-        bedrock_mock.invoke_model.side_effect = lambda **_: _valid_response()
+        anthropic_mock.messages.create.side_effect = lambda **_: _valid_response()
 
         with caplog.at_level(logging.INFO, logger="ai.clients.llm"):
             await client.invoke("p1", _Schema)
@@ -258,10 +259,10 @@ class TestCorrelationIdLogging:
     async def test_retry_logs_include_attempt_and_correlation_id(
         self,
         client: LLMClient,
-        bedrock_mock: MagicMock,
+        anthropic_mock: MagicMock,
         caplog: pytest.LogCaptureFixture,
     ):
-        bedrock_mock.invoke_model.side_effect = [
+        anthropic_mock.messages.create.side_effect = [
             _schema_violation_response(),
             _valid_response(),
         ]

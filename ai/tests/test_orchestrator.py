@@ -1,15 +1,14 @@
-"""ai/services/__init__.py 오케스트레이터 단위 테스트.
+"""ai/services/__init__.py 오케스트레이터 단위 테스트 — Anthropic Direct API (이슈 #232).
 
-3개 public async 함수가 boto3 클라이언트를 받아 올바른 LLM/RAG 와이어링을
-수행하고 적절한 Pydantic 출력을 반환하는지 검증한다.
+3개 public async 함수가 AsyncAnthropic + bedrock-agent-runtime 클라이언트를 받아
+올바른 LLM/RAG 와이어링을 수행하고 적절한 Pydantic 출력을 반환하는지 검증한다.
 """
 
 from __future__ import annotations
 
-import io
 import json
 from typing import Any, Optional
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -111,17 +110,22 @@ def _side_panel_input() -> SidePanelInput:
 
 
 # ---------------------------------------------------------------------------
-# Bedrock mock factories
+# Mock factories
 # ---------------------------------------------------------------------------
 
 
-def _bedrock_runtime_mock(payload: dict) -> MagicMock:
-    """invoke_model이 주어진 payload를 Claude 응답 형식으로 반환하는 mock."""
-    envelope = {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}]}
-    raw = json.dumps(envelope, ensure_ascii=False).encode("utf-8")
+def _anthropic_mock(payload: dict) -> MagicMock:
+    """messages.create가 주어진 payload를 Claude 응답 형식으로 반환하는 mock."""
+    text_payload = json.dumps(payload, ensure_ascii=False)
+
+    def _response(**_):
+        msg = MagicMock()
+        msg.content = [MagicMock(text=text_payload)]
+        return msg
 
     mock = MagicMock()
-    mock.invoke_model.side_effect = lambda **_: {"body": io.BytesIO(raw)}
+    mock.messages = MagicMock()
+    mock.messages.create = AsyncMock(side_effect=_response)
     return mock
 
 
@@ -179,12 +183,12 @@ def _valid_side_panel_payload() -> dict:
 class TestGenerateSteps:
     @pytest.mark.asyncio
     async def test_returns_generate_output(self):
-        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+        runtime = _anthropic_mock(_valid_generate_payload())
         agent = _bedrock_agent_mock([{"text": "DOJ 청크", "score": 0.9}])
 
         result = await generate_steps(
             input_data=_generate_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
@@ -195,29 +199,29 @@ class TestGenerateSteps:
         assert result.generated_steps[0].name == "Step 1"
 
     @pytest.mark.asyncio
-    async def test_uses_provided_model_id_in_invoke_model(self):
-        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+    async def test_uses_provided_model_id(self):
+        runtime = _anthropic_mock(_valid_generate_payload())
         agent = _bedrock_agent_mock()
 
         await generate_steps(
             input_data=_generate_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
         )
 
-        kwargs = runtime.invoke_model.call_args.kwargs
-        assert kwargs["modelId"] == _MODEL_ID
+        kwargs = runtime.messages.create.call_args.kwargs
+        assert kwargs["model"] == _MODEL_ID
 
     @pytest.mark.asyncio
     async def test_uses_provided_kb_id_in_retrieve(self):
-        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+        runtime = _anthropic_mock(_valid_generate_payload())
         agent = _bedrock_agent_mock()
 
         await generate_steps(
             input_data=_generate_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
@@ -230,20 +234,20 @@ class TestGenerateSteps:
     @pytest.mark.asyncio
     async def test_rag_failure_is_non_fatal(self):
         # RAG가 예외를 던져도 LLM 호출은 진행되어야 한다 (RAGClient가 [] 반환)
-        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+        runtime = _anthropic_mock(_valid_generate_payload())
         agent = MagicMock()
         agent.retrieve.side_effect = RuntimeError("KB 다운")
 
         result = await generate_steps(
             input_data=_generate_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
         )
 
         assert isinstance(result, GenerateOutput)
-        runtime.invoke_model.assert_called_once()
+        runtime.messages.create.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -254,11 +258,11 @@ class TestGenerateSteps:
 class TestJudgeRequiredStep:
     @pytest.mark.asyncio
     async def test_returns_accept_output_true(self):
-        runtime = _bedrock_runtime_mock({"is_current_required_step_completed": True})
+        runtime = _anthropic_mock({"is_current_required_step_completed": True})
 
         result = await judge_required_step(
             input_data=_accept_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             model_id=_MODEL_ID,
         )
 
@@ -267,11 +271,11 @@ class TestJudgeRequiredStep:
 
     @pytest.mark.asyncio
     async def test_returns_accept_output_false(self):
-        runtime = _bedrock_runtime_mock({"is_current_required_step_completed": False})
+        runtime = _anthropic_mock({"is_current_required_step_completed": False})
 
         result = await judge_required_step(
             input_data=_accept_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             model_id=_MODEL_ID,
         )
 
@@ -280,22 +284,22 @@ class TestJudgeRequiredStep:
 
     @pytest.mark.asyncio
     async def test_uses_provided_model_id(self):
-        runtime = _bedrock_runtime_mock({"is_current_required_step_completed": True})
+        runtime = _anthropic_mock({"is_current_required_step_completed": True})
 
         await judge_required_step(
             input_data=_accept_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             model_id=_MODEL_ID,
         )
 
-        kwargs = runtime.invoke_model.call_args.kwargs
-        assert kwargs["modelId"] == _MODEL_ID
+        kwargs = runtime.messages.create.call_args.kwargs
+        assert kwargs["model"] == _MODEL_ID
 
     @pytest.mark.asyncio
     async def test_skip_when_current_required_step_is_none(self):
         # current_required_step=None → LLM 호출 없이 즉시 False 반환
         runtime = MagicMock()
-        runtime.invoke_model = MagicMock()
+        # (auto-created via MagicMock attribute access)
 
         input_data = AcceptInput(
             project_info=_project(),
@@ -308,13 +312,13 @@ class TestJudgeRequiredStep:
 
         result = await judge_required_step(
             input_data=input_data,
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             model_id=_MODEL_ID,
         )
 
         assert isinstance(result, AcceptOutput)
         assert result.is_current_required_step_completed is False
-        runtime.invoke_model.assert_not_called()
+        runtime.messages.create.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -325,12 +329,12 @@ class TestJudgeRequiredStep:
 class TestGenerateSidePanel:
     @pytest.mark.asyncio
     async def test_returns_side_panel_output(self):
-        runtime = _bedrock_runtime_mock(_valid_side_panel_payload())
+        runtime = _anthropic_mock(_valid_side_panel_payload())
         agent = _bedrock_agent_mock([{"text": "DOJ 청크", "score": 0.9}])
 
         result = await generate_side_panel(
             input_data=_side_panel_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
@@ -343,30 +347,30 @@ class TestGenerateSidePanel:
 
     @pytest.mark.asyncio
     async def test_uses_provided_model_id_and_kb_id(self):
-        runtime = _bedrock_runtime_mock(_valid_side_panel_payload())
+        runtime = _anthropic_mock(_valid_side_panel_payload())
         agent = _bedrock_agent_mock()
 
         await generate_side_panel(
             input_data=_side_panel_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
         )
 
-        assert runtime.invoke_model.call_args.kwargs["modelId"] == _MODEL_ID
+        assert runtime.messages.create.call_args.kwargs["model"] == _MODEL_ID
         # search_doj + search_custom 모두 같은 KB ID 사용
         for call in agent.retrieve.call_args_list:
             assert call.kwargs["knowledgeBaseId"] == _KB_ID
 
     @pytest.mark.asyncio
     async def test_calls_both_doj_and_custom_kb(self):
-        runtime = _bedrock_runtime_mock(_valid_side_panel_payload())
+        runtime = _anthropic_mock(_valid_side_panel_payload())
         agent = _bedrock_agent_mock()
 
         await generate_side_panel(
             input_data=_side_panel_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
@@ -399,30 +403,30 @@ class TestDeliveryInterface:
     @pytest.mark.asyncio
     async def test_all_three_functions_return_correct_output_types(self):
         """3개 public 함수의 입출력 스키마 검증."""
-        runtime_gen = _bedrock_runtime_mock(_valid_generate_payload())
+        runtime_gen = _anthropic_mock(_valid_generate_payload())
         agent_gen = _bedrock_agent_mock()
         gen_result = await generate_steps(
             input_data=_generate_input(),
-            bedrock_runtime_client=runtime_gen,
+            anthropic_client=runtime_gen,
             bedrock_agent_client=agent_gen,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
         )
         assert isinstance(gen_result, GenerateOutput)
 
-        runtime_acc = _bedrock_runtime_mock({"is_current_required_step_completed": True})
+        runtime_acc = _anthropic_mock({"is_current_required_step_completed": True})
         acc_result = await judge_required_step(
             input_data=_accept_input(),
-            bedrock_runtime_client=runtime_acc,
+            anthropic_client=runtime_acc,
             model_id=_MODEL_ID,
         )
         assert isinstance(acc_result, AcceptOutput)
 
-        runtime_sp = _bedrock_runtime_mock(_valid_side_panel_payload())
+        runtime_sp = _anthropic_mock(_valid_side_panel_payload())
         agent_sp = _bedrock_agent_mock()
         sp_result = await generate_side_panel(
             input_data=_side_panel_input(),
-            bedrock_runtime_client=runtime_sp,
+            anthropic_client=runtime_sp,
             bedrock_agent_client=agent_sp,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
@@ -431,19 +435,19 @@ class TestDeliveryInterface:
 
     @pytest.mark.asyncio
     async def test_injected_mock_clients_are_actually_called(self):
-        """의존성 주입 패턴 동작 확인 — 주입한 mock의 invoke_model/retrieve가 호출되어야 한다."""
-        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+        """의존성 주입 패턴 동작 확인 — 주입한 mock의 messages.create/retrieve가 호출되어야 한다."""
+        runtime = _anthropic_mock(_valid_generate_payload())
         agent = _bedrock_agent_mock()
 
         await generate_steps(
             input_data=_generate_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
         )
 
-        runtime.invoke_model.assert_called_once()
+        runtime.messages.create.assert_called_once()
         agent.retrieve.assert_called_once()
 
     def test_orchestrator_files_no_backend_imports(self):
@@ -482,12 +486,12 @@ class TestDataSourceIdPropagation:
 
     @pytest.mark.asyncio
     async def test_generate_steps_passes_doj_id_to_retrieve(self):
-        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+        runtime = _anthropic_mock(_valid_generate_payload())
         agent = _bedrock_agent_mock([{"text": "DOJ 청크", "score": 0.9}])
 
         await generate_steps(
             input_data=_generate_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
@@ -503,12 +507,12 @@ class TestDataSourceIdPropagation:
 
     @pytest.mark.asyncio
     async def test_generate_steps_without_id_omits_filter(self):
-        runtime = _bedrock_runtime_mock(_valid_generate_payload())
+        runtime = _anthropic_mock(_valid_generate_payload())
         agent = _bedrock_agent_mock()
 
         await generate_steps(
             input_data=_generate_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
@@ -520,12 +524,12 @@ class TestDataSourceIdPropagation:
 
     @pytest.mark.asyncio
     async def test_generate_side_panel_passes_both_ids(self):
-        runtime = _bedrock_runtime_mock(_valid_side_panel_payload())
+        runtime = _anthropic_mock(_valid_side_panel_payload())
         agent = _bedrock_agent_mock()
 
         await generate_side_panel(
             input_data=_side_panel_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,
@@ -546,12 +550,12 @@ class TestDataSourceIdPropagation:
 
     @pytest.mark.asyncio
     async def test_generate_side_panel_without_ids_omits_filters(self):
-        runtime = _bedrock_runtime_mock(_valid_side_panel_payload())
+        runtime = _anthropic_mock(_valid_side_panel_payload())
         agent = _bedrock_agent_mock()
 
         await generate_side_panel(
             input_data=_side_panel_input(),
-            bedrock_runtime_client=runtime,
+            anthropic_client=runtime,
             bedrock_agent_client=agent,
             model_id=_MODEL_ID,
             kb_id=_KB_ID,

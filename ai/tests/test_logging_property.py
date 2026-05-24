@@ -1,13 +1,12 @@
-"""hypothesis 기반 LLMClient 로깅 property 테스트.
+"""hypothesis 기반 LLMClient 로깅 property 테스트 (이슈 #232).
 
 Property 8: 요청별 correlation_id 일관성
 """
 
 import asyncio
-import io
 import json
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -16,13 +15,17 @@ from ai.clients.llm import LLMClient
 from ai.schemas.accept import AcceptOutput
 
 
-def _make_bedrock_mock(payload: dict) -> MagicMock:
-    """주어진 payload를 Bedrock 응답 형식으로 반환하는 mock (호출마다 새 BytesIO)."""
-    envelope = {"content": [{"type": "text", "text": json.dumps(payload)}]}
-    raw = json.dumps(envelope).encode()
+def _make_anthropic_mock(payload: dict) -> MagicMock:
+    """주어진 payload를 Anthropic 응답 형식으로 반환하는 mock (호출마다 새 메시지)."""
+
+    def _response(**_):
+        msg = MagicMock()
+        msg.content = [MagicMock(text=json.dumps(payload))]
+        return msg
 
     mock = MagicMock()
-    mock.invoke_model.side_effect = lambda **_: {"body": io.BytesIO(raw)}
+    mock.messages = MagicMock()
+    mock.messages.create = AsyncMock(side_effect=_response)
     return mock
 
 
@@ -69,8 +72,8 @@ def _capture_logs(client: LLMClient) -> tuple[list[dict], list[dict]]:
 @given(st.data())
 def test_correlation_id_consistency(_data):
     valid_payload = {"is_current_required_step_completed": True}
-    bedrock_mock = _make_bedrock_mock(valid_payload)
-    client = LLMClient(bedrock_client=bedrock_mock, model_id="test-model")
+    anthropic_mock = _make_anthropic_mock(valid_payload)
+    client = LLMClient(anthropic_client=anthropic_mock, model_id="test-model")
 
     logs1, logs2 = _capture_logs(client)
 
