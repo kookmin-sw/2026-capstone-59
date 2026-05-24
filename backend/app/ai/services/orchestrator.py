@@ -1,6 +1,8 @@
 import boto3
 from typing import AsyncIterator
 
+from anthropic import AsyncAnthropic
+
 from app.core.config import settings
 from app.core.logging import get_logger
 from ai import generate_steps, judge_required_step, generate_side_panel, generate_side_panel_stream, generate_design_export
@@ -9,7 +11,9 @@ from ai.clients.rag import RAGClient
 
 logger = get_logger(__name__)
 
-bedrock_runtime = boto3.client("bedrock-runtime", region_name="us-east-1")
+# Anthropic Direct API client (LLM 호출 전용 — 이슈 #232).
+anthropic_client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+# RAG는 여전히 Bedrock KB (bedrock-agent-runtime) 그대로 유지.
 bedrock_agent = boto3.client("bedrock-agent-runtime", region_name="us-east-1")
 
 
@@ -17,7 +21,7 @@ async def call_accept(input_data):
     logger.debug("ai: invoking accept (judge_required_step)")
     try:
         return await judge_required_step(
-            input_data, bedrock_runtime, settings.BEDROCK_MODEL_ID
+            input_data, anthropic_client, settings.BEDROCK_MODEL_ID
         )
     except Exception:
         logger.error("ai: accept invocation failed", exc_info=True)
@@ -29,7 +33,7 @@ async def call_generate(input_data):
     try:
         return await generate_steps(
             input_data,
-            bedrock_runtime,
+            anthropic_client,
             bedrock_agent,
             settings.BEDROCK_MODEL_ID,
             settings.BEDROCK_KB_ID,
@@ -45,7 +49,7 @@ async def call_side_panel(input_data):
     try:
         return await generate_side_panel(
             input_data,
-            bedrock_runtime,
+            anthropic_client,
             bedrock_agent,
             settings.BEDROCK_MODEL_ID,
             settings.BEDROCK_KB_ID,
@@ -58,7 +62,7 @@ async def call_side_panel(input_data):
 
 
 async def call_side_panel_stream(input_data) -> AsyncIterator[str]:
-    llm = LLMClient(bedrock_client=bedrock_runtime, model_id=settings.BEDROCK_MODEL_ID)
+    llm = LLMClient(anthropic_client=anthropic_client, model_id=settings.BEDROCK_MODEL_ID)
     rag = RAGClient(bedrock_agent_client=bedrock_agent, kb_id=settings.BEDROCK_KB_ID)
     async for chunk in generate_side_panel_stream(
         input_data,
@@ -76,7 +80,7 @@ async def call_design_export(input_data):
     try:
         return await generate_design_export(
             input_data,
-            bedrock_runtime,
+            anthropic_client,
             settings.BEDROCK_MODEL_ID,
         )
     except Exception:
