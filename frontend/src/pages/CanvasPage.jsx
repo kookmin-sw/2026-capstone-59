@@ -737,16 +737,16 @@ export default function CanvasPage() {
     }
     currentRequiredStepName.current = activeRS?.data?.label ?? null
 
-    if (animateNew) {
-      n.filter((node) =>
-        !existingIds.has(node.id) &&                  // 새로 생긴 노드만
-        node.data.status === 'READY' &&
-        node.type !== 'requiredStepNode' &&
-        !streamBuffers.current.has(node.id)
-      ).forEach((node) => {
-        startNodeStream(node.id)                      // 스트리밍만 시작 (getStepDetail X)
-      })
-    }
+    // if (animateNew) {
+    //   n.filter((node) =>
+    //     !existingIds.has(node.id) &&                  // 새로 생긴 노드만
+    //     node.data.status === 'READY' &&
+    //     node.type !== 'requiredStepNode' &&
+    //     !streamBuffers.current.has(node.id)
+    //   ).forEach((node) => {
+    //     startNodeStream(node.id)                      // 스트리밍만 시작 (getStepDetail X)
+    //   })
+    // }
     
     if (!hasProgress && autoOpenedStageRef.current !== stageId) {
       const firstRequired = n.find(
@@ -921,22 +921,50 @@ export default function CanvasPage() {
 
     // 새로고침 등으로 in-memory buffer 가 유실된 경우 — 백엔드에 진행 상태 확인.
     // streaming/pending 이면 폴링을 재개해 화면을 복구한다.
-    if (!buf && !detailCacheRef.current[node.id]) {
-      try {
-        const probe = await getSidePanelContent(node.id)
-        if (requestId !== detailRequestRef.current) return
-        if (probe.status === 'streaming' || probe.status === 'pending') {
-          startNodeStream(node.id)
-          buf = streamBuffers.current.get(node.id)
-          if (buf && probe.content) {
-            // 첫 폴링까지 기다리지 않고 누적된 raw text 를 미리 채워둠
-            buf.text = probe.content
+    // if (!buf && !detailCacheRef.current[node.id]) {
+    //   try {
+    //     const probe = await getSidePanelContent(node.id)
+    //     if (requestId !== detailRequestRef.current) return
+    //     if (probe.status === 'streaming' || probe.status === 'pending') {
+    //       startNodeStream(node.id)
+    //       buf = streamBuffers.current.get(node.id)
+    //       if (buf && probe.content) {
+    //         // 첫 폴링까지 기다리지 않고 누적된 raw text 를 미리 채워둠
+    //         buf.text = probe.content
+    //       }
+    //     }
+    //   } catch {
+    //     // probe 실패는 무시 — 아래 분기에서 자연스럽게 처리됨
+    //   }
+    // }
+      if (!buf && !detailCacheRef.current[node.id]) {
+        try {
+          const probe = await getSidePanelContent(node.id)
+          if (requestId !== detailRequestRef.current) return
+
+          if (probe.status === 'streaming' || probe.status === 'pending') {
+            // 이미 진행 중 — 폴링 재개 (새로고침 복구 등)
+            startNodeStream(node.id)
+            buf = streamBuffers.current.get(node.id)
+            if (buf && probe.content) buf.text = probe.content
+          } else if (
+            probe.status === 'idle' &&
+            node.data?.status === 'READY' &&
+            node.type !== 'requiredStepNode'
+          ) {
+            // 아직 생성 안 됨 — 클릭 시점에 생성 시작 (#232 프리페치 제거)
+            startNodeStream(node.id)
+            buf = streamBuffers.current.get(node.id)
+          }
+          // status === 'done' → 아래 else 분기에서 getStepDetail 로 가져옴
+        } catch {
+          // probe 실패 — READY 일반이면 그냥 생성 시작
+          if (node.data?.status === 'READY' && node.type !== 'requiredStepNode') {
+            startNodeStream(node.id)
+            buf = streamBuffers.current.get(node.id)
           }
         }
-      } catch {
-        // probe 실패는 무시 — 아래 분기에서 자연스럽게 처리됨
       }
-    }
 
     if (buf?.isDone) {
       setIsStreamMode(false)
