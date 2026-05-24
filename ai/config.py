@@ -15,9 +15,10 @@ class AISettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    AWS_REGION: str = "us-east-1"
-    MODEL_ID: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    AWS_REGION: str = "us-east-1"  # RAG (Bedrock KB) 용도로 유지
+    MODEL_ID: str = "claude-haiku-4-5-20251001"  # Anthropic Direct API 형식
     KB_ID: str = ""
+    ANTHROPIC_API_KEY: str = ""
     MAX_TOKENS: int = 4096
     TEMPERATURE: float = 0.7
 

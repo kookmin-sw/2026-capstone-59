@@ -16,12 +16,15 @@ class Settings(BaseSettings):
     DB_PORT: int = 5432
     DB_SSL: bool = False
 
-    # AWS
+    # AWS — RAG (Bedrock KB)는 그대로 유지. LLM은 Anthropic Direct로 전환 (#232).
     AWS_REGION: str = "ap-northeast-2"
-    BEDROCK_MODEL_ID: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    BEDROCK_MODEL_ID: str = "claude-haiku-4-5-20251001"  # Anthropic Direct API 형식
     BEDROCK_KB_ID: str = ""
     BEDROCK_DOJ_DATA_SOURCE_ID: str = ""
     BEDROCK_CUSTOM_DATA_SOURCE_ID: str = ""
+
+    # Anthropic Direct API
+    ANTHROPIC_API_KEY: str = ""
 
     # JWT
     JWT_SECRET_KEY: str = "change-me"
