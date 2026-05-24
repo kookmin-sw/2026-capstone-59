@@ -2,8 +2,8 @@
 
 실행: ``python -m ai.cli_simulator``
 
-실제 Bedrock API를 호출하여 generate → accept → side_panel 흐름,
-또는 design-export 시나리오를 모사한다.
+실제 Anthropic Direct API + Bedrock KB(RAG)를 호출하여
+generate → accept → side_panel 흐름, 또는 design-export 시나리오를 모사한다.
 인메모리 상태만 유지하며 DB는 사용하지 않는다.
 """
 
@@ -11,12 +11,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import sys
 import time
 import uuid
 from typing import Optional
 
 import boto3
+from anthropic import AsyncAnthropic
 
 from ai.clients.llm import LLMClient
 from ai.clients.rag import RAGClient
@@ -171,14 +173,23 @@ def _build_project_info() -> ProjectInfo:
     )
 
 
+def _build_anthropic_client() -> AsyncAnthropic:
+    """Anthropic Direct API용 AsyncAnthropic 클라이언트 생성.
+
+    환경변수 ANTHROPIC_API_KEY 우선, 없으면 ai_settings에서 fallback.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or ai_settings.ANTHROPIC_API_KEY
+    return AsyncAnthropic(api_key=api_key)
+
+
 def _build_services() -> tuple[StepGenerator, RequiredStepJudge, SidePanelGenerator]:
-    bedrock_runtime = boto3.client("bedrock-runtime", region_name=ai_settings.AWS_REGION)
+    anthropic_client = _build_anthropic_client()
     bedrock_agent_runtime = boto3.client(
         "bedrock-agent-runtime", region_name=ai_settings.AWS_REGION
     )
 
     llm = LLMClient(
-        bedrock_client=bedrock_runtime,
+        anthropic_client=anthropic_client,
         model_id=ai_settings.MODEL_ID,
         max_tokens=ai_settings.MAX_TOKENS,
         temperature=ai_settings.TEMPERATURE,
@@ -533,9 +544,9 @@ def _design_export_detailed_input() -> DesignExportInput:
     )
 
 
-def _build_design_export_bedrock() -> object:
-    """design-export용 bedrock-runtime 클라이언트 생성."""
-    return boto3.client("bedrock-runtime", region_name=ai_settings.AWS_REGION)
+def _build_design_export_anthropic() -> AsyncAnthropic:
+    """design-export용 AsyncAnthropic 클라이언트 생성."""
+    return _build_anthropic_client()
 
 
 def _print_design_export_header(input_data: DesignExportInput) -> None:
@@ -574,15 +585,15 @@ def _print_design_export_result(result: DesignExportOutput) -> None:
 
 
 async def _run_design_export(input_data: DesignExportInput) -> None:
-    """design-export 시나리오 실행 — Bedrock 호출 + 결과 출력 (v1.4 Z+)."""
-    bedrock_runtime = _build_design_export_bedrock()
+    """design-export 시나리오 실행 — Anthropic 호출 + 결과 출력 (v1.4 Z+)."""
+    anthropic_client = _build_design_export_anthropic()
 
-    _wait("프롬프트 렌더 + Bedrock 호출 중...")
+    _wait("프롬프트 렌더 + Anthropic 호출 중...")
     t_start = time.perf_counter()
     try:
         result = await generate_design_export(
             input_data=input_data,
-            bedrock_runtime_client=bedrock_runtime,
+            anthropic_client=anthropic_client,
             model_id=ai_settings.MODEL_ID,
         )
     except OutputViolatesHonestyGuardError as exc:
@@ -599,7 +610,7 @@ async def _run_design_export(input_data: DesignExportInput) -> None:
         return
     except BedrockAPIError as exc:
         elapsed = time.perf_counter() - t_start
-        _fail(f"Bedrock API 오류  [{elapsed:.2f}s]: {exc.message}")
+        _fail(f"LLM API 오류  [{elapsed:.2f}s]: {exc.message}")
         return
     except AIGenerationFailedError as exc:
         elapsed = time.perf_counter() - t_start
