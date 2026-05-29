@@ -533,7 +533,140 @@ Poco는 *"What · Why를 정의하는 도구"* 이고, 외부 AI(Claude · ChatG
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 
-### 5-4. 백엔드의 AI 의존도와 기여점
+### 5-4. 실시간 진행 상태 판단 — FE · BE · AI가 한 영역으로 풀어내는 로직
+
+Poco의 가장 복잡한 부분은 *"노드 1개를 화면에 띄우는 일"* 이 단순한 UI 출력이 아니라, **AI 판단 · 백엔드 상태 머신 · 프론트엔드 시각 효과가 한 사이클 안에 맞물려 돌아가는 통합 로직**이라는 점이다. 사용자에게는 *"노드를 클릭했을 뿐"* 이지만, 그 뒤에서 일어나는 일은 다음과 같다.
+
+**시나리오 — 사용자가 일반 Step을 Accept한 순간**
+
+```
+Frontend (CanvasPage)
+  └─ POST /steps/{id}/accept
+       │
+       ▼
+Backend Lambda (AI Orchestrator)
+  ├─ ① Step 상태를 ACCEPTED로 마킹 (RDS 트랜잭션)
+  ├─ ② 현재 진행 중인 필수 Step의 충족 여부를 체크할지 결정
+  │     └─ 이미 충족이면 accept 호출 스킵 (불필요한 LLM 비용 절감)
+  ├─ ③ asyncio.gather 로 두 LLM 호출을 병렬 실행
+  │     ├─ accept   ─→ Anthropic Claude (충족 기준 측면 매칭 판단)
+  │     └─ generate ─→ Anthropic Claude + Bedrock KB Retrieve (다음 Step 3개)
+  ├─ ④ 충족 판단이 true면 ProjectRequiredStepStatus.is_fulfilled = true 업서트
+  ├─ ⑤ 모든 필수 Step이 충족되었는지 검사 → Stage 진행 판단 (순수 규칙, AI 호출 X)
+  ├─ ⑥ 다음 Stage가 활성화되면 ProjectStage.is_active 이동
+  ├─ ⑦ 다음 미충족 필수 Step을 derive → 다이아몬드 노드를 캔버스에 조합
+  └─ 응답: 일반 노드 3개 (+ 조건부 다이아몬드 노드 1개)
+       │
+       ▼
+Frontend
+  ├─ 다이아몬드 노드 등장 애니메이션 (framer-motion: opacity + scale + slide-in)
+  ├─ 좌측 Stage Navigator 활성화 토글 (다음 Stage가 흐릿 → 클릭 가능)
+  └─ 다이아몬드 노드 클릭 시 토스트 알림 (3초 자동 소멸 + 토글 재확인)
+```
+
+**왜 이렇게까지 복잡한가**
+
+사용자에게는 *"필수 Step"* 이라는 용어를 노출하지 않기로 했다. 하지만 *"체계적 방법론을 따라가고 있다"* 는 감각은 줘야 한다. 이 모순을 *"용어가 아닌 형태와 타이밍"* 으로 풀었다.
+
+| 기능 | 구현 영역 | 근거 |
+|---|---|---|
+| **충족 기준 측면 매칭** | AI 프롬프트 (24개 필수 Step의 측면 리스트 주입) | 측면 중 2개 이상 커버하면 충족. AI가 자유 텍스트가 아닌 *"인덱스 자기검증"* 으로 답하도록 출력 스키마 강제 |
+| **accept · generate 병렬 호출** | 백엔드 `asyncio.gather` | 두 LLM 호출을 직렬로 하면 사용자 대기 시간이 8~10초로 늘어남. 병렬화로 4~5초로 단축 |
+| **다이아몬드 노드 derive** | 백엔드 (AI 응답 후처리) | AI는 *"이 필수 Step이 충족됐냐"* 만 판단하고, *"다음 다이아몬드를 띄울지"* 는 백엔드가 RDS의 RS Status를 보고 derive. AI 환각 차단 |
+| **노드 등장 애니메이션** | 프론트엔드 (framer-motion) | phase A(자리 잡기) → phase B(슬라이드 인) 두 단계로 분리. 기존 노드와 충돌 없이 자연스럽게 끼어듦 |
+| **토스트 고정 문자열** | 프론트엔드 + DB seed | AI 동적 생성 X. 24개 필수 Step별로 사전 정의된 한국어 문자열을 DB에서 lookup. 톤 일관성 확보 |
+| **Stage Navigator 활성화** | 프론트엔드 (반응형 상태) | 백엔드의 `is_current_stage_completed` 플래그를 받아 좌측 패널의 다음 Stage가 흐릿 → 클릭 가능으로 전환 |
+
+**측면(Aspect) 기반 충족 판단 — 왜 이 방식을 골랐나**
+
+24개 필수 Step 각각에 *"충족 기준 측면"* 이 4~5개씩 정의되어 있다. 예를 들어 *"문제/기회 정의"* 는 `[문제 자체 서술, 중요도, 발생 배경, 기존 대안의 한계]` 4가지 측면을 가진다. AI는 사용자의 하위 Step 히스토리를 보고 *"이 중 2개 이상이 커버됐는가"* 를 판단한다.
+
+자유 텍스트로 *"충족됐어"* 만 받으면 LLM 환각이 잡히지 않는다. 그래서 출력 스키마를 `covered_aspect_index: [int]` 형태로 강제하고, **자기검증을 LLM이 답할 때 같이 적게 했다.** 측면 인덱스가 매핑되지 않으면 백엔드가 재호출. *"근거 없는 충족 판단"* 을 구조적으로 차단한 설계다.
+
+### 5-5. 백엔드 상태 머신 — Stage · 필수 Step · 롤백의 정합성
+
+Poco는 *"되돌아갈 수 있는 사고"* 를 핵심 가치로 내세우는 만큼, 롤백이 일어났을 때도 데이터 정합성이 깨지지 않아야 한다. 이를 위해 백엔드는 단순 CRUD가 아니라, **여러 테이블에 걸친 상태 머신**을 운영한다.
+
+**Step 트리 — Closure Table 패턴**
+
+자기참조 FK(`parent_step_id`)만으로는 *"이 Step의 모든 조상 / 자손"* 을 가져올 때마다 재귀 쿼리가 필요해진다. 그래서 별도의 **Closure Table** (`step_path`, `(ancestor, descendant, depth)` 컬럼)을 두어 모든 조상-자손 관계를 평탄화 저장한다. 이 덕분에 다음과 같은 연산이 모두 단일 SELECT/DELETE로 끝난다:
+
+- 특정 Step의 모든 조상을 ACCEPTED로 일괄 복원
+- 특정 Stage의 모든 Step을 일괄 삭제 (자기참조 FK 회피용 detach → delete 2-step)
+- 트리 시각화에 필요한 *"루트 → 현재 노드"* 경로 추출
+
+**Stage 내 롤백 — 자식 있는 Step 차단 + 같은 Stage 일괄 CANCELED**
+
+사용자가 분기점으로 돌아가려고 할 때, 백엔드는 다음 불변식을 보장한다:
+
+1. **자식이 있는 Step은 롤백 불가** (`InvalidRollbackError`) — *"이미 가지를 친 결정"* 은 잘라낼 수 없음
+2. **같은 Stage 내 모든 ACCEPTED Step을 CANCELED로 일괄 마킹** — 분기 외 결정은 *"진행 중이 아님"* 으로 통일
+3. **롤백 대상의 조상만 ACCEPTED 복원** — 트리 위쪽 한 줄기만 활성 상태로 남김
+4. **필수 Step 충족 상태 재정렬** — 롤백 대상이 속한 RS의 sequence를 기준으로 *"이전 RS는 fulfilled, 이후 RS는 unfulfilled"* 로 자동 재계산
+
+이 4단계가 한 트랜잭션 안에서 일어나, 어느 단계에서 실패해도 일관성을 잃지 않는다.
+
+**Stage 간 롤백 — 파괴적 작업의 안전 처리**
+
+Stage 4까지 진행한 사용자가 Stage 1로 돌아가면, Stage 2 · 3 · 4의 모든 데이터가 삭제된다. 자기참조 FK 때문에 단순 DELETE는 외래키 제약에 걸리므로, 다음 순서로 처리한다:
+
+1. **첫 번째 RS Step 보존** — 각 Stage 진입점은 사용자에게 다시 보여줘야 하므로 status만 READY로 리셋
+2. **detach** — 보존 대상을 제외한 나머지 Step들의 `parent_step_id`를 NULL로 일괄 업데이트 (외래키 회피)
+3. **delete** — 평탄화된 노드들을 일괄 DELETE
+4. **RS Status unfulfill** — 윗 Stage의 모든 필수 Step 충족 상태를 false로 리셋
+5. **ProjectStage.is_active 이동** — 활성 Stage 포인터를 돌아간 Stage로 이동
+
+확인 모달에서 *"Stage 2~4의 모든 진행 내역이 삭제됩니다"* 라고 명시적으로 경고하고, 사용자 확정이 있어야만 실행된다. 파괴적 작업의 *"되돌릴 수 없음"* 을 UI 차원과 데이터 차원 양쪽에서 보장한다.
+
+### 5-6. RDS Streaming Buffer 패턴 — API Gateway 30초 한계 풀어내기
+
+사이드패널 콘텐츠는 LLM이 토큰 단위로 생성하기 때문에, *"chunk가 도착하는 대로 화면에 흐르는"* SSE(Server-Sent Events) 효과가 사용자 체감 품질에 결정적이다. 그러나 캡스톤 AWS 트랙의 제약(**CloudFront 사용 불가**)과 API Gateway HTTP API의 응답 버퍼링 특성상, 진짜 SSE를 단일 진입점 안에서 구현할 수 없다.
+
+**채택한 차선책 — RDS를 streaming buffer로 활용**
+
+```
+Frontend                     Backend (Lambda B)
+   │                                │
+   ├─ POST /sidepanel-start ───────▶│
+   │   (응답 안 기다림)              ├─ asyncio.create_task(run_side_panel_generation)
+   │                                ├─ ┌─ asyncio.shield + while loop ─┐
+   │   GET /sidepanel-content       │  │ async for chunk in LLM stream:│
+   ├──── 적응형 폴링 시작 ──────────▶│  │   step_content.streaming_raw  │
+   │   (1s → 4s, 1.5x backoff)      │  │       UPDATE 누적             │
+   │◀─── 누적 raw text ─────────────│  └────────────────────────────────┘
+   │   (status: streaming)          │
+   │                                │
+   │   ...폴링 반복...               │
+   │                                │
+   │◀─── 누적 raw text ─────────────│
+   │   (status: done, is_complete)  │
+   │   폴링 중단                     │
+```
+
+**왜 `asyncio.shield`인가** — Lambda + Mangum 환경에서 클라이언트가 끊기면(새로고침, 뒤로가기) FastAPI가 핸들러를 자동 cancel한다. 그러면 LLM stream 소비 task도 같이 죽어 DB 누적이 중단된다. `asyncio.shield`로 task를 핸들러 cancel 전파로부터 격리하면, 핸들러는 죽었지만 task는 **Lambda invocation이 끝날 때까지 살아남아** DB 저장을 보장한다.
+
+```python
+task = asyncio.create_task(step_service.run_side_panel_generation(db, step_id))
+while not task.done():
+    try:
+        await asyncio.shield(task)
+    except asyncio.CancelledError:
+        # 클라이언트 끊김으로 핸들러가 cancel돼도 task는 shield로 보호됨
+        # 다음 iteration에서 task가 끝날 때까지 계속 대기
+        continue
+```
+
+**적응형 폴링 — DB 부하 절반 절감**
+
+클라이언트는 무작정 1초마다 폴링하지 않는다. 새 chunk가 도착하면 빠른 주기(1s), chunk가 멈추면 1.5배씩 늘려 최대 4s까지 늘어난다. 새 chunk가 다시 들어오면 1s로 reset. *"활발한 시점에는 빠르게, 조용한 시점에는 느슨하게"* 가 자동 조절된다. 이 한 가지 패턴으로 **평균 폴링 요청 ~50% 감소**를 확보했다.
+
+**누적 content 전달 — 새로고침 복구의 핵심**
+
+폴링 응답은 *"이번에 도착한 delta"* 가 아니라 *"지금까지 누적된 전체 content"* 를 담는다. 그래서 사용자가 페이지를 새로고침하더라도, 첫 폴링 응답이 곧 *"여기까지 진행됨"* 의 완전한 상태가 된다. 클라이언트의 in-memory buffer를 단순 대입(`buf.text = content`) 하면 되므로 중복 누적 위험이 없다.
+
+**트레이드오프 인지** — 진짜 SSE 대비 단점은 (1) chunk 단위 UPDATE가 누적되며 RDS write 부하, (2) ~1s 폴링 지연이다. 운영 단계에서 CloudFront 사용 가능해지면 진짜 SSE로 마이그레이션 가능한 구조로 설계되어 있다. AI 모듈(`generate_side_panel_stream`)은 AsyncIterator 그대로 두고, 백엔드 진입 패턴만 SSE → DB 폴링으로 바뀐 것이라 마이그레이션 비용이 낮다.
+
+### 5-7. 백엔드의 AI 의존도와 기여점
 
 **AI 의존 범위 (정확히 명시)**
 
