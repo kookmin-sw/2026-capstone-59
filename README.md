@@ -233,4 +233,4 @@ $${\color{#6c63b5}\textsf{Poco는 그 답을 스스로 찾아가는 구조를 �
 
 ---
 
-<sub>*본 프로젝트는 미국 법무부 SDLC Guidance Document의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, SWEBOK V4.0a (2024, IEEE Computer Society)</a>의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
+<sub>*본 프로젝트는 미국 법무부 SDLC Guidance Document의 10단계 Phase를 재검토·선별하여 6단계로 재구성하고, SWEBOK V4.0a (2024, IEEE Computer Society)의 토픽 구조를 참고하여 자체 가이드를 제작했습니다.*</sub>
