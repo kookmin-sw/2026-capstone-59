@@ -283,21 +283,26 @@ from ai import (
     generate_design_export,
 )
 
-# 예시: Accept API 핸들러
+# 예시 1: Accept API 핸들러 (judge ∥ generate 병렬 호출)
 async def accept_step(step_id: str):
-    result = await judge_required_step(input_data, bedrock_client, model_id)
-    if result.is_current_required_step_completed:
+    accept_result, generate_result = await asyncio.gather(
+        judge_required_step(accept_input, bedrock_client, model_id),
+        generate_steps(generate_input, bedrock_client, bedrock_agent_client, model_id, kb_id),
+    )
+    if accept_result.is_current_required_step_completed:
         ...
-    generated = await generate_steps(input_data, bedrock_client, bedrock_agent_client, model_id, kb_id)
-    ...
 
-# 예시: design-export SSE 엔드포인트 (backend/app/ai/routers/projects.py)
+# 예시 2: 사이드패널 스트리밍 (POST /sidepanel-start → 백엔드가 chunk를 RDS에 누적 UPDATE)
+async for chunk in generate_side_panel_stream(input_data, llm, rag, ...):
+    append_side_panel_chunk(db, step_id, accumulated)
+
+# 예시 3: design-export (POST /design-export-start → 백엔드가 결과를 RDS에 저장 → 클라이언트가 폴링)
 ai_output = await generate_design_export(input_data, bedrock_client, model_id)
 md = design_export_renderer.render(input_data, ai_output)
-yield f"event: complete\ndata: {json.dumps({'markdown': md, 'filename': filename})}\n\n"
+update_design_export_job(db, job_id, status="done", markdown=md, filename=filename)
 ```
 
-백엔드는 위 5개 함수를 직접 호출하고, **병렬 실행 / SSE 엔드포인트 구성 / `.md` 골격 렌더 / DB 저장 / 에러 응답 변환은 모두 백엔드 레이어에서 처리**합니다. design-export의 경우 AI는 동기 1회 호출이고, 백엔드가 결과를 받아 SSE `event: complete` 청크로 전송하는 *"whole-response SSE"* 패턴을 사용합니다 (API Gateway 29초 동기 한도 우회용).
+백엔드는 위 5개 함수를 직접 호출하고, **병렬 실행 / 비동기 Job 폴링 / DB 저장 / 에러 응답 변환은 모두 백엔드 레이어에서 처리**합니다. 사이드패널과 design-export 모두 단일 API Gateway 진입점 안에서 동작하도록 백엔드가 *"trigger + 폴링"* 패턴(`POST -start` → `GET -content` / `GET -jobs/{job_id}`)으로 오케스트레이션하며, AI 모듈은 동기/스트리밍 함수 호출만 노출합니다.
 
 ---
 
