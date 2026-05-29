@@ -577,6 +577,19 @@ Frontend
 | **토스트 고정 문자열** | 프론트엔드 + DB seed | AI 동적 생성 X. 24개 필수 Step별로 사전 정의된 한국어 문자열을 DB에서 lookup. 톤 일관성 확보 |
 | **Stage Navigator 활성화** | 프론트엔드 (반응형 상태) | 백엔드의 `is_current_stage_completed` 플래그를 받아 좌측 패널의 다음 Stage가 흐릿 → 클릭 가능으로 전환 |
 
+**다이아몬드 노드의 이월 규칙 — 강제하지 않으면서 따라오게 하는 설계**
+
+다이아몬드 노드는 *"반드시 클릭해야 다음으로 넘어가는 관문"* 이 아니다. 사용자에게는 *"필수 Step"* 이라는 용어조차 보이지 않는다. 그래서 사용자는 다이아몬드 노드 대신 일반 노드를 선택해도 자유롭게 진행할 수 있어야 하고, 그래도 *"빠뜨린 게 있는 것처럼"* 느껴지면 안 된다. 이 모순은 **노드의 이월(carry-over) 규칙**으로 풀었다.
+
+| 사용자 행동 | 캔버스 동작 |
+|---|---|
+| AI가 *"이 필수 Step에 진입할 때가 됐다"* 고 판단 | 일반 노드 3개 + 다이아몬드 노드 1개 = **총 4개** 동시 표시 |
+| 다이아몬드 노드 선택 | 해당 필수 Step에 관한 하위 노드 3개가 생성. 이후 정상 진행 |
+| 다이아몬드 대신 **일반 노드 선택** | 선택되지 않은 다이아몬드 노드는 해당 분기에서 자연스럽게 사라짐 |
+| 다음 Step Accept 시 | **사라졌던 다이아몬드 노드가 다음 트리에 다시 나타남** (AI가 충족됐다고 판단할 때까지 계속 따라옴) |
+
+즉, *"필수이긴 한데 강제하지 않는"* 묘한 균형을 노드의 출현/소멸/재등장으로 표현했다. 사용자는 *"좋은 결정"* 으로 보이는 일반 노드를 자유롭게 골라도 되고, 그래도 다음 트리에서 다이아몬드가 다시 인사하니 빠뜨릴 일도 없다. 강제하지 않으면서도 체계적 흐름을 따라가게 하는 *"부드러운 안내"* 의 핵심 장치다.
+
 **측면(Aspect) 기반 충족 판단 — 왜 이 방식을 골랐나**
 
 24개 필수 Step 각각에 *"충족 기준 측면"* 이 4~5개씩 정의되어 있다. 예를 들어 *"문제/기회 정의"* 는 `[문제 자체 서술, 중요도, 발생 배경, 기존 대안의 한계]` 4가지 측면을 가진다. AI는 사용자의 하위 Step 히스토리를 보고 *"이 중 2개 이상이 커버됐는가"* 를 판단한다.
@@ -605,65 +618,7 @@ Poco는 *"되돌아갈 수 있는 사고"* 를 핵심 가치로 내세우는 만
 
 이 단계들이 한 트랜잭션 안에서 일어나, 어느 단계에서 실패해도 일관성을 잃지 않는다.
 
-**Stage 간 롤백 — 파괴적 작업의 안전 처리**
-
-Stage 4까지 진행한 사용자가 Stage 1로 돌아가면, Stage 2 · 3 · 4의 모든 데이터가 삭제된다. 자기참조 FK 때문에 단순 DELETE는 외래키 제약에 걸리므로, 다음 순서로 처리한다:
-
-1. **첫 번째 RS Step 보존** — 각 Stage 진입점은 사용자에게 다시 보여줘야 하므로 status만 READY로 리셋
-2. **detach** — 보존 대상을 제외한 나머지 Step들의 `parent_step_id`를 NULL로 일괄 업데이트 (외래키 회피)
-3. **delete** — 평탄화된 노드들을 일괄 DELETE
-4. **RS Status unfulfill** — 윗 Stage의 모든 필수 Step 충족 상태를 false로 리셋
-5. **ProjectStage.is_active 이동** — 활성 Stage 포인터를 돌아간 Stage로 이동
-
-확인 모달에서 *"Stage 2~4의 모든 진행 내역이 삭제됩니다"* 라고 명시적으로 경고하고, 사용자 확정이 있어야만 실행된다. 파괴적 작업의 *"되돌릴 수 없음"* 을 UI 차원과 데이터 차원 양쪽에서 보장한다.
-
-### 5-6. RDS Streaming Buffer 패턴 — API Gateway 30초 한계 풀어내기
-
-사이드패널 콘텐츠는 LLM이 토큰 단위로 생성하기 때문에, *"chunk가 도착하는 대로 화면에 흐르는"* SSE(Server-Sent Events) 효과가 사용자 체감 품질에 결정적이다. 그러나 캡스톤 AWS 트랙의 제약(**CloudFront 사용 불가**)과 API Gateway HTTP API의 응답 버퍼링 특성상, 진짜 SSE를 단일 진입점 안에서 구현할 수 없다.
-
-**채택한 차선책 — RDS를 streaming buffer로 활용**
-
-```
-Frontend                     Backend (Lambda B)
-   │                                │
-   ├─ POST /sidepanel-start ───────▶│
-   │   (응답 안 기다림)              ├─ asyncio.create_task(run_side_panel_generation)
-   │                                ├─ ┌─ asyncio.shield + while loop ─┐
-   │   GET /sidepanel-content       │  │ async for chunk in LLM stream:│
-   ├──── 적응형 폴링 시작 ──────────▶│  │   step_content.streaming_raw  │
-   │   (1s → 4s, 1.5x backoff)      │  │       UPDATE 누적             │
-   │◀─── 누적 raw text ─────────────│  └────────────────────────────────┘
-   │   (status: streaming)          │
-   │                                │
-   │   ...폴링 반복...               │
-   │                                │
-   │◀─── 누적 raw text ─────────────│
-   │   (status: done, is_complete)  │
-   │   폴링 중단                     │
-```
-
-**왜 `asyncio.shield`인가** — Lambda + Mangum 환경에서 클라이언트가 끊기면(새로고침, 뒤로가기) FastAPI가 핸들러를 자동 cancel한다. 그러면 LLM stream 소비 task도 같이 죽어 DB 누적이 중단된다. `asyncio.shield`로 task를 핸들러 cancel 전파로부터 격리하면, 핸들러는 죽었지만 task는 **Lambda invocation이 끝날 때까지 살아남아** DB 저장을 보장한다.
-
-```python
-task = asyncio.create_task(step_service.run_side_panel_generation(db, step_id))
-while not task.done():
-    try:
-        await asyncio.shield(task)
-    except asyncio.CancelledError:
-        # 클라이언트 끊김으로 핸들러가 cancel돼도 task는 shield로 보호됨
-        # 다음 iteration에서 task가 끝날 때까지 계속 대기
-        continue
-```
-
-**적응형 폴링 — DB 부하 절반 절감**
-
-클라이언트는 무작정 1초마다 폴링하지 않는다. 새 chunk가 도착하면 빠른 주기(1s), chunk가 멈추면 1.5배씩 늘려 최대 4s까지 늘어난다. 새 chunk가 다시 들어오면 1s로 reset. *"활발한 시점에는 빠르게, 조용한 시점에는 느슨하게"* 가 자동 조절된다. 이 한 가지 패턴으로 **평균 폴링 요청 ~50% 감소**를 확보했다.
-
-**누적 content 전달 — 새로고침 복구의 핵심**
-
-폴링 응답은 *"이번에 도착한 delta"* 가 아니라 *"지금까지 누적된 전체 content"* 를 담는다. 그래서 사용자가 페이지를 새로고침하더라도, 첫 폴링 응답이 곧 *"여기까지 진행됨"* 의 완전한 상태가 된다. 클라이언트의 in-memory buffer를 단순 대입(`buf.text = content`) 하면 되므로 중복 누적 위험이 없다.
-
-### 5-7. 백엔드의 AI 의존도와 기여점
+### 5-6. 백엔드의 AI 의존도와 기여점
 
 **AI 의존 범위 (정확히 명시)**
 
