@@ -353,7 +353,7 @@ AI는 **"어떻게(How)"** 를 엄청난 속도로 만들어준다. 코드도, �
 
 ### 소개 영상
 
-[![Poco 시연 영상](https://img.youtube.com/vi/s793EX8OvLs/maxresdefault.jpg)](https://youtu.be/s793EX8OvLs)
+[![Poco 시연 영상](./assets/video_thumbnail.png)](https://youtu.be/dm9nSAuRjMo)
 
 &nbsp;
 
