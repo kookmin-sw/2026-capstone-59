@@ -89,11 +89,13 @@ function HeroScreen() {
 // ===== Demo Video — 영상이 있으면 video, 없으면 fallback 애니메이션 =====
 // 영상 파일: public/assets/demo-panel-1.webm ~ demo-panel-4.webm
 // 영상이 준비되면 해당 경로에 파일만 넣으면 자동 재생됨
+// BASE: GitHub Pages 서브경로 배포 대응 (base '/'면 '/assets/...', '/landing/'면 그 하위로 resolve)
+const BASE = import.meta.env.BASE_URL
 const DEMO_VIDEOS = [
-  '/assets/demo-panel-1',
-  '/assets/demo-panel-2',
-  '/assets/demo-panel-3',
-  '/assets/demo-panel-4',
+  `${BASE}assets/demo-panel-1`,
+  `${BASE}assets/demo-panel-2`,
+  `${BASE}assets/demo-panel-3`,
+  `${BASE}assets/demo-panel-4`,
 ]
 
 function DemoVideo({ index, playing, fallback }) {
@@ -147,8 +149,8 @@ function HeroDemoVideo() {
       onError={() => setVideoError(true)}
       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
     >
-      <source src="/assets/demo-hero.mp4" type="video/mp4" />
-      <source src="/assets/demo-hero.webm" type="video/webm" />
+      <source src={`${BASE}assets/demo-hero.mp4`} type="video/mp4" />
+      <source src={`${BASE}assets/demo-hero.webm`} type="video/webm" />
     </video>
   )
 }
@@ -781,7 +783,7 @@ export default function LandingPage() {
           </Reveal>
           <Reveal delay={2} className={styles.heroVis}>
             <div className={styles.heroDevice}>
-              <img src="/assets/hero-imac.png" alt="" />
+              <img src={`${BASE}assets/hero-imac.png`} alt="" />
               <div className={styles.heroDisplay}>
                 <HeroDemoVideo />
               </div>
@@ -877,7 +879,7 @@ export default function LandingPage() {
             {/* RIGHT: pinned iMac frame */}
             <div className={styles.stageDevice}>
               <div className={styles.device}>
-                <img className={styles.deviceFrame} src="/assets/show-imac.png" alt="" />
+                <img className={styles.deviceFrame} src={`${BASE}assets/show-imac.png`} alt="" />
                 <div className={styles.deviceDisplay}>
                   <div className={styles.screens}>
                     {PANELS.map((_, i) => {

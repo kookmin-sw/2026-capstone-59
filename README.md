@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/">
+  <a href="https://kookmin-sw.github.io/2026-capstone-59/landing/">
     <img src="./assets/logo.png" alt="Poco 로고" width="400" />
   </a>
 </p>
@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://kookmin-sw.github.io/2026-capstone-59/"><img src="https://img.shields.io/badge/소개_페이지-GitHub_Pages-0969da?logo=github" alt="Intro Page" /></a>
-  <a href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/"><img src="https://img.shields.io/badge/서비스_바로가기-Poco-5C45E8" alt="Live Service" /></a>
+  <a href="https://kookmin-sw.github.io/2026-capstone-59/landing/"><img src="https://img.shields.io/badge/랜딩페이지_바로가기-Poco-5C45E8" alt="Landing Page" /></a>
   <a href="https://github.com/kookmin-sw/2026-capstone-59/raw/master/assets/poco_ppt.pdf"><img src="https://img.shields.io/badge/발표자료-PDF-E8453C?logo=adobeacrobatreader&logoColor=white" alt="발표자료 PDF" /></a>
   <a href="#-팀원"><img src="https://img.shields.io/badge/Capstone_2026-AWS_분반_59팀-FF9900?logo=amazon-aws" alt="AWS 분반" /></a>
 </p>

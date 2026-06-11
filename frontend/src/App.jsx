@@ -11,8 +11,11 @@ import PrivateRoute from './components/PrivateRoute'
 import UseCasePage from './pages/UseCasePage'
 
 export default function App() {
+  // GitHub Pages 서브경로 배포 시 BASE_URL(예: /2026-capstone-59/landing/)을
+  // 라우터 basename 으로 사용. 일반 배포(base '/')에서는 빈 문자열이 되어 동작 동일.
+  const basename = import.meta.env.BASE_URL.replace(/\/$/, '')
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/usecase" element={<UseCasePage />} />
