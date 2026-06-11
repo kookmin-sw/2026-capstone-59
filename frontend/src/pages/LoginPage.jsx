@@ -13,7 +13,7 @@ export default function LoginPage() {
       {/* 네비바 */}
       <nav className={styles.nav}>
         <div className={styles.logo}>
-          <object data="/poco-logo-text.svg" alt="poco" height={25}></object>
+          <object data={`${import.meta.env.BASE_URL}poco-logo-text.svg`} alt="poco" height={25}></object>
         </div>
       </nav>
 
@@ -23,7 +23,7 @@ export default function LoginPage() {
 
         <div className={styles.btnGroup}>
           <button className={`${styles.socialBtn} ${styles.google}`} onClick={() => handleLogin('google')}>
-            <object data="/google-logo.svg" width={27} height={27}></object> Google로 시작하기
+            <object data={`${import.meta.env.BASE_URL}google-logo.svg`} width={27} height={27}></object> Google로 시작하기
           </button>
           <button className={`${styles.socialBtn} ${styles.naver}`} onClick={() => handleLogin('naver')}>
             <SiNaver size={25} /> Naver로 시작하기

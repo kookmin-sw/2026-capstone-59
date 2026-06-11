@@ -305,8 +305,8 @@ body .wrapper sup a:hover {
       <img src="./assets/github_logo.png" alt="" />
       <span>GitHub 리포지토리</span>
     </a>
-    <a class="poco-btn" href="http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/" target="_blank" rel="noopener">
-      <span>서비스 바로가기</span>
+    <a class="poco-btn" href="https://kookmin-sw.github.io/2026-capstone-59/landing/" target="_blank" rel="noopener">
+      <span>랜딩페이지 바로가기</span>
     </a>
   </div>
 </nav>
@@ -1023,7 +1023,7 @@ other/#n-other-example       → 문서 수정 및 기타
 
 ### 10-1. 배포 버전
 
-> [Poco 서비스 바로가기 →](http://pj-kmucd1-09-poco-frontend.s3-website-us-east-1.amazonaws.com/)
+> [Poco 랜딩페이지 바로가기 →](https://kookmin-sw.github.io/2026-capstone-59/landing/)
 
 ### 10-2. 로컬 실행
 
